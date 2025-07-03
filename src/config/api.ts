@@ -1,7 +1,7 @@
 // Configuração centralizada da API
 export const API_CONFIG = {
-  // Host base da API - pode ser alterado dinamicamente
-  BASE_URL: 'https://cb86-2804-45c4-5c3-2400-9cdd-75aa-68d-d6b5.ngrok-free.app/api',
+  // Host base da API - alterado para localhost como padrão
+  BASE_URL: 'http://localhost:3000/api',
   
   // Endpoints disponíveis
   ENDPOINTS: {
@@ -47,6 +47,11 @@ export const getAuthHeaders = (): Record<string, string> => {
   return headers;
 };
 
+// Função para verificar se a resposta é HTML (indicando erro de configuração da API)
+const isHtmlResponse = (text: string): boolean => {
+  return text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html');
+};
+
 // Função para fazer requisições HTTP com autenticação automática
 export const apiRequest = async (
   endpoint: string, 
@@ -84,8 +89,21 @@ export const apiRequest = async (
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return data;
+    const responseText = await response.text();
+    
+    // Verificar se a resposta é HTML (indicando problema de configuração da API)
+    if (isHtmlResponse(responseText)) {
+      throw new Error('API returned HTML instead of JSON - check API configuration');
+    }
+    
+    // Tentar fazer parse do JSON
+    try {
+      const data = JSON.parse(responseText);
+      return data;
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', responseText);
+      throw new Error('Invalid JSON response from API');
+    }
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;
@@ -114,8 +132,21 @@ export const apiRequestNoAuth = async (
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return data;
+    const responseText = await response.text();
+    
+    // Verificar se a resposta é HTML (indicando problema de configuração da API)
+    if (isHtmlResponse(responseText)) {
+      throw new Error('API returned HTML instead of JSON - check API configuration');
+    }
+    
+    // Tentar fazer parse do JSON
+    try {
+      const data = JSON.parse(responseText);
+      return data;
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', responseText);
+      throw new Error('Invalid JSON response from API');
+    }
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;

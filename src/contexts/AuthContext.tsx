@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(userData);
       }
     } catch (error) {
-      // Token inválido, limpar dados
+      // Token inválido ou API indisponível, limpar dados
       localStorage.removeItem('auth_token');
       localStorage.removeItem('token_type');
       localStorage.removeItem('token_expires_in');
@@ -136,9 +136,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Tentar fazer logout na API se houver token
       const token = localStorage.getItem('auth_token');
       if (token) {
-        await apiRequest(API_CONFIG.ENDPOINTS.LOGOUT, {
-          method: 'POST'
-        });
+        // Tentar fazer logout na API, mas não falhar se der erro
+        try {
+          await apiRequest(API_CONFIG.ENDPOINTS.LOGOUT, {
+            method: 'POST'
+          });
+        } catch (apiError) {
+          // Ignorar erros da API no logout (endpoint pode não existir ou estar indisponível)
+          console.warn('Logout API call failed, proceeding with local logout:', apiError);
+        }
       }
     } catch (error) {
       console.error('Logout error:', error);
