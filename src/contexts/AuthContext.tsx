@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { apiRequest, API_CONFIG } from '../config/api';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { apiRequestNoAuth, apiRequest, API_CONFIG } from '../config/api';
 
 interface User {
   email: string;
@@ -36,18 +36,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  // Verificar se há token salvo ao inicializar
+  useEffect(() => {
+    const savedToken = localStorage.getItem('auth_token');
+    if (savedToken) {
+      // Verificar se o token ainda é válido fazendo uma requisição de teste
+      checkTokenValidity();
+    }
+  }, []);
+
+  const checkTokenValidity = async () => {
     try {
-      // Fazer requisição para a API real
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.LOGIN, {
-        method: 'POST',
-        body: JSON.stringify({
-          email,
-          password
-        })
+      // Fazer uma requisição para verificar se o token ainda é válido
+      // Você pode usar um endpoint específico para isso ou qualquer endpoint protegido
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
+        method: 'GET'
       });
 
-      // Verificar se a resposta contém os dados do usuário
       if (response && response.user) {
         const userData: User = {
           email: response.user.email,
@@ -55,13 +60,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: response.user.phone || response.user.telefone,
           department: response.user.department || response.user.departamento,
           position: response.user.position || response.user.cargo,
-          token: response.token || response.access_token
+          token: localStorage.getItem('auth_token') || undefined
         };
 
-        // Salvar token no localStorage se disponível
-        if (userData.token) {
-          localStorage.setItem('auth_token', userData.token);
-        }
+        setIsAuthenticated(true);
+        setUser(userData);
+      }
+    } catch (error) {
+      // Token inválido, limpar dados
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('token_type');
+      localStorage.removeItem('token_expires_in');
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      // Fazer requisição para a API real usando apiRequestNoAuth (sem token)
+      const response = await apiRequestNoAuth(API_CONFIG.ENDPOINTS.LOGIN, {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+
+      // Verificar se a resposta contém o token conforme sua API
+      if (response && response.token) {
+        // Salvar token no localStorage
+        localStorage.setItem('auth_token', response.token);
+        localStorage.setItem('token_type', response.type || 'bearer');
+        localStorage.setItem('token_expires_in', response.experes_in || response.expires_in || '3600');
+
+        // Criar dados do usuário (você pode ajustar conforme sua API retorna)
+        const userData: User = {
+          email,
+          name: response.user?.name || response.user?.nome || 'Usuário',
+          phone: response.user?.phone || response.user?.telefone,
+          department: response.user?.department || response.user?.departamento,
+          position: response.user?.position || response.user?.cargo,
+          token: response.token
+        };
 
         setIsAuthenticated(true);
         setUser(userData);
@@ -96,10 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = localStorage.getItem('auth_token');
       if (token) {
         await apiRequest(API_CONFIG.ENDPOINTS.LOGOUT, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          method: 'POST'
         });
       }
     } catch (error) {
@@ -107,6 +145,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       // Limpar dados locais independentemente do resultado da API
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('token_type');
+      localStorage.removeItem('token_expires_in');
       setIsAuthenticated(false);
       setUser(null);
     }
@@ -114,23 +154,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateUserProfile = async (profileData: Partial<User>): Promise<void> => {
     try {
-      const token = localStorage.getItem('auth_token');
-      
-      if (token) {
-        // Tentar atualizar via API
-        const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(profileData)
-        });
+      // Tentar atualizar via API (o token será incluído automaticamente)
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
+        method: 'PUT',
+        body: JSON.stringify(profileData)
+      });
 
-        if (response && response.user) {
-          const updatedUser = { ...user, ...response.user };
-          setUser(updatedUser);
-          return;
-        }
+      if (response && response.user) {
+        const updatedUser = { ...user, ...response.user };
+        setUser(updatedUser);
+        return;
       }
 
       // Fallback para atualização local

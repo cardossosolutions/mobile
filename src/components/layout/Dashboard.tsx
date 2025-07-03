@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import CompanyManagement from '../management/CompanyManagement';
@@ -8,9 +8,16 @@ import GuestManagement from '../management/GuestManagement';
 import AppointmentManagement from '../management/AppointmentManagement';
 import VisitorScheduleView from '../views/VisitorScheduleView';
 import DashboardHome from './DashboardHome';
+import { useData } from '../../contexts/DataContext';
 
 const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('home');
+  const { loadData } = useData();
+
+  // Carregar dados da API quando o dashboard for montado
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const renderContent = () => {
     switch (activeSection) {

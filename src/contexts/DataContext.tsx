@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { apiRequest, API_CONFIG } from '../config/api';
 
 interface Company {
   id: string;
@@ -67,24 +68,25 @@ interface DataContextType {
   employees: Employee[];
   guests: Guest[];
   appointments: Appointment[];
-  addCompany: (company: Omit<Company, 'id'>) => void;
-  updateCompany: (id: string, company: Partial<Company>) => void;
-  deleteCompany: (id: string) => void;
-  addResidence: (residence: Omit<Residence, 'id'>) => void;
-  updateResidence: (id: string, residence: Partial<Residence>) => void;
-  deleteResidence: (id: string) => void;
-  addResident: (resident: Omit<Resident, 'id'>) => void;
-  updateResident: (id: string, resident: Partial<Resident>) => void;
-  deleteResident: (id: string) => void;
-  addEmployee: (employee: Omit<Employee, 'id'>) => void;
-  updateEmployee: (id: string, employee: Partial<Employee>) => void;
-  deleteEmployee: (id: string) => void;
-  addGuest: (guest: Omit<Guest, 'id'>) => void;
-  updateGuest: (id: string, guest: Partial<Guest>) => void;
-  deleteGuest: (id: string) => void;
-  addAppointment: (appointment: Omit<Appointment, 'id'>) => void;
-  updateAppointment: (id: string, appointment: Partial<Appointment>) => void;
-  deleteAppointment: (id: string) => void;
+  addCompany: (company: Omit<Company, 'id'>) => Promise<void>;
+  updateCompany: (id: string, company: Partial<Company>) => Promise<void>;
+  deleteCompany: (id: string) => Promise<void>;
+  addResidence: (residence: Omit<Residence, 'id'>) => Promise<void>;
+  updateResidence: (id: string, residence: Partial<Residence>) => Promise<void>;
+  deleteResidence: (id: string) => Promise<void>;
+  addResident: (resident: Omit<Resident, 'id'>) => Promise<void>;
+  updateResident: (id: string, resident: Partial<Resident>) => Promise<void>;
+  deleteResident: (id: string) => Promise<void>;
+  addEmployee: (employee: Omit<Employee, 'id'>) => Promise<void>;
+  updateEmployee: (id: string, employee: Partial<Employee>) => Promise<void>;
+  deleteEmployee: (id: string) => Promise<void>;
+  addGuest: (guest: Omit<Guest, 'id'>) => Promise<void>;
+  updateGuest: (id: string, guest: Partial<Guest>) => Promise<void>;
+  deleteGuest: (id: string) => Promise<void>;
+  addAppointment: (appointment: Omit<Appointment, 'id'>) => Promise<void>;
+  updateAppointment: (id: string, appointment: Partial<Appointment>) => Promise<void>;
+  deleteAppointment: (id: string) => Promise<void>;
+  loadData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -97,7 +99,7 @@ export const useData = () => {
   return context;
 };
 
-// Mock data
+// Mock data (mantido como fallback)
 const mockCompanies: Company[] = [
   {
     id: '1',
@@ -422,80 +424,335 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const generateId = () => Date.now().toString();
 
-  const addCompany = (company: Omit<Company, 'id'>) => {
-    setCompanies(prev => [...prev, { ...company, id: generateId() }]);
+  // Função para carregar dados da API
+  const loadData = async () => {
+    try {
+      // Carregar dados da API usando o token automaticamente
+      const [
+        companiesData,
+        residencesData,
+        residentsData,
+        employeesData,
+        guestsData,
+        appointmentsData
+      ] = await Promise.allSettled([
+        apiRequest(API_CONFIG.ENDPOINTS.COMPANIES),
+        apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES),
+        apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS),
+        apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES),
+        apiRequest(API_CONFIG.ENDPOINTS.GUESTS),
+        apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS)
+      ]);
+
+      // Atualizar estados com dados da API se disponíveis, senão manter mock
+      if (companiesData.status === 'fulfilled' && companiesData.value) {
+        setCompanies(companiesData.value.data || companiesData.value);
+      }
+      if (residencesData.status === 'fulfilled' && residencesData.value) {
+        setResidences(residencesData.value.data || residencesData.value);
+      }
+      if (residentsData.status === 'fulfilled' && residentsData.value) {
+        setResidents(residentsData.value.data || residentsData.value);
+      }
+      if (employeesData.status === 'fulfilled' && employeesData.value) {
+        setEmployees(employeesData.value.data || employeesData.value);
+      }
+      if (guestsData.status === 'fulfilled' && guestsData.value) {
+        setGuests(guestsData.value.data || guestsData.value);
+      }
+      if (appointmentsData.status === 'fulfilled' && appointmentsData.value) {
+        setAppointments(appointmentsData.value.data || appointmentsData.value);
+      }
+    } catch (error) {
+      console.error('Error loading data from API:', error);
+      // Manter dados mock em caso de erro
+    }
   };
 
-  const updateCompany = (id: string, company: Partial<Company>) => {
-    setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
+  // Funções para empresas
+  const addCompany = async (company: Omit<Company, 'id'>) => {
+    try {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.COMPANIES, {
+        method: 'POST',
+        body: JSON.stringify(company)
+      });
+      
+      if (response && response.data) {
+        setCompanies(prev => [...prev, response.data]);
+      } else {
+        // Fallback para mock
+        setCompanies(prev => [...prev, { ...company, id: generateId() }]);
+      }
+    } catch (error) {
+      console.error('Error adding company:', error);
+      // Fallback para mock
+      setCompanies(prev => [...prev, { ...company, id: generateId() }]);
+    }
   };
 
-  const deleteCompany = (id: string) => {
-    setCompanies(prev => prev.filter(c => c.id !== id));
+  const updateCompany = async (id: string, company: Partial<Company>) => {
+    try {
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(company)
+      });
+      
+      if (response) {
+        setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
+      }
+    } catch (error) {
+      console.error('Error updating company:', error);
+      // Fallback para mock
+      setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
+    }
   };
 
-  const addResidence = (residence: Omit<Residence, 'id'>) => {
-    setResidences(prev => [...prev, { ...residence, id: generateId() }]);
+  const deleteCompany = async (id: string) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      setCompanies(prev => prev.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      // Fallback para mock
+      setCompanies(prev => prev.filter(c => c.id !== id));
+    }
   };
 
-  const updateResidence = (id: string, residence: Partial<Residence>) => {
-    setResidences(prev => prev.map(r => r.id === id ? { ...r, ...residence } : r));
+  // Funções para residências
+  const addResidence = async (residence: Omit<Residence, 'id'>) => {
+    try {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES, {
+        method: 'POST',
+        body: JSON.stringify(residence)
+      });
+      
+      if (response && response.data) {
+        setResidences(prev => [...prev, response.data]);
+      } else {
+        setResidences(prev => [...prev, { ...residence, id: generateId() }]);
+      }
+    } catch (error) {
+      console.error('Error adding residence:', error);
+      setResidences(prev => [...prev, { ...residence, id: generateId() }]);
+    }
   };
 
-  const deleteResidence = (id: string) => {
-    setResidences(prev => prev.filter(r => r.id !== id));
-    // Also remove residents from this residence
-    setResidents(prev => prev.filter(r => r.residenceId !== id));
+  const updateResidence = async (id: string, residence: Partial<Residence>) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(residence)
+      });
+      
+      setResidences(prev => prev.map(r => r.id === id ? { ...r, ...residence } : r));
+    } catch (error) {
+      console.error('Error updating residence:', error);
+      setResidences(prev => prev.map(r => r.id === id ? { ...r, ...residence } : r));
+    }
   };
 
-  const addResident = (resident: Omit<Resident, 'id'>) => {
-    setResidents(prev => [...prev, { ...resident, id: generateId() }]);
+  const deleteResidence = async (id: string) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      setResidences(prev => prev.filter(r => r.id !== id));
+      setResidents(prev => prev.filter(r => r.residenceId !== id));
+    } catch (error) {
+      console.error('Error deleting residence:', error);
+      setResidences(prev => prev.filter(r => r.id !== id));
+      setResidents(prev => prev.filter(r => r.residenceId !== id));
+    }
   };
 
-  const updateResident = (id: string, resident: Partial<Resident>) => {
-    setResidents(prev => prev.map(r => r.id === id ? { ...r, ...resident } : r));
+  // Funções para moradores
+  const addResident = async (resident: Omit<Resident, 'id'>) => {
+    try {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
+        method: 'POST',
+        body: JSON.stringify(resident)
+      });
+      
+      if (response && response.data) {
+        setResidents(prev => [...prev, response.data]);
+      } else {
+        setResidents(prev => [...prev, { ...resident, id: generateId() }]);
+      }
+    } catch (error) {
+      console.error('Error adding resident:', error);
+      setResidents(prev => [...prev, { ...resident, id: generateId() }]);
+    }
   };
 
-  const deleteResident = (id: string) => {
-    setResidents(prev => prev.filter(r => r.id !== id));
+  const updateResident = async (id: string, resident: Partial<Resident>) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(resident)
+      });
+      
+      setResidents(prev => prev.map(r => r.id === id ? { ...r, ...resident } : r));
+    } catch (error) {
+      console.error('Error updating resident:', error);
+      setResidents(prev => prev.map(r => r.id === id ? { ...r, ...resident } : r));
+    }
   };
 
-  const addEmployee = (employee: Omit<Employee, 'id'>) => {
-    setEmployees(prev => [...prev, { ...employee, id: generateId() }]);
+  const deleteResident = async (id: string) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      setResidents(prev => prev.filter(r => r.id !== id));
+    } catch (error) {
+      console.error('Error deleting resident:', error);
+      setResidents(prev => prev.filter(r => r.id !== id));
+    }
   };
 
-  const updateEmployee = (id: string, employee: Partial<Employee>) => {
-    setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+  // Funções para funcionários
+  const addEmployee = async (employee: Omit<Employee, 'id'>) => {
+    try {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
+        method: 'POST',
+        body: JSON.stringify(employee)
+      });
+      
+      if (response && response.data) {
+        setEmployees(prev => [...prev, response.data]);
+      } else {
+        setEmployees(prev => [...prev, { ...employee, id: generateId() }]);
+      }
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      setEmployees(prev => [...prev, { ...employee, id: generateId() }]);
+    }
   };
 
-  const deleteEmployee = (id: string) => {
-    setEmployees(prev => prev.filter(e => e.id !== id));
+  const updateEmployee = async (id: string, employee: Partial<Employee>) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(employee)
+      });
+      
+      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+    }
   };
 
-  const addGuest = (guest: Omit<Guest, 'id'>) => {
-    setGuests(prev => [...prev, { ...guest, id: generateId() }]);
+  const deleteEmployee = async (id: string) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      setEmployees(prev => prev.filter(e => e.id !== id));
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      setEmployees(prev => prev.filter(e => e.id !== id));
+    }
   };
 
-  const updateGuest = (id: string, guest: Partial<Guest>) => {
-    setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
+  // Funções para convidados
+  const addGuest = async (guest: Omit<Guest, 'id'>) => {
+    try {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS, {
+        method: 'POST',
+        body: JSON.stringify(guest)
+      });
+      
+      if (response && response.data) {
+        setGuests(prev => [...prev, response.data]);
+      } else {
+        setGuests(prev => [...prev, { ...guest, id: generateId() }]);
+      }
+    } catch (error) {
+      console.error('Error adding guest:', error);
+      setGuests(prev => [...prev, { ...guest, id: generateId() }]);
+    }
   };
 
-  const deleteGuest = (id: string) => {
-    setGuests(prev => prev.filter(g => g.id !== id));
-    // Also remove appointments for this guest
-    setAppointments(prev => prev.filter(a => a.guestId !== id));
+  const updateGuest = async (id: string, guest: Partial<Guest>) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(guest)
+      });
+      
+      setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
+    } catch (error) {
+      console.error('Error updating guest:', error);
+      setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
+    }
   };
 
-  const addAppointment = (appointment: Omit<Appointment, 'id'>) => {
-    setAppointments(prev => [...prev, { ...appointment, id: generateId() }]);
+  const deleteGuest = async (id: string) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      setGuests(prev => prev.filter(g => g.id !== id));
+      setAppointments(prev => prev.filter(a => a.guestId !== id));
+    } catch (error) {
+      console.error('Error deleting guest:', error);
+      setGuests(prev => prev.filter(g => g.id !== id));
+      setAppointments(prev => prev.filter(a => a.guestId !== id));
+    }
   };
 
-  const updateAppointment = (id: string, appointment: Partial<Appointment>) => {
-    setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...appointment } : a));
+  // Funções para agendamentos
+  const addAppointment = async (appointment: Omit<Appointment, 'id'>) => {
+    try {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS, {
+        method: 'POST',
+        body: JSON.stringify(appointment)
+      });
+      
+      if (response && response.data) {
+        setAppointments(prev => [...prev, response.data]);
+      } else {
+        setAppointments(prev => [...prev, { ...appointment, id: generateId() }]);
+      }
+    } catch (error) {
+      console.error('Error adding appointment:', error);
+      setAppointments(prev => [...prev, { ...appointment, id: generateId() }]);
+    }
   };
 
-  const deleteAppointment = (id: string) => {
-    setAppointments(prev => prev.filter(a => a.id !== id));
+  const updateAppointment = async (id: string, appointment: Partial<Appointment>) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(appointment)
+      });
+      
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...appointment } : a));
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...appointment } : a));
+    }
+  };
+
+  const deleteAppointment = async (id: string) => {
+    try {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      setAppointments(prev => prev.filter(a => a.id !== id));
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      setAppointments(prev => prev.filter(a => a.id !== id));
+    }
   };
 
   return (
@@ -523,7 +780,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       deleteGuest,
       addAppointment,
       updateAppointment,
-      deleteAppointment
+      deleteAppointment,
+      loadData
     }}>
       {children}
     </DataContext.Provider>
