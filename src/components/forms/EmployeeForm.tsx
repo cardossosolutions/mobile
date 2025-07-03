@@ -7,6 +7,14 @@ interface EmployeeFormProps {
   onClose: () => void;
 }
 
+interface FormErrors {
+  nome?: string;
+  email?: string;
+  companyId?: string;
+  permissao?: string;
+  status?: string;
+}
+
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const { addEmployee, updateEmployee, companies } = useData();
   const [formData, setFormData] = useState({
@@ -16,12 +24,47 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     permissao: employee?.permissao || '',
     status: employee?.status || 'Ativo'
   });
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const permissionOptions = ['Administrador', 'Operador', 'Visitante'];
   const statusOptions = ['Ativo', 'Inativo', 'Suspenso'];
 
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.nome) {
+      newErrors.nome = 'Nome é obrigatório';
+    }
+
+    if (!formData.email) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email deve ter um formato válido';
+    }
+
+    if (!formData.companyId) {
+      newErrors.companyId = 'Empresa é obrigatória';
+    }
+
+    if (!formData.permissao) {
+      newErrors.permissao = 'Permissão é obrigatória';
+    }
+
+    if (!formData.status) {
+      newErrors.status = 'Status é obrigatório';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     if (employee) {
       updateEmployee(employee.id, formData);
     } else {
@@ -31,10 +74,19 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors({
+        ...errors,
+        [name]: undefined
+      });
+    }
   };
 
   return (
@@ -51,83 +103,103 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nome *
+            Nome <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="nome"
             value={formData.nome}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.nome ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.nome && (
+            <p className="text-red-500 text-sm mt-1">{errors.nome}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email *
+            Email <span className="text-red-500">*</span>
           </label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.email ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.email && (
+            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Empresa *
+            Empresa <span className="text-red-500">*</span>
           </label>
           <select
             name="companyId"
             value={formData.companyId}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.companyId ? 'border-red-500' : 'border-gray-300'
+            }`}
           >
             <option value="">Selecione a empresa</option>
             {companies.map(company => (
               <option key={company.id} value={company.id}>{company.nomeFantasia}</option>
             ))}
           </select>
+          {errors.companyId && (
+            <p className="text-red-500 text-sm mt-1">{errors.companyId}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Permissão *
+              Permissão <span className="text-red-500">*</span>
             </label>
             <select
               name="permissao"
               value={formData.permissao}
               onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.permissao ? 'border-red-500' : 'border-gray-300'
+              }`}
             >
               <option value="">Selecione a permissão</option>
               {permissionOptions.map(permission => (
                 <option key={permission} value={permission}>{permission}</option>
               ))}
             </select>
+            {errors.permissao && (
+              <p className="text-red-500 text-sm mt-1">{errors.permissao}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status *
+              Status <span className="text-red-500">*</span>
             </label>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.status ? 'border-red-500' : 'border-gray-300'
+              }`}
             >
               {statusOptions.map(status => (
                 <option key={status} value={status}>{status}</option>
               ))}
             </select>
+            {errors.status && (
+              <p className="text-red-500 text-sm mt-1">{errors.status}</p>
+            )}
           </div>
         </div>
 

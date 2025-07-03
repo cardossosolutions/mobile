@@ -6,6 +6,17 @@ interface UserProfileFormProps {
   onClose: () => void;
 }
 
+interface ProfileErrors {
+  name?: string;
+  email?: string;
+}
+
+interface PasswordErrors {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+}
+
 const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
   const { user, updateUserProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
@@ -14,6 +25,8 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [profileErrors, setProfileErrors] = useState<ProfileErrors>({});
+  const [passwordErrors, setPasswordErrors] = useState<PasswordErrors>({});
 
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -29,24 +42,87 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
     confirmPassword: ''
   });
 
+  const validateProfile = (): boolean => {
+    const newErrors: ProfileErrors = {};
+
+    if (!profileData.name) {
+      newErrors.name = 'Nome é obrigatório';
+    }
+
+    if (!profileData.email) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
+      newErrors.email = 'Email deve ter um formato válido';
+    }
+
+    setProfileErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validatePassword = (): boolean => {
+    const newErrors: PasswordErrors = {};
+
+    if (!passwordData.currentPassword) {
+      newErrors.currentPassword = 'Senha atual é obrigatória';
+    }
+
+    if (!passwordData.newPassword) {
+      newErrors.newPassword = 'Nova senha é obrigatória';
+    } else if (passwordData.newPassword.length < 6) {
+      newErrors.newPassword = 'A nova senha deve ter pelo menos 6 caracteres';
+    }
+
+    if (!passwordData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirmação de senha é obrigatória';
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+      newErrors.confirmPassword = 'As senhas não coincidem';
+    }
+
+    setPasswordErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setProfileData({
       ...profileData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error when user starts typing
+    if (profileErrors[name as keyof ProfileErrors]) {
+      setProfileErrors({
+        ...profileErrors,
+        [name]: undefined
+      });
+    }
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setPasswordData({
       ...passwordData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error when user starts typing
+    if (passwordErrors[name as keyof PasswordErrors]) {
+      setPasswordErrors({
+        ...passwordErrors,
+        [name]: undefined
+      });
+    }
   };
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setMessage('');
+
+    if (!validateProfile()) {
+      return;
+    }
+
+    setLoading(true);
 
     try {
       await updateUserProfile(profileData);
@@ -60,20 +136,13 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setMessage('');
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage('As senhas não coincidem.');
-      setLoading(false);
+    if (!validatePassword()) {
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      setMessage('A nova senha deve ter pelo menos 6 caracteres.');
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
 
     try {
       // Mock password update - replace with real API call
@@ -148,20 +217,24 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome Completo *
+                Nome Completo <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 name="name"
                 value={profileData.name}
                 onChange={handleProfileChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  profileErrors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {profileErrors.name && (
+                <p className="text-red-500 text-sm mt-1">{profileErrors.name}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email *
+                Email <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -169,11 +242,15 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                   name="email"
                   value={profileData.email}
                   onChange={handleProfileChange}
-                  required
-                  className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    profileErrors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
+              {profileErrors.email && (
+                <p className="text-red-500 text-sm mt-1">{profileErrors.email}</p>
+              )}
             </div>
           </div>
 
@@ -250,7 +327,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Senha Atual *
+              Senha Atual <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -258,8 +335,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 name="currentPassword"
                 value={passwordData.currentPassword}
                 onChange={handlePasswordChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
+                  passwordErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Digite sua senha atual"
               />
               <button
@@ -274,11 +352,14 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 )}
               </button>
             </div>
+            {passwordErrors.currentPassword && (
+              <p className="text-red-500 text-sm mt-1">{passwordErrors.currentPassword}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nova Senha *
+              Nova Senha <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -286,8 +367,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 name="newPassword"
                 value={passwordData.newPassword}
                 onChange={handlePasswordChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
+                  passwordErrors.newPassword ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Digite a nova senha (mín. 6 caracteres)"
               />
               <button
@@ -302,11 +384,14 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 )}
               </button>
             </div>
+            {passwordErrors.newPassword && (
+              <p className="text-red-500 text-sm mt-1">{passwordErrors.newPassword}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirmar Nova Senha *
+              Confirmar Nova Senha <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -314,8 +399,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 name="confirmPassword"
                 value={passwordData.confirmPassword}
                 onChange={handlePasswordChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
+                  passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Confirme a nova senha"
               />
               <button
@@ -330,6 +416,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 )}
               </button>
             </div>
+            {passwordErrors.confirmPassword && (
+              <p className="text-red-500 text-sm mt-1">{passwordErrors.confirmPassword}</p>
+            )}
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

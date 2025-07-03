@@ -7,6 +7,12 @@ interface GuestFormProps {
   onClose: () => void;
 }
 
+interface FormErrors {
+  nome?: string;
+  rg?: string;
+  cpf?: string;
+}
+
 const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
   const { addGuest, updateGuest } = useData();
   const [formData, setFormData] = useState({
@@ -16,9 +22,34 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
     placaVeiculo: guest?.placaVeiculo || '',
     observacoes: guest?.observacoes || ''
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.nome) {
+      newErrors.nome = 'Nome é obrigatório';
+    }
+
+    if (!formData.rg) {
+      newErrors.rg = 'RG é obrigatório';
+    }
+
+    if (!formData.cpf) {
+      newErrors.cpf = 'CPF é obrigatório';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     if (guest) {
       updateGuest(guest.id, formData);
     } else {
@@ -28,10 +59,19 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors({
+        ...errors,
+        [name]: undefined
+      });
+    }
   };
 
   return (
@@ -48,44 +88,56 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nome *
+            Nome <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="nome"
             value={formData.nome}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.nome ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.nome && (
+            <p className="text-red-500 text-sm mt-1">{errors.nome}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              RG *
+              RG <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="rg"
               value={formData.rg}
               onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.rg ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {errors.rg && (
+              <p className="text-red-500 text-sm mt-1">{errors.rg}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              CPF *
+              CPF <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="cpf"
               value={formData.cpf}
               onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.cpf ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {errors.cpf && (
+              <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>
+            )}
           </div>
         </div>
 

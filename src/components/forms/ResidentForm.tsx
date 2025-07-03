@@ -8,6 +8,12 @@ interface ResidentFormProps {
   onClose: () => void;
 }
 
+interface FormErrors {
+  nome?: string;
+  email?: string;
+  celular?: string;
+}
+
 const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onClose }) => {
   const { addResident, updateResident } = useData();
   const [formData, setFormData] = useState({
@@ -15,9 +21,36 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
     email: resident?.email || '',
     celular: resident?.celular || ''
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.nome) {
+      newErrors.nome = 'Nome é obrigatório';
+    }
+
+    if (!formData.email) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email deve ter um formato válido';
+    }
+
+    if (!formData.celular) {
+      newErrors.celular = 'Celular é obrigatório';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     if (resident) {
       updateResident(resident.id, formData);
     } else {
@@ -27,10 +60,19 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors({
+        ...errors,
+        [name]: undefined
+      });
+    }
   };
 
   return (
@@ -47,44 +89,56 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nome *
+            Nome <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="nome"
             value={formData.nome}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.nome ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.nome && (
+            <p className="text-red-500 text-sm mt-1">{errors.nome}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email *
+            Email <span className="text-red-500">*</span>
           </label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.email ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.email && (
+            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Celular *
+            Celular <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="celular"
             value={formData.celular}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.celular ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.celular && (
+            <p className="text-red-500 text-sm mt-1">{errors.celular}</p>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">

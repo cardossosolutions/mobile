@@ -7,6 +7,12 @@ interface ResidenceFormProps {
   onClose: () => void;
 }
 
+interface FormErrors {
+  bloco?: string;
+  apartamento?: string;
+  proprietario?: string;
+}
+
 const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => {
   const { addResidence, updateResidence } = useData();
   const [formData, setFormData] = useState({
@@ -16,9 +22,34 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
     telefone: residence?.telefone || '',
     email: residence?.email || ''
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.bloco) {
+      newErrors.bloco = 'Bloco é obrigatório';
+    }
+
+    if (!formData.apartamento) {
+      newErrors.apartamento = 'Apartamento é obrigatório';
+    }
+
+    if (!formData.proprietario) {
+      newErrors.proprietario = 'Proprietário é obrigatório';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     if (residence) {
       updateResidence(residence.id, formData);
     } else {
@@ -28,10 +59,19 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors({
+        ...errors,
+        [name]: undefined
+      });
+    }
   };
 
   return (
@@ -49,44 +89,56 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bloco *
+              Bloco <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="bloco"
               value={formData.bloco}
               onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.bloco ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {errors.bloco && (
+              <p className="text-red-500 text-sm mt-1">{errors.bloco}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Apartamento *
+              Apartamento <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="apartamento"
               value={formData.apartamento}
               onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.apartamento ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {errors.apartamento && (
+              <p className="text-red-500 text-sm mt-1">{errors.apartamento}</p>
+            )}
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Proprietário *
+            Proprietário <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="proprietario"
             value={formData.proprietario}
             onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.proprietario ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.proprietario && (
+            <p className="text-red-500 text-sm mt-1">{errors.proprietario}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
