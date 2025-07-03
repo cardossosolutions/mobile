@@ -87,6 +87,7 @@ interface DataContextType {
   updateAppointment: (id: string, appointment: Partial<Appointment>) => Promise<void>;
   deleteAppointment: (id: string) => Promise<void>;
   loadData: () => Promise<void>;
+  loadUserProfile: () => Promise<any>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -424,10 +425,42 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const generateId = () => Date.now().toString();
 
+  // Função específica para carregar dados do usuário
+  const loadUserProfile = async () => {
+    try {
+      console.log('🔄 Fazendo requisição para /user/me...');
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta do /user/me:', response);
+      
+      // Salvar dados do usuário no localStorage
+      if (response) {
+        localStorage.setItem('user_profile', JSON.stringify(response));
+        console.log('💾 Dados do usuário salvos no localStorage:', response);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('❌ Erro ao carregar perfil do usuário:', error);
+      throw error;
+    }
+  };
+
   // Função para carregar dados da API
   const loadData = async () => {
     try {
-      // Carregar dados da API usando o token automaticamente
+      console.log('🔄 Iniciando carregamento de dados...');
+      
+      // PRIMEIRO: Carregar dados do usuário
+      try {
+        await loadUserProfile();
+      } catch (userError) {
+        console.warn('⚠️ Erro ao carregar dados do usuário, continuando com outros dados:', userError);
+      }
+
+      // SEGUNDO: Carregar outros dados da API usando o token automaticamente
       const [
         companiesData,
         residencesData,
@@ -463,8 +496,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (appointmentsData.status === 'fulfilled' && appointmentsData.value) {
         setAppointments(appointmentsData.value.data || appointmentsData.value);
       }
+
+      console.log('✅ Carregamento de dados concluído');
     } catch (error) {
-      console.error('Error loading data from API:', error);
+      console.error('❌ Erro ao carregar dados da API:', error);
       // Manter dados mock em caso de erro
     }
   };
@@ -781,7 +816,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addAppointment,
       updateAppointment,
       deleteAppointment,
-      loadData
+      loadData,
+      loadUserProfile
     }}>
       {children}
     </DataContext.Provider>
