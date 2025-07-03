@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Calendar, Clock } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
@@ -6,7 +6,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import AppointmentForm from '../forms/AppointmentForm';
 
 const AppointmentManagement: React.FC = () => {
-  const { appointments, guests, deleteAppointment } = useData();
+  const { appointments, guests, loadAppointments, loadGuests, deleteAppointment } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,6 +20,13 @@ const AppointmentManagement: React.FC = () => {
     appointment: null,
     loading: false
   });
+
+  // Carregar agendamentos e convidados quando o componente for montado
+  useEffect(() => {
+    console.log('📅 AppointmentManagement montado - carregando agendamentos e convidados...');
+    loadAppointments();
+    loadGuests(); // Necessário para mostrar nomes dos convidados
+  }, []);
 
   const filteredAppointments = appointments.filter(appointment => {
     const guest = guests.find(g => g.id === appointment.guestId);

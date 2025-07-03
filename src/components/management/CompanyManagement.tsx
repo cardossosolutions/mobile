@@ -23,6 +23,7 @@ const CompanyManagement: React.FC = () => {
 
   // Carregar empresas quando o componente for montado
   useEffect(() => {
+    console.log('📋 CompanyManagement montado - carregando empresas...');
     loadCompanies();
   }, []);
 

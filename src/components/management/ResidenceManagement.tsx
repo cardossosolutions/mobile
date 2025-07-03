@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Home, Users } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
@@ -7,7 +7,7 @@ import ResidenceForm from '../forms/ResidenceForm';
 import ResidentManagement from './ResidentManagement';
 
 const ResidenceManagement: React.FC = () => {
-  const { residences, deleteResidence } = useData();
+  const { residences, loadResidences, loadResidents, deleteResidence } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
@@ -21,6 +21,13 @@ const ResidenceManagement: React.FC = () => {
     residence: null,
     loading: false
   });
+
+  // Carregar residências quando o componente for montado
+  useEffect(() => {
+    console.log('🏠 ResidenceManagement montado - carregando residências...');
+    loadResidences();
+    loadResidents(); // Carregar moradores também para o gerenciamento
+  }, []);
 
   const filteredResidences = residences.filter(residence =>
     residence.bloco.toLowerCase().includes(searchTerm.toLowerCase()) ||

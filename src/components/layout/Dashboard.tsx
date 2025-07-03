@@ -12,11 +12,21 @@ import { useData } from '../../contexts/DataContext';
 
 const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('home');
-  const { loadData } = useData();
+  const { loadUserProfile } = useData();
 
-  // Carregar dados da API quando o dashboard for montado
+  // Carregar apenas dados do usuário quando o dashboard for montado
   useEffect(() => {
-    loadData();
+    const initializeDashboard = async () => {
+      try {
+        console.log('🚀 Inicializando Dashboard...');
+        await loadUserProfile();
+        console.log('✅ Dashboard inicializado com sucesso');
+      } catch (error) {
+        console.warn('⚠️ Erro ao carregar dados do usuário:', error);
+      }
+    };
+
+    initializeDashboard();
   }, []);
 
   const renderContent = () => {

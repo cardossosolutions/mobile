@@ -4,18 +4,33 @@ import { apiRequest, API_CONFIG } from '../config/api';
 interface Company {
   id: string;
   cnpj: string;
-  razaoSocial: string;
-  nomeFantasia: string;
-  cep: string;
-  logradouro: string;
-  numero: string;
-  complemento: string;
-  bairro: string;
-  cidade: string;
-  estado: string;
+  corporate_name: string;
+  fantasy_name: string;
   email: string;
-  telefone: string;
-  celular: string;
+  phone_number: string | null;
+  mobile_number: string;
+  city_name: string | null;
+  state: string;
+}
+
+interface CompanyResponse {
+  current_page: number;
+  data: Company[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
 }
 
 interface Residence {
@@ -63,11 +78,18 @@ interface Appointment {
 
 interface DataContextType {
   companies: Company[];
+  companyPagination: CompanyResponse | null;
   residences: Residence[];
   residents: Resident[];
   employees: Employee[];
   guests: Guest[];
   appointments: Appointment[];
+  loadCompanies: (page?: number, search?: string) => Promise<void>;
+  loadResidences: () => Promise<void>;
+  loadResidents: () => Promise<void>;
+  loadEmployees: () => Promise<void>;
+  loadGuests: () => Promise<void>;
+  loadAppointments: () => Promise<void>;
   addCompany: (company: Omit<Company, 'id'>) => Promise<void>;
   updateCompany: (id: string, company: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
@@ -86,7 +108,6 @@ interface DataContextType {
   addAppointment: (appointment: Omit<Appointment, 'id'>) => Promise<void>;
   updateAppointment: (id: string, appointment: Partial<Appointment>) => Promise<void>;
   deleteAppointment: (id: string) => Promise<void>;
-  loadData: () => Promise<void>;
   loadUserProfile: () => Promise<any>;
 }
 
@@ -105,50 +126,35 @@ const mockCompanies: Company[] = [
   {
     id: '1',
     cnpj: '12.345.678/0001-90',
-    razaoSocial: 'Segurança Total Ltda',
-    nomeFantasia: 'SecTotal',
-    cep: '01310-100',
-    logradouro: 'Av. Paulista',
-    numero: '1000',
-    complemento: 'Sala 501',
-    bairro: 'Bela Vista',
-    cidade: 'São Paulo',
-    estado: 'SP',
+    corporate_name: 'Segurança Total Ltda',
+    fantasy_name: 'SecTotal',
     email: 'contato@sectotal.com.br',
-    telefone: '(11) 3333-4444',
-    celular: '(11) 99999-8888'
+    phone_number: '(11) 3333-4444',
+    mobile_number: '(11) 99999-8888',
+    city_name: 'São Paulo',
+    state: 'SP'
   },
   {
     id: '2',
     cnpj: '98.765.432/0001-10',
-    razaoSocial: 'Limpeza Express S.A.',
-    nomeFantasia: 'CleanExpress',
-    cep: '04567-890',
-    logradouro: 'Rua das Flores',
-    numero: '250',
-    complemento: '',
-    bairro: 'Vila Madalena',
-    cidade: 'São Paulo',
-    estado: 'SP',
+    corporate_name: 'Limpeza Express S.A.',
+    fantasy_name: 'CleanExpress',
     email: 'admin@cleanexpress.com.br',
-    telefone: '(11) 2222-3333',
-    celular: '(11) 88888-7777'
+    phone_number: '(11) 2222-3333',
+    mobile_number: '(11) 88888-7777',
+    city_name: 'São Paulo',
+    state: 'SP'
   },
   {
     id: '3',
     cnpj: '11.222.333/0001-44',
-    razaoSocial: 'Manutenção & Cia Ltda',
-    nomeFantasia: 'ManutençãoPro',
-    cep: '02345-678',
-    logradouro: 'Rua dos Técnicos',
-    numero: '789',
-    complemento: 'Galpão B',
-    bairro: 'Santana',
-    cidade: 'São Paulo',
-    estado: 'SP',
+    corporate_name: 'Manutenção & Cia Ltda',
+    fantasy_name: 'ManutençãoPro',
     email: 'servicos@manutencaopro.com.br',
-    telefone: '(11) 4444-5555',
-    celular: '(11) 77777-6666'
+    phone_number: '(11) 4444-5555',
+    mobile_number: '(11) 77777-6666',
+    city_name: 'São Paulo',
+    state: 'SP'
   }
 ];
 
@@ -416,12 +422,13 @@ const mockAppointments: Appointment[] = [
 ];
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
-  const [residences, setResidences] = useState<Residence[]>(mockResidences);
-  const [residents, setResidents] = useState<Resident[]>(mockResidents);
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
-  const [guests, setGuests] = useState<Guest[]>(mockGuests);
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companyPagination, setCompanyPagination] = useState<CompanyResponse | null>(null);
+  const [residences, setResidences] = useState<Residence[]>([]);
+  const [residents, setResidents] = useState<Resident[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   const generateId = () => Date.now().toString();
 
@@ -448,59 +455,156 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Função para carregar dados da API
-  const loadData = async () => {
+  // Função específica para carregar empresas com paginação
+  const loadCompanies = async (page: number = 1, search?: string) => {
     try {
-      console.log('🔄 Iniciando carregamento de dados...');
+      console.log(`🔄 Carregando empresas - Página: ${page}, Busca: ${search || 'N/A'}`);
       
-      // PRIMEIRO: Carregar dados do usuário
-      try {
-        await loadUserProfile();
-      } catch (userError) {
-        console.warn('⚠️ Erro ao carregar dados do usuário, continuando com outros dados:', userError);
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.COMPANIES}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
       }
-
-      // SEGUNDO: Carregar outros dados da API usando o token automaticamente
-      const [
-        companiesData,
-        residencesData,
-        residentsData,
-        employeesData,
-        guestsData,
-        appointmentsData
-      ] = await Promise.allSettled([
-        apiRequest(API_CONFIG.ENDPOINTS.COMPANIES),
-        apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES),
-        apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS),
-        apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES),
-        apiRequest(API_CONFIG.ENDPOINTS.GUESTS),
-        apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS)
-      ]);
-
-      // Atualizar estados com dados da API se disponíveis, senão manter mock
-      if (companiesData.status === 'fulfilled' && companiesData.value) {
-        setCompanies(companiesData.value.data || companiesData.value);
+      
+      const response = await apiRequest(url, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta das empresas:', response);
+      
+      if (response) {
+        // Converter os dados da API para o formato esperado
+        const companiesData: Company[] = response.data.map((company: any) => ({
+          id: company.id.toString(),
+          cnpj: company.cnpj,
+          corporate_name: company.corporate_name,
+          fantasy_name: company.fantasy_name,
+          email: company.email,
+          phone_number: company.phone_number,
+          mobile_number: company.mobile_number,
+          city_name: company.city_name,
+          state: company.state
+        }));
+        
+        setCompanies(companiesData);
+        setCompanyPagination(response);
+        console.log('💾 Empresas carregadas:', companiesData);
       }
-      if (residencesData.status === 'fulfilled' && residencesData.value) {
-        setResidences(residencesData.value.data || residencesData.value);
-      }
-      if (residentsData.status === 'fulfilled' && residentsData.value) {
-        setResidents(residentsData.value.data || residentsData.value);
-      }
-      if (employeesData.status === 'fulfilled' && employeesData.value) {
-        setEmployees(employeesData.value.data || employeesData.value);
-      }
-      if (guestsData.status === 'fulfilled' && guestsData.value) {
-        setGuests(guestsData.value.data || guestsData.value);
-      }
-      if (appointmentsData.status === 'fulfilled' && appointmentsData.value) {
-        setAppointments(appointmentsData.value.data || appointmentsData.value);
-      }
-
-      console.log('✅ Carregamento de dados concluído');
     } catch (error) {
-      console.error('❌ Erro ao carregar dados da API:', error);
-      // Manter dados mock em caso de erro
+      console.error('❌ Erro ao carregar empresas:', error);
+      // Usar dados mock em caso de erro
+      setCompanies(mockCompanies);
+      setCompanyPagination(null);
+    }
+  };
+
+  // Função específica para carregar residências
+  const loadResidences = async () => {
+    try {
+      console.log('🔄 Carregando residências...');
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta das residências:', response);
+      
+      if (response && response.data) {
+        setResidences(response.data);
+      } else if (response) {
+        setResidences(response);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar residências:', error);
+      // Usar dados mock em caso de erro
+      setResidences(mockResidences);
+    }
+  };
+
+  // Função específica para carregar moradores
+  const loadResidents = async () => {
+    try {
+      console.log('🔄 Carregando moradores...');
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta dos moradores:', response);
+      
+      if (response && response.data) {
+        setResidents(response.data);
+      } else if (response) {
+        setResidents(response);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar moradores:', error);
+      // Usar dados mock em caso de erro
+      setResidents(mockResidents);
+    }
+  };
+
+  // Função específica para carregar funcionários
+  const loadEmployees = async () => {
+    try {
+      console.log('🔄 Carregando funcionários...');
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta dos funcionários:', response);
+      
+      if (response && response.data) {
+        setEmployees(response.data);
+      } else if (response) {
+        setEmployees(response);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar funcionários:', error);
+      // Usar dados mock em caso de erro
+      setEmployees(mockEmployees);
+    }
+  };
+
+  // Função específica para carregar convidados
+  const loadGuests = async () => {
+    try {
+      console.log('🔄 Carregando convidados...');
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta dos convidados:', response);
+      
+      if (response && response.data) {
+        setGuests(response.data);
+      } else if (response) {
+        setGuests(response);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar convidados:', error);
+      // Usar dados mock em caso de erro
+      setGuests(mockGuests);
+    }
+  };
+
+  // Função específica para carregar agendamentos
+  const loadAppointments = async () => {
+    try {
+      console.log('🔄 Carregando agendamentos...');
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta dos agendamentos:', response);
+      
+      if (response && response.data) {
+        setAppointments(response.data);
+      } else if (response) {
+        setAppointments(response);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar agendamentos:', error);
+      // Usar dados mock em caso de erro
+      setAppointments(mockAppointments);
     }
   };
 
@@ -513,7 +617,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (response && response.data) {
-        setCompanies(prev => [...prev, response.data]);
+        // Recarregar a lista de empresas após adicionar
+        await loadCompanies();
       } else {
         // Fallback para mock
         setCompanies(prev => [...prev, { ...company, id: generateId() }]);
@@ -533,7 +638,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (response) {
-        setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
+        // Recarregar a lista de empresas após atualizar
+        await loadCompanies();
       }
     } catch (error) {
       console.error('Error updating company:', error);
@@ -548,7 +654,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         method: 'DELETE'
       });
       
-      setCompanies(prev => prev.filter(c => c.id !== id));
+      // Recarregar a lista de empresas após deletar
+      await loadCompanies();
     } catch (error) {
       console.error('Error deleting company:', error);
       // Fallback para mock
@@ -793,11 +900,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <DataContext.Provider value={{
       companies,
+      companyPagination,
       residences,
       residents,
       employees,
       guests,
       appointments,
+      loadCompanies,
+      loadResidences,
+      loadResidents,
+      loadEmployees,
+      loadGuests,
+      loadAppointments,
       addCompany,
       updateCompany,
       deleteCompany,
@@ -816,7 +930,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addAppointment,
       updateAppointment,
       deleteAppointment,
-      loadData,
       loadUserProfile
     }}>
       {children}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Users, Filter } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
@@ -6,7 +6,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import EmployeeForm from '../forms/EmployeeForm';
 
 const EmployeeManagement: React.FC = () => {
-  const { employees, companies, deleteEmployee } = useData();
+  const { employees, companies, loadEmployees, loadCompanies, deleteEmployee } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [permissionFilter, setPermissionFilter] = useState('');
@@ -24,6 +24,13 @@ const EmployeeManagement: React.FC = () => {
 
   const statusOptions = ['Ativo', 'Inativo', 'Suspenso'];
   const permissionOptions = ['Administrador', 'Operador', 'Visitante'];
+
+  // Carregar funcionários e empresas quando o componente for montado
+  useEffect(() => {
+    console.log('👥 EmployeeManagement montado - carregando funcionários e empresas...');
+    loadEmployees();
+    loadCompanies(); // Necessário para o dropdown de empresas
+  }, []);
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,7 +88,7 @@ const EmployeeManagement: React.FC = () => {
 
   const getCompanyName = (companyId: string) => {
     const company = companies.find(c => c.id === companyId);
-    return company ? company.nomeFantasia : 'Empresa não encontrada';
+    return company ? company.fantasy_name : 'Empresa não encontrada';
   };
 
   const getStatusBadge = (status: string) => {

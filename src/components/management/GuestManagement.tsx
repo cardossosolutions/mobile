@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, UserCheck } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
@@ -6,7 +6,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import GuestForm from '../forms/GuestForm';
 
 const GuestManagement: React.FC = () => {
-  const { guests, deleteGuest } = useData();
+  const { guests, loadGuests, deleteGuest } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<any>(null);
@@ -19,6 +19,12 @@ const GuestManagement: React.FC = () => {
     guest: null,
     loading: false
   });
+
+  // Carregar convidados quando o componente for montado
+  useEffect(() => {
+    console.log('👤 GuestManagement montado - carregando convidados...');
+    loadGuests();
+  }, []);
 
   const filteredGuests = guests.filter(guest =>
     guest.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
