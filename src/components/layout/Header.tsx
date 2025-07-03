@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
-import { Bell, User, LogOut, Settings } from 'lucide-react';
+import { Bell, User, LogOut, Settings, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../common/Modal';
 import UserProfileForm from '../forms/UserProfileForm';
+import ApiConfigModal from '../common/ApiConfigModal';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isApiConfigModalOpen, setIsApiConfigModalOpen] = useState(false);
 
   const handleProfileClick = () => {
     setShowUserMenu(false);
     setIsProfileModalOpen(true);
+  };
+
+  const handleApiConfigClick = () => {
+    setShowUserMenu(false);
+    setIsApiConfigModalOpen(true);
   };
 
   const handleLogout = () => {
@@ -60,6 +67,13 @@ const Header: React.FC = () => {
                     <Settings className="w-4 h-4" />
                     <span>Meu Perfil</span>
                   </button>
+                  <button
+                    onClick={handleApiConfigClick}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span>Configurar API</span>
+                  </button>
                   <hr className="my-1" />
                   <button
                     onClick={handleLogout}
@@ -87,6 +101,12 @@ const Header: React.FC = () => {
       <Modal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)}>
         <UserProfileForm onClose={() => setIsProfileModalOpen(false)} />
       </Modal>
+
+      {/* API Configuration Modal */}
+      <ApiConfigModal 
+        isOpen={isApiConfigModalOpen} 
+        onClose={() => setIsApiConfigModalOpen(false)} 
+      />
     </>
   );
 };
