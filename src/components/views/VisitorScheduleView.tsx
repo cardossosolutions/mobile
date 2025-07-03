@@ -24,28 +24,56 @@ interface VisitorDetails {
 
 const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
   const formatPlate = (plate: string) => {
+    // Remove any non-alphanumeric characters and convert to uppercase
+    const cleanPlate = plate.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    
     // Format for Mercosul pattern: ABC1D23
-    if (plate.length === 7) {
-      return `${plate.slice(0, 3)}${plate.slice(3, 4)}${plate.slice(4, 5)}${plate.slice(5, 7)}`;
+    if (cleanPlate.length === 7) {
+      return `${cleanPlate.slice(0, 3)}${cleanPlate.slice(3, 4)}${cleanPlate.slice(4, 5)}${cleanPlate.slice(5, 7)}`;
     }
-    return plate;
+    return cleanPlate;
   };
 
   const formattedPlate = formatPlate(plate);
 
   return (
-    <div className="bg-white border-4 border-blue-600 rounded-lg p-3 shadow-lg">
-      <div className="text-center">
-        <div className="text-xs font-bold text-blue-600 mb-1">BRASIL</div>
-        <div className="text-2xl font-bold text-gray-900 tracking-wider font-mono">
-          {formattedPlate}
-        </div>
-        <div className="flex justify-between items-center mt-2">
-          <div className="w-6 h-4 bg-blue-600 rounded"></div>
-          <div className="text-xs text-gray-600">MERCOSUL</div>
-          <div className="w-6 h-4 bg-green-500 rounded"></div>
+    <div className="relative bg-white rounded-lg shadow-lg overflow-hidden" style={{ width: '280px', height: '140px' }}>
+      {/* Header azul com BRASIL */}
+      <div className="bg-blue-600 text-white text-center py-2 relative">
+        <div className="flex items-center justify-between px-4">
+          {/* QR Code placeholder */}
+          <div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center">
+            <div className="w-6 h-6 bg-white rounded-sm opacity-20"></div>
+          </div>
+          
+          {/* BRASIL text */}
+          <div className="text-lg font-bold tracking-wider">BRASIL</div>
+          
+          {/* Bandeira do Brasil */}
+          <div className="w-8 h-6 bg-green-500 rounded-sm relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-yellow-400 to-blue-600"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-3 bg-blue-600 rounded-full"></div>
+          </div>
         </div>
       </div>
+
+      {/* Área principal da placa */}
+      <div className="bg-white flex-1 flex flex-col justify-center items-center py-4">
+        {/* Placa */}
+        <div className="text-4xl font-bold text-gray-900 tracking-wider font-mono mb-2">
+          {formattedPlate}
+        </div>
+        
+        {/* Footer com BR e MERCOSUL */}
+        <div className="flex items-center justify-between w-full px-6">
+          <div className="text-lg font-bold text-gray-700">BR</div>
+          <div className="text-sm text-gray-600 font-medium">MERCOSUL</div>
+          <div className="w-6 h-4 bg-blue-600 rounded"></div>
+        </div>
+      </div>
+
+      {/* Borda preta */}
+      <div className="absolute inset-0 border-4 border-black rounded-lg pointer-events-none"></div>
     </div>
   );
 };
