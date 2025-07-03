@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Calendar, Clock } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
+import ConfirmationModal from '../common/ConfirmationModal';
 import AppointmentForm from '../forms/AppointmentForm';
 
 const AppointmentManagement: React.FC = () => {
@@ -10,6 +11,15 @@ const AppointmentManagement: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    appointment: any | null;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    appointment: null,
+    loading: false
+  });
 
   const filteredAppointments = appointments.filter(appointment => {
     const guest = guests.find(g => g.id === appointment.guestId);
@@ -28,10 +38,39 @@ const AppointmentManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este agendamento?')) {
-      deleteAppointment(id);
+  const handleDeleteClick = (appointment: any) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      appointment,
+      loading: false
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmation.appointment) return;
+
+    setDeleteConfirmation(prev => ({ ...prev, loading: true }));
+
+    try {
+      await deleteAppointment(deleteConfirmation.appointment.id);
+      
+      setDeleteConfirmation({
+        isOpen: false,
+        appointment: null,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Erro ao excluir agendamento:', error);
+      setDeleteConfirmation(prev => ({ ...prev, loading: false }));
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmation({
+      isOpen: false,
+      appointment: null,
+      loading: false
+    });
   };
 
   const handleCloseModal = () => {
@@ -164,13 +203,15 @@ const AppointmentManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(appointment)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                        title="Editar"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(appointment.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        onClick={() => handleDeleteClick(appointment)}
+                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
+                        title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -190,12 +231,26 @@ const AppointmentManagement: React.FC = () => {
         )}
       </div>
 
+      {/* Modal de Formulário */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <AppointmentForm
           appointment={editingAppointment}
           onClose={handleCloseModal}
         />
       </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Confirmar Exclusão"
+        message={`Tem certeza que deseja excluir este agendamento para "${getGuestName(deleteConfirmation.appointment?.guestId || '')}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir Agendamento"
+        cancelText="Cancelar"
+        type="danger"
+        loading={deleteConfirmation.loading}
+      />
     </div>
   );
 };

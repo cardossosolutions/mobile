@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, ArrowLeft, User } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
+import ConfirmationModal from '../common/ConfirmationModal';
 import ResidentForm from '../forms/ResidentForm';
 
 interface ResidentManagementProps {
@@ -14,6 +15,15 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResident, setEditingResident] = useState<any>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    resident: any | null;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    resident: null,
+    loading: false
+  });
 
   const residence = residences.find(r => r.id === residenceId);
   const residenceResidents = residents.filter(r => r.residenceId === residenceId);
@@ -28,10 +38,39 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este morador?')) {
-      deleteResident(id);
+  const handleDeleteClick = (resident: any) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      resident,
+      loading: false
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmation.resident) return;
+
+    setDeleteConfirmation(prev => ({ ...prev, loading: true }));
+
+    try {
+      await deleteResident(deleteConfirmation.resident.id);
+      
+      setDeleteConfirmation({
+        isOpen: false,
+        resident: null,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Erro ao excluir morador:', error);
+      setDeleteConfirmation(prev => ({ ...prev, loading: false }));
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmation({
+      isOpen: false,
+      resident: null,
+      loading: false
+    });
   };
 
   const handleCloseModal = () => {
@@ -118,13 +157,15 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(resident)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                        title="Editar"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(resident.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        onClick={() => handleDeleteClick(resident)}
+                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
+                        title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -144,6 +185,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
         )}
       </div>
 
+      {/* Modal de Formulário */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <ResidentForm
           resident={editingResident}
@@ -151,6 +193,19 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
           onClose={handleCloseModal}
         />
       </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Confirmar Exclusão"
+        message={`Tem certeza que deseja excluir o morador "${deleteConfirmation.resident?.nome}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir Morador"
+        cancelText="Cancelar"
+        type="danger"
+        loading={deleteConfirmation.loading}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Search, Edit, Trash2, Home, Users } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
+import ConfirmationModal from '../common/ConfirmationModal';
 import ResidenceForm from '../forms/ResidenceForm';
 import ResidentManagement from './ResidentManagement';
 
@@ -11,6 +12,15 @@ const ResidenceManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
   const [selectedResidenceId, setSelectedResidenceId] = useState<string | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    residence: any | null;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    residence: null,
+    loading: false
+  });
 
   const filteredResidences = residences.filter(residence =>
     residence.bloco.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -23,10 +33,39 @@ const ResidenceManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta residência?')) {
-      deleteResidence(id);
+  const handleDeleteClick = (residence: any) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      residence,
+      loading: false
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmation.residence) return;
+
+    setDeleteConfirmation(prev => ({ ...prev, loading: true }));
+
+    try {
+      await deleteResidence(deleteConfirmation.residence.id);
+      
+      setDeleteConfirmation({
+        isOpen: false,
+        residence: null,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Erro ao excluir residência:', error);
+      setDeleteConfirmation(prev => ({ ...prev, loading: false }));
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmation({
+      isOpen: false,
+      residence: null,
+      loading: false
+    });
   };
 
   const handleCloseModal = () => {
@@ -118,20 +157,22 @@ const ResidenceManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleManageResidents(residence.id)}
-                        className="text-purple-600 hover:text-purple-800 p-1"
+                        className="text-purple-600 hover:text-purple-800 p-1 rounded-full hover:bg-purple-50 transition-colors"
                         title="Gerenciar Moradores"
                       >
                         <Users className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleEdit(residence)}
-                        className="text-blue-600 hover:text-blue-800 p-1"
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                        title="Editar"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(residence.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        onClick={() => handleDeleteClick(residence)}
+                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
+                        title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -151,12 +192,26 @@ const ResidenceManagement: React.FC = () => {
         )}
       </div>
 
+      {/* Modal de Formulário */}
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <ResidenceForm
           residence={editingResidence}
           onClose={handleCloseModal}
         />
       </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Confirmar Exclusão"
+        message={`Tem certeza que deseja excluir a residência "Bloco ${deleteConfirmation.residence?.bloco} - Apt ${deleteConfirmation.residence?.apartamento}"? Esta ação não pode ser desfeita e todos os moradores relacionados também serão removidos.`}
+        confirmText="Excluir Residência"
+        cancelText="Cancelar"
+        type="danger"
+        loading={deleteConfirmation.loading}
+      />
     </div>
   );
 };
