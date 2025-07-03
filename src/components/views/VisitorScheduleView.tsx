@@ -39,22 +39,8 @@ const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
   return (
     <div className="relative bg-white rounded-lg shadow-lg overflow-hidden" style={{ width: '280px', height: '140px' }}>
       {/* Header azul com BRASIL */}
-      <div className="bg-blue-600 text-white text-center py-2 relative">
-        <div className="flex items-center justify-between px-4">
-          {/* QR Code placeholder */}
-          <div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center">
-            <div className="w-6 h-6 bg-white rounded-sm opacity-20"></div>
-          </div>
-          
-          {/* BRASIL text */}
-          <div className="text-lg font-bold tracking-wider">BRASIL</div>
-          
-          {/* Bandeira do Brasil */}
-          <div className="w-8 h-6 bg-green-500 rounded-sm relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-yellow-400 to-blue-600"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-3 bg-blue-600 rounded-full"></div>
-          </div>
-        </div>
+      <div className="bg-blue-600 text-white text-center py-2">
+        <div className="text-lg font-bold tracking-wider">BRASIL</div>
       </div>
 
       {/* Área principal da placa */}
