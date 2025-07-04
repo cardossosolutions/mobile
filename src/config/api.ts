@@ -83,15 +83,9 @@ export const apiRequest = async (
     
     // Verificar se o token expirou (401 Unauthorized)
     if (response.status === 401) {
-      console.log('🔒 Token expirado, limpando dados de autenticação...');
-      // Token expirado, limpar dados de autenticação
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('token_type');
-      localStorage.removeItem('token_expires_in');
-      
-      // Redirecionar para login ou recarregar a página
-      window.location.reload();
-      return;
+      console.log('🔒 Token expirado ou inválido (401)');
+      // Lançar erro específico para 401
+      throw new Error('HTTP error! status: 401');
     }
     
     if (!response.ok) {
