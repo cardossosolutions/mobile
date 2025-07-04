@@ -11,8 +11,20 @@ import DashboardHome from './DashboardHome';
 import { useData } from '../../contexts/DataContext';
 
 const Dashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState('home');
+  // Recuperar seção ativa do localStorage ou usar 'home' como padrão
+  const [activeSection, setActiveSection] = useState(() => {
+    const savedSection = localStorage.getItem('dashboard_active_section');
+    console.log('🔄 Dashboard inicializando - seção salva:', savedSection);
+    return savedSection || 'home';
+  });
+  
   const { loadUserProfile } = useData();
+
+  // Salvar seção ativa no localStorage sempre que mudar
+  useEffect(() => {
+    console.log('💾 Salvando seção ativa no localStorage:', activeSection);
+    localStorage.setItem('dashboard_active_section', activeSection);
+  }, [activeSection]);
 
   // Carregar apenas dados do usuário quando o dashboard for montado
   useEffect(() => {
@@ -29,7 +41,15 @@ const Dashboard: React.FC = () => {
     initializeDashboard();
   }, []);
 
+  // Função para mudar seção (será passada para o Sidebar)
+  const handleSectionChange = (section: string) => {
+    console.log('🔄 Mudando seção para:', section);
+    setActiveSection(section);
+  };
+
   const renderContent = () => {
+    console.log('🎯 Renderizando conteúdo para seção:', activeSection);
+    
     switch (activeSection) {
       case 'home':
         return <DashboardHome />;
@@ -46,13 +66,19 @@ const Dashboard: React.FC = () => {
       case 'visitor-schedule':
         return <VisitorScheduleView />;
       default:
+        console.warn('⚠️ Seção desconhecida:', activeSection, '- redirecionando para home');
+        // Se a seção não existir, voltar para home
+        setActiveSection('home');
         return <DashboardHome />;
     }
   };
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
+      <Sidebar 
+        activeSection={activeSection} 
+        setActiveSection={handleSectionChange} 
+      />
       <div className="flex-1 flex flex-col">
         <Header />
         <main className="flex-1 overflow-auto p-6">
