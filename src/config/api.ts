@@ -1,7 +1,7 @@
 // Configuração centralizada da API
 export const API_CONFIG = {
-  // Host base da API - alterado para o seu ngrok
-  BASE_URL: 'https://cb86-2804-45c4-5c3-2400-9cdd-75aa-68d-d6b5.ngrok-free.app/api',
+  // Host base da API - alterado para localhost
+  BASE_URL: 'http://127.0.0.1:8080/api',
   
   // Endpoints disponíveis
   ENDPOINTS: {

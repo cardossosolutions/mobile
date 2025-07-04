@@ -57,7 +57,7 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleReset = () => {
-    setApiHost('https://cb86-2804-45c4-5c3-2400-9cdd-75aa-68d-d6b5.ngrok-free.app/api');
+    setApiHost('http://127.0.0.1:8080/api');
     setMessage('');
   };
 
@@ -92,7 +92,7 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({ isOpen, onClose }) => {
                 type="url"
                 value={apiHost}
                 onChange={(e) => setApiHost(e.target.value)}
-                placeholder="https://api.exemplo.com/api"
+                placeholder="http://127.0.0.1:8080/api"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
