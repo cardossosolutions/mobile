@@ -1,13 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
-
-export interface ToastData {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
-  message?: string;
-  duration?: number;
-}
+import { ToastData } from '../../contexts/ToastContext';
 
 interface ToastProps {
   toast: ToastData;
@@ -20,15 +13,18 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
 
   useEffect(() => {
     // Animar entrada
-    setTimeout(() => setIsVisible(true), 100);
+    const showTimer = setTimeout(() => setIsVisible(true), 100);
 
     // Auto remover após duração especificada
     const duration = toast.duration || 5000;
-    const timer = setTimeout(() => {
+    const hideTimer = setTimeout(() => {
       handleRemove();
     }, duration);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, []);
 
   const handleRemove = () => {

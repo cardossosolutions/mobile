@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { apiRequest, API_CONFIG } from '../config/api';
-import { useToast } from '../hooks/useToast';
+import { useToast } from './ToastContext';
 
 interface Company {
   id: string;

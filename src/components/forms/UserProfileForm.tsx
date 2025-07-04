@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Lock, Mail, Save, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../hooks/useToast';
+import { useToast } from '../../contexts/ToastContext';
 import { phoneMasks } from '../../utils/masks';
 
 interface UserProfileFormProps {
