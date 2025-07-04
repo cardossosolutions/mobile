@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Building } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { phoneMasks, otherMasks } from '../../utils/masks';
+import StatesCitiesSelector from '../common/StatesCitiesSelector';
 
 interface CompanyFormProps {
   company?: any;
@@ -32,8 +33,11 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
     numero: company?.numero || '',
     complemento: company?.complemento || '',
     bairro: company?.bairro || '',
-    cidade: company?.cidade || company?.city_name || '',
-    estado: company?.estado || company?.state || '',
+    cidadeId: company?.cidadeId || company?.city_id || '',
+    cidadeNome: company?.cidade || company?.city_name || '',
+    estadoId: company?.estadoId || company?.state_id || '',
+    estadoNome: company?.estado || company?.state || '',
+    estadoSigla: company?.estadoSigla || company?.state_abbreviation || '',
     email: company?.email || '',
     telefone: company?.telefone || company?.phone_number || '',
     celular: company?.celular || company?.mobile_number || ''
@@ -71,11 +75,11 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
       newErrors.bairro = 'Bairro é obrigatório';
     }
 
-    if (!formData.cidade) {
+    if (!formData.cidadeId || Number(formData.cidadeId) === 0) {
       newErrors.cidade = 'Cidade é obrigatória';
     }
 
-    if (!formData.estado) {
+    if (!formData.estadoId || Number(formData.estadoId) === 0) {
       newErrors.estado = 'Estado é obrigatório';
     }
 
@@ -98,11 +102,22 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
 
     // Remover máscaras antes de enviar
     const dataToSubmit = {
-      ...formData,
       cnpj: otherMasks.cnpj(formData.cnpj).replace(/\D/g, ''),
+      corporate_name: formData.razaoSocial,
+      fantasy_name: formData.nomeFantasia,
       cep: otherMasks.cep(formData.cep).replace(/\D/g, ''),
-      telefone: phoneMasks.unmask(formData.telefone),
-      celular: phoneMasks.unmask(formData.celular)
+      street: formData.logradouro,
+      number: formData.numero,
+      complement: formData.complemento,
+      neighborhood: formData.bairro,
+      city_id: Number(formData.cidadeId),
+      city_name: formData.cidadeNome,
+      state_id: Number(formData.estadoId),
+      state: formData.estadoSigla,
+      state_name: formData.estadoNome,
+      email: formData.email,
+      phone_number: phoneMasks.unmask(formData.telefone),
+      mobile_number: phoneMasks.unmask(formData.celular)
     };
 
     if (company) {
@@ -149,9 +164,40 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
     }
   };
 
-  const estados = [
-    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
-  ];
+  const handleStateChange = (stateId: number, stateName: string, stateAbbreviation: string) => {
+    setFormData({
+      ...formData,
+      estadoId: stateId.toString(),
+      estadoNome: stateName,
+      estadoSigla: stateAbbreviation,
+      cidadeId: '', // Limpar cidade quando mudar estado
+      cidadeNome: ''
+    });
+
+    // Limpar erro de estado
+    if (errors.estado) {
+      setErrors({
+        ...errors,
+        estado: undefined
+      });
+    }
+  };
+
+  const handleCityChange = (cityId: number, cityName: string) => {
+    setFormData({
+      ...formData,
+      cidadeId: cityId.toString(),
+      cidadeNome: cityName
+    });
+
+    // Limpar erro de cidade
+    if (errors.cidade) {
+      setErrors({
+        ...errors,
+        cidade: undefined
+      });
+    }
+  };
 
   return (
     <div>
@@ -194,6 +240,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="razaoSocial"
               value={formData.razaoSocial}
               onChange={handleChange}
+              placeholder="Razão social da empresa"
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.razaoSocial ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -213,6 +260,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
             name="nomeFantasia"
             value={formData.nomeFantasia}
             onChange={handleChange}
+            placeholder="Nome fantasia da empresa"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.nomeFantasia ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -251,6 +299,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="logradouro"
               value={formData.logradouro}
               onChange={handleChange}
+              placeholder="Rua, Avenida, etc."
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.logradouro ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -268,6 +317,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="numero"
               value={formData.numero}
               onChange={handleChange}
+              placeholder="123"
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.numero ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -278,7 +328,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Complemento
@@ -288,6 +338,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="complemento"
               value={formData.complemento}
               onChange={handleChange}
+              placeholder="Sala, Andar, etc."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -300,6 +351,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="bairro"
               value={formData.bairro}
               onChange={handleChange}
+              placeholder="Nome do bairro"
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.bairro ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -308,46 +360,18 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               <p className="text-red-500 text-sm mt-1">{errors.bairro}</p>
             )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cidade <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="cidade"
-              value={formData.cidade}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.cidade ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.cidade && (
-              <p className="text-red-500 text-sm mt-1">{errors.cidade}</p>
-            )}
-          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Estado <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="estado"
-            value={formData.estado}
-            onChange={handleChange}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.estado ? 'border-red-500' : 'border-gray-300'
-            }`}
-          >
-            <option value="">Selecione o estado</option>
-            {estados.map(estado => (
-              <option key={estado} value={estado}>{estado}</option>
-            ))}
-          </select>
-          {errors.estado && (
-            <p className="text-red-500 text-sm mt-1">{errors.estado}</p>
-          )}
-        </div>
+        {/* Seletor de Estado e Cidade */}
+        <StatesCitiesSelector
+          selectedStateId={formData.estadoId}
+          selectedCityId={formData.cidadeId}
+          onStateChange={handleStateChange}
+          onCityChange={handleCityChange}
+          stateError={errors.estado}
+          cityError={errors.cidade}
+          required={true}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -359,6 +383,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              placeholder="contato@empresa.com"
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
               }`}

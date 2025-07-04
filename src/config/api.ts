@@ -8,12 +8,14 @@ export const API_CONFIG = {
     LOGIN: '/login',
     LOGOUT: '/logout',
     USER_PROFILE: '/user/me',
-    COMPANIES: '/companies',
+    COMPANIES: '/company',
     RESIDENCES: '/residences',
     RESIDENTS: '/residents',
     EMPLOYEES: '/employees',
     GUESTS: '/guests',
-    APPOINTMENTS: '/appointments'
+    APPOINTMENTS: '/appointments',
+    STATES: '/infos/state',
+    CITIES: '/infos/city'
   },
   
   // Headers padrão
