@@ -698,14 +698,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateResidence = async (id: string, residence: Partial<Residence>) => {
     try {
-      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(residence)
       });
       
-      setResidences(prev => prev.map(r => r.id === id ? { ...r, ...residence } : r));
+      console.log('✅ Residência atualizada:', response);
+      
+      // Recarregar a lista de residências após atualizar
+      await loadResidences();
     } catch (error) {
       console.error('Error updating residence:', error);
+      // Fallback para mock
       setResidences(prev => prev.map(r => r.id === id ? { ...r, ...residence } : r));
     }
   };
