@@ -317,7 +317,7 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
           <p className="text-gray-500 text-xs mt-1">Selecione um estado para ver as cidades</p>
         )}
         
-        {selectedStateId && cities.length === 0 && !loadingCities && !citiesError && (
+        {selectedStateId && Number(selectedStateId) > 0 && cities.length === 0 && !loadingCities && !citiesError && (
           <p className="text-yellow-600 text-xs mt-1">
             ⚠️ Nenhuma cidade encontrada para este estado
           </p>
