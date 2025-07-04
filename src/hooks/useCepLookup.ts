@@ -30,7 +30,7 @@ interface AddressData {
 export const useCepLookup = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { states, cities, loadCities, findStateByAbbreviation, findCityByName } = useStatesAndCities();
+  const { states, loadCities, findStateByAbbreviation } = useStatesAndCities();
 
   const lookupCep = async (cep: string): Promise<AddressData | null> => {
     // Limpar CEP (remover caracteres não numéricos)
@@ -66,14 +66,28 @@ export const useCepLookup = () => {
 
       console.log(`🗺️ Estado encontrado: ${state.name} (${state.sigla})`);
 
-      // Carregar cidades do estado
-      await loadCities(state.id);
-
-      // Aguardar um pouco para garantir que as cidades foram carregadas
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Carregar cidades do estado e aguardar o resultado
+      const citiesResponse = await new Promise<any[]>((resolve, reject) => {
+        loadCities(state.id).then(() => {
+          // Aguardar um pouco para garantir que as cidades foram carregadas
+          setTimeout(() => {
+            // Fazer uma nova requisição para obter as cidades carregadas
+            import('../config/api').then(({ apiRequest, API_CONFIG }) => {
+              apiRequest(`${API_CONFIG.ENDPOINTS.CITIES}/${state.id}`, {
+                method: 'GET'
+              }).then(citiesData => {
+                console.log('🏙️ Cidades carregadas para busca:', citiesData);
+                resolve(Array.isArray(citiesData) ? citiesData : []);
+              }).catch(reject);
+            }).catch(reject);
+          }, 1000);
+        }).catch(reject);
+      });
 
       // Encontrar a cidade pelos dados da API
-      const city = findCityByName(data.city, state.id);
+      const city = citiesResponse.find(c => 
+        c.name.toLowerCase() === data.city.toLowerCase()
+      );
       
       if (!city) {
         console.warn(`⚠️ Cidade não encontrada na API: ${data.city}. Usando dados da BrasilAPI.`);
@@ -90,7 +104,7 @@ export const useCepLookup = () => {
         };
       }
 
-      console.log(`🏙️ Cidade encontrada: ${city.name}`);
+      console.log(`🏙️ Cidade encontrada: ${city.name} (ID: ${city.id})`);
 
       // Retornar dados formatados
       return {

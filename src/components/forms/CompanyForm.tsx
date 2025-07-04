@@ -194,31 +194,34 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
     if (addressData) {
       console.log('📍 Preenchendo dados do endereço:', addressData);
       
-      setFormData(prev => ({
-        ...prev,
-        logradouro: addressData.logradouro,
-        bairro: addressData.bairro,
-        cidadeId: addressData.cidadeId,
-        cidadeNome: addressData.cidade,
-        estadoId: addressData.estadoId,
-        estadoNome: addressData.estado,
-        estadoSigla: addressData.estadoSigla
-      }));
+      // Aguardar um pouco para garantir que o estado seja atualizado primeiro
+      setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          logradouro: addressData.logradouro,
+          bairro: addressData.bairro,
+          cidadeId: addressData.cidadeId,
+          cidadeNome: addressData.cidade,
+          estadoId: addressData.estadoId,
+          estadoNome: addressData.estado,
+          estadoSigla: addressData.estadoSigla
+        }));
 
-      // Limpar erros relacionados ao endereço
-      setErrors(prev => ({
-        ...prev,
-        cep: undefined,
-        logradouro: undefined,
-        bairro: undefined,
-        cidade: undefined,
-        estado: undefined
-      }));
+        // Limpar erros relacionados ao endereço
+        setErrors(prev => ({
+          ...prev,
+          cep: undefined,
+          logradouro: undefined,
+          bairro: undefined,
+          cidade: undefined,
+          estado: undefined
+        }));
 
-      // Mostrar aviso se a cidade não foi encontrada na nossa API
-      if (addressData.cidadeId === 0) {
-        console.warn('⚠️ Cidade não encontrada na API interna, usando dados da BrasilAPI');
-      }
+        // Mostrar aviso se a cidade não foi encontrada na nossa API
+        if (addressData.cidadeId === 0) {
+          console.warn('⚠️ Cidade não encontrada na API interna, usando dados da BrasilAPI');
+        }
+      }, 100);
     }
   };
 

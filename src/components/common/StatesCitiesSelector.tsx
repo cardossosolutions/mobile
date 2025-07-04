@@ -42,12 +42,22 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
   // Carregar cidades quando o estado mudar
   useEffect(() => {
     const stateIdNumber = Number(selectedStateId);
+    console.log(`🔄 StatesCitiesSelector - Estado mudou para: ${stateIdNumber}`);
+    
     if (selectedStateId && stateIdNumber > 0) {
+      console.log(`📍 Carregando cidades para o estado ${stateIdNumber}...`);
       loadCities(stateIdNumber);
     } else {
+      console.log('🧹 Limpando cidades (estado não selecionado)');
       clearCities();
     }
   }, [selectedStateId]);
+
+  // Log quando as cidades mudarem
+  useEffect(() => {
+    console.log(`🏙️ StatesCitiesSelector - Cidades atualizadas:`, cities);
+    console.log(`🎯 Cidade selecionada ID: ${selectedCityId}`);
+  }, [cities, selectedCityId]);
 
   // Filtrar estados baseado na pesquisa
   const filteredStates = states.filter(state =>
@@ -61,13 +71,25 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
   );
 
   // Obter nome do estado selecionado
-  const selectedStateName = states.find(state => state.id === Number(selectedStateId))?.name || '';
-  const selectedStateAbbr = states.find(state => state.id === Number(selectedStateId))?.sigla || '';
+  const selectedState = states.find(state => state.id === Number(selectedStateId));
+  const selectedStateName = selectedState?.name || '';
+  const selectedStateAbbr = selectedState?.sigla || '';
 
   // Obter nome da cidade selecionada
-  const selectedCityName = cities.find(city => city.id === Number(selectedCityId))?.name || '';
+  const selectedCity = cities.find(city => city.id === Number(selectedCityId));
+  const selectedCityName = selectedCity?.name || '';
+
+  console.log(`🔍 Debug seleção:`, {
+    selectedStateId: Number(selectedStateId),
+    selectedCityId: Number(selectedCityId),
+    selectedStateName,
+    selectedCityName,
+    citiesCount: cities.length,
+    selectedCity
+  });
 
   const handleStateSelect = (state: any) => {
+    console.log(`🗺️ Estado selecionado:`, state);
     onStateChange(state.id, state.name, state.sigla);
     onCityChange(0, ''); // Limpar cidade
     setStateSearchTerm('');
@@ -75,12 +97,14 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
   };
 
   const handleCitySelect = (city: any) => {
+    console.log(`🏙️ Cidade selecionada:`, city);
     onCityChange(city.id, city.name);
     setCitySearchTerm('');
     setShowCityDropdown(false);
   };
 
   const clearStateSelection = () => {
+    console.log('🧹 Limpando seleção de estado');
     onStateChange(0, '', '');
     onCityChange(0, '');
     setStateSearchTerm('');
@@ -88,6 +112,7 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
   };
 
   const clearCitySelection = () => {
+    console.log('🧹 Limpando seleção de cidade');
     onCityChange(0, '');
     setCitySearchTerm('');
     setShowCityDropdown(false);
@@ -267,7 +292,9 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
                       key={city.id}
                       type="button"
                       onClick={() => handleCitySelect(city)}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                      className={`w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none ${
+                        Number(selectedCityId) === city.id ? 'bg-blue-100 font-medium' : ''
+                      }`}
                     >
                       {city.name}
                     </button>
