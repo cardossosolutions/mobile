@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Building } from 'lucide-react';
+import { Building, Search, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { phoneMasks, otherMasks } from '../../utils/masks';
 import StatesCitiesSelector from '../common/StatesCitiesSelector';
+import { useCepLookup } from '../../hooks/useCepLookup';
 
 interface CompanyFormProps {
   company?: any;
@@ -24,6 +25,7 @@ interface FormErrors {
 
 const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
   const { addCompany, updateCompany } = useData();
+  const { lookupCep, loading: cepLoading, error: cepError, clearError: clearCepError } = useCepLookup();
   
   // Inicializar com valores corretos, garantindo que IDs sejam números
   const [formData, setFormData] = useState({
@@ -169,6 +171,55 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
         [name]: undefined
       });
     }
+
+    // Limpar erro de CEP quando usuário digitar
+    if (name === 'cep' && cepError) {
+      clearCepError();
+    }
+  };
+
+  const handleCepLookup = async () => {
+    const cleanCep = formData.cep.replace(/\D/g, '');
+    
+    if (cleanCep.length !== 8) {
+      setErrors({
+        ...errors,
+        cep: 'CEP deve ter 8 dígitos para buscar automaticamente'
+      });
+      return;
+    }
+
+    const addressData = await lookupCep(cleanCep);
+    
+    if (addressData) {
+      console.log('📍 Preenchendo dados do endereço:', addressData);
+      
+      setFormData(prev => ({
+        ...prev,
+        logradouro: addressData.logradouro,
+        bairro: addressData.bairro,
+        cidadeId: addressData.cidadeId,
+        cidadeNome: addressData.cidade,
+        estadoId: addressData.estadoId,
+        estadoNome: addressData.estado,
+        estadoSigla: addressData.estadoSigla
+      }));
+
+      // Limpar erros relacionados ao endereço
+      setErrors(prev => ({
+        ...prev,
+        cep: undefined,
+        logradouro: undefined,
+        bairro: undefined,
+        cidade: undefined,
+        estado: undefined
+      }));
+
+      // Mostrar aviso se a cidade não foi encontrada na nossa API
+      if (addressData.cidadeId === 0) {
+        console.warn('⚠️ Cidade não encontrada na API interna, usando dados da BrasilAPI');
+      }
+    }
   };
 
   const handleStateChange = (stateId: number, stateName: string, stateAbbreviation: string) => {
@@ -281,11 +332,12 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              CEP <span className="text-red-500">*</span>
-            </label>
+        {/* CEP com busca automática */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            CEP <span className="text-red-500">*</span>
+          </label>
+          <div className="flex space-x-2">
             <input
               type="text"
               name="cep"
@@ -293,15 +345,37 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               onChange={handleChange}
               placeholder="12345-678"
               maxLength={9}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.cep ? 'border-red-500' : 'border-gray-300'
+              className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.cep || cepError ? 'border-red-500' : 'border-gray-300'
               }`}
             />
-            {errors.cep && (
-              <p className="text-red-500 text-sm mt-1">{errors.cep}</p>
-            )}
+            <button
+              type="button"
+              onClick={handleCepLookup}
+              disabled={cepLoading || formData.cep.replace(/\D/g, '').length !== 8}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
+              title="Buscar endereço pelo CEP"
+            >
+              {cepLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {cepLoading ? 'Buscando...' : 'Buscar'}
+              </span>
+            </button>
           </div>
-          <div>
+          {(errors.cep || cepError) && (
+            <p className="text-red-500 text-sm mt-1">{errors.cep || cepError}</p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            Digite o CEP e clique em "Buscar" para preencher automaticamente o endereço
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Logradouro <span className="text-red-500">*</span>
             </label>
