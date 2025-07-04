@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Building } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { phoneMasks, otherMasks } from '../../utils/masks';
 
 interface CompanyFormProps {
   company?: any;
@@ -24,18 +25,18 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
   const { addCompany, updateCompany } = useData();
   const [formData, setFormData] = useState({
     cnpj: company?.cnpj || '',
-    razaoSocial: company?.razaoSocial || '',
-    nomeFantasia: company?.nomeFantasia || '',
+    razaoSocial: company?.razaoSocial || company?.corporate_name || '',
+    nomeFantasia: company?.nomeFantasia || company?.fantasy_name || '',
     cep: company?.cep || '',
     logradouro: company?.logradouro || '',
     numero: company?.numero || '',
     complemento: company?.complemento || '',
     bairro: company?.bairro || '',
-    cidade: company?.cidade || '',
-    estado: company?.estado || '',
+    cidade: company?.cidade || company?.city_name || '',
+    estado: company?.estado || company?.state || '',
     email: company?.email || '',
-    telefone: company?.telefone || '',
-    celular: company?.celular || ''
+    telefone: company?.telefone || company?.phone_number || '',
+    celular: company?.celular || company?.mobile_number || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -95,19 +96,48 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
       return;
     }
 
+    // Remover máscaras antes de enviar
+    const dataToSubmit = {
+      ...formData,
+      cnpj: otherMasks.cnpj(formData.cnpj).replace(/\D/g, ''),
+      cep: otherMasks.cep(formData.cep).replace(/\D/g, ''),
+      telefone: phoneMasks.unmask(formData.telefone),
+      celular: phoneMasks.unmask(formData.celular)
+    };
+
     if (company) {
-      updateCompany(company.id, formData);
+      updateCompany(company.id, dataToSubmit);
     } else {
-      addCompany(formData);
+      addCompany(dataToSubmit);
     }
     onClose();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    let maskedValue = value;
+
+    // Aplicar máscaras específicas
+    switch (name) {
+      case 'cnpj':
+        maskedValue = otherMasks.cnpj(value);
+        break;
+      case 'cep':
+        maskedValue = otherMasks.cep(value);
+        break;
+      case 'telefone':
+        maskedValue = phoneMasks.landline(value);
+        break;
+      case 'celular':
+        maskedValue = phoneMasks.mobile(value);
+        break;
+      default:
+        maskedValue = value;
+    }
+
     setFormData({
       ...formData,
-      [name]: value
+      [name]: maskedValue
     });
 
     // Clear error when user starts typing
@@ -145,6 +175,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="cnpj"
               value={formData.cnpj}
               onChange={handleChange}
+              placeholder="12.345.678/0001-90"
+              maxLength={18}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.cnpj ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -200,6 +232,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="cep"
               value={formData.cep}
               onChange={handleChange}
+              placeholder="12345-678"
+              maxLength={9}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.cep ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -342,8 +376,11 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="telefone"
               value={formData.telefone}
               onChange={handleChange}
+              placeholder="(11) 3333-4444"
+              maxLength={14}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-xs text-gray-500 mt-1">Telefone fixo</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -354,8 +391,11 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
               name="celular"
               value={formData.celular}
               onChange={handleChange}
+              placeholder="(11) 99999-9999"
+              maxLength={15}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-xs text-gray-500 mt-1">Telefone celular</p>
           </div>
         </div>
 

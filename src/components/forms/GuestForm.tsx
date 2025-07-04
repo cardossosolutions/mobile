@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserCheck } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { otherMasks } from '../../utils/masks';
 
 interface GuestFormProps {
   guest?: any;
@@ -50,19 +51,47 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
       return;
     }
 
+    // Remover máscaras antes de enviar
+    const dataToSubmit = {
+      ...formData,
+      cpf: otherMasks.cpf(formData.cpf).replace(/\D/g, ''),
+      placaVeiculo: formData.placaVeiculo.toUpperCase()
+    };
+
     if (guest) {
-      updateGuest(guest.id, formData);
+      updateGuest(guest.id, dataToSubmit);
     } else {
-      addGuest(formData);
+      addGuest(dataToSubmit);
     }
     onClose();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    let maskedValue = value;
+
+    // Aplicar máscaras específicas
+    switch (name) {
+      case 'cpf':
+        maskedValue = otherMasks.cpf(value);
+        break;
+      case 'placaVeiculo':
+        // Máscara para placa de veículo (ABC-1234 ou ABC1D23)
+        maskedValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (maskedValue.length > 3 && maskedValue.length <= 7) {
+          // Formato antigo: ABC-1234
+          if (/^[A-Z]{3}[0-9]/.test(maskedValue)) {
+            maskedValue = `${maskedValue.slice(0, 3)}-${maskedValue.slice(3)}`;
+          }
+        }
+        break;
+      default:
+        maskedValue = value;
+    }
+
     setFormData({
       ...formData,
-      [name]: value
+      [name]: maskedValue
     });
 
     // Clear error when user starts typing
@@ -95,6 +124,7 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
             name="nome"
             value={formData.nome}
             onChange={handleChange}
+            placeholder="Nome completo do convidado"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.nome ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -114,6 +144,7 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
               name="rg"
               value={formData.rg}
               onChange={handleChange}
+              placeholder="12.345.678-9"
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.rg ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -131,6 +162,8 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
               name="cpf"
               value={formData.cpf}
               onChange={handleChange}
+              placeholder="123.456.789-00"
+              maxLength={14}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.cpf ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -150,8 +183,11 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
             name="placaVeiculo"
             value={formData.placaVeiculo}
             onChange={handleChange}
+            placeholder="ABC-1234 ou ABC1D23"
+            maxLength={8}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <p className="text-xs text-gray-500 mt-1">Formato antigo (ABC-1234) ou Mercosul (ABC1D23)</p>
         </div>
 
         <div>
@@ -163,6 +199,7 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
             value={formData.observacoes}
             onChange={handleChange}
             rows={3}
+            placeholder="Informações adicionais sobre o convidado..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

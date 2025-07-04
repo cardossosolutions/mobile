@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Home } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { phoneMasks } from '../../utils/masks';
 
 interface ResidenceFormProps {
   residence?: any;
@@ -50,19 +51,32 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
       return;
     }
 
+    // Remover máscara do telefone antes de enviar
+    const dataToSubmit = {
+      ...formData,
+      telefone: phoneMasks.unmask(formData.telefone)
+    };
+
     if (residence) {
-      updateResidence(residence.id, formData);
+      updateResidence(residence.id, dataToSubmit);
     } else {
-      addResidence(formData);
+      addResidence(dataToSubmit);
     }
     onClose();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    let maskedValue = value;
+
+    // Aplicar máscara para telefone
+    if (name === 'telefone') {
+      maskedValue = phoneMasks.auto(value);
+    }
+
     setFormData({
       ...formData,
-      [name]: value
+      [name]: maskedValue
     });
 
     // Clear error when user starts typing
@@ -96,6 +110,7 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
               name="bloco"
               value={formData.bloco}
               onChange={handleChange}
+              placeholder="A, B, C..."
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.bloco ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -113,6 +128,7 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
               name="apartamento"
               value={formData.apartamento}
               onChange={handleChange}
+              placeholder="101, 102, 201..."
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.apartamento ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -132,6 +148,7 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
             name="proprietario"
             value={formData.proprietario}
             onChange={handleChange}
+            placeholder="Nome completo do proprietário"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.proprietario ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -151,8 +168,11 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
               name="telefone"
               value={formData.telefone}
               onChange={handleChange}
+              placeholder="(11) 3333-4444 ou (11) 99999-9999"
+              maxLength={15}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-xs text-gray-500 mt-1">Telefone fixo ou celular</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -163,6 +183,7 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
               name="email"
               value={formData.email}
               onChange={handleChange}
+              placeholder="email@exemplo.com"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

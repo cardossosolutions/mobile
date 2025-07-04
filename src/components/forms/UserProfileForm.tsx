@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Lock, Mail, Save, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { phoneMasks } from '../../utils/masks';
 
 interface UserProfileFormProps {
   onClose: () => void;
@@ -84,9 +85,16 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    let maskedValue = value;
+
+    // Aplicar máscara para telefone
+    if (name === 'phone') {
+      maskedValue = phoneMasks.auto(value);
+    }
+
     setProfileData({
       ...profileData,
-      [name]: value
+      [name]: maskedValue
     });
 
     // Clear error when user starts typing
@@ -125,7 +133,13 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
     setLoading(true);
 
     try {
-      await updateUserProfile(profileData);
+      // Remover máscara do telefone antes de enviar
+      const dataToSubmit = {
+        ...profileData,
+        phone: phoneMasks.unmask(profileData.phone)
+      };
+
+      await updateUserProfile(dataToSubmit);
       setMessage('Perfil atualizado com sucesso!');
     } catch (error) {
       setMessage('Erro ao atualizar perfil. Tente novamente.');
@@ -266,7 +280,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 onChange={handleProfileChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="(11) 99999-9999"
+                maxLength={15}
               />
+              <p className="text-xs text-gray-500 mt-1">Telefone fixo ou celular</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

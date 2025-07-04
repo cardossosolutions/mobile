@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { phoneMasks } from '../../utils/masks';
 
 interface ResidentFormProps {
   resident?: any;
@@ -38,6 +39,8 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
 
     if (!formData.celular) {
       newErrors.celular = 'Celular é obrigatório';
+    } else if (!phoneMasks.isValid(formData.celular)) {
+      newErrors.celular = 'Celular deve ter um formato válido';
     }
 
     setErrors(newErrors);
@@ -51,19 +54,32 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
       return;
     }
 
+    // Remover máscara do celular antes de enviar
+    const dataToSubmit = {
+      ...formData,
+      celular: phoneMasks.unmask(formData.celular)
+    };
+
     if (resident) {
-      updateResident(resident.id, formData);
+      updateResident(resident.id, dataToSubmit);
     } else {
-      addResident({ ...formData, residenceId });
+      addResident({ ...dataToSubmit, residenceId });
     }
     onClose();
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    let maskedValue = value;
+
+    // Aplicar máscara para celular
+    if (name === 'celular') {
+      maskedValue = phoneMasks.mobile(value);
+    }
+
     setFormData({
       ...formData,
-      [name]: value
+      [name]: maskedValue
     });
 
     // Clear error when user starts typing
@@ -96,6 +112,7 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
             name="nome"
             value={formData.nome}
             onChange={handleChange}
+            placeholder="Nome completo do morador"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.nome ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -114,6 +131,7 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
             name="email"
             value={formData.email}
             onChange={handleChange}
+            placeholder="email@exemplo.com"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.email ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -132,6 +150,8 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
             name="celular"
             value={formData.celular}
             onChange={handleChange}
+            placeholder="(11) 99999-9999"
+            maxLength={15}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.celular ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -139,6 +159,7 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
           {errors.celular && (
             <p className="text-red-500 text-sm mt-1">{errors.celular}</p>
           )}
+          <p className="text-xs text-gray-500 mt-1">Número do celular com DDD</p>
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">
