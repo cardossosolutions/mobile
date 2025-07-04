@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Home, Users, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Home, Users, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -7,11 +7,12 @@ import ResidenceForm from '../forms/ResidenceForm';
 import ResidentManagement from './ResidentManagement';
 
 const ResidenceManagement: React.FC = () => {
-  const { residences, loadResidences, loadResidents, deleteResidence } = useData();
+  const { residences, residencePagination, loadResidences, loadResidents, deleteResidence } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedResidenceId, setSelectedResidenceId] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -40,11 +41,36 @@ const ResidenceManagement: React.FC = () => {
     loadInitialData();
   }, []);
 
-  const filteredResidences = residences.filter(residence =>
-    residence.bloco.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    residence.apartamento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    residence.proprietario.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Debounce para busca
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        handleSearch();
+      } else {
+        loadResidences(1); // Recarregar primeira página sem busca
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      await loadResidences(1, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    setLoading(true);
+    try {
+      await loadResidences(page, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = (residence: any) => {
     setEditingResidence(residence);
@@ -72,6 +98,10 @@ const ResidenceManagement: React.FC = () => {
         residence: null,
         loading: false
       });
+
+      // Recarregar a página atual após exclusão
+      const currentPage = residencePagination?.current_page || 1;
+      await loadResidences(currentPage, searchTerm);
     } catch (error) {
       console.error('Erro ao excluir residência:', error);
       setDeleteConfirmation(prev => ({ ...prev, loading: false }));
@@ -91,6 +121,110 @@ const ResidenceManagement: React.FC = () => {
     setEditingResidence(null);
   };
 
+  const handleFormSuccess = () => {
+    handleCloseModal();
+    // Recarregar a página atual após sucesso
+    const currentPage = residencePagination?.current_page || 1;
+    loadResidences(currentPage, searchTerm);
+  };
+
+  // Função para renderizar os botões de paginação
+  const renderPaginationButtons = () => {
+    if (!residencePagination || residencePagination.last_page <= 1) {
+      return null;
+    }
+
+    const buttons = [];
+    const currentPage = residencePagination.current_page;
+    const lastPage = residencePagination.last_page;
+
+    // Botão "Anterior"
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1 || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+    );
+
+    // Botões de páginas
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(lastPage, currentPage + 2);
+
+    if (startPage > 1) {
+      buttons.push(
+        <button
+          key={1}
+          onClick={() => handlePageChange(1)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(
+          <span key="ellipsis1" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+    }
+
+    for (let page = startPage; page <= endPage; page++) {
+      buttons.push(
+        <button
+          key={page}
+          onClick={() => handlePageChange(page)}
+          disabled={loading}
+          className={`px-3 py-2 text-sm font-medium border border-gray-300 disabled:opacity-50 ${
+            page === currentPage
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-500 bg-white hover:bg-gray-50'
+          }`}
+        >
+          {page}
+        </button>
+      );
+    }
+
+    if (endPage < lastPage) {
+      if (endPage < lastPage - 1) {
+        buttons.push(
+          <span key="ellipsis2" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+      buttons.push(
+        <button
+          key={lastPage}
+          onClick={() => handlePageChange(lastPage)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {lastPage}
+        </button>
+      );
+    }
+
+    // Botão "Próximo"
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === lastPage || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    );
+
+    return buttons;
+  };
   const handleManageResidents = (residenceId: string) => {
     setSelectedResidenceId(residenceId);
   };
@@ -123,13 +257,31 @@ const ResidenceManagement: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar por bloco, apartamento ou proprietário..."
+              placeholder="Buscar por nome, rua ou número..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {loading && (
+            <div className="flex items-center space-x-2 text-green-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+              <span className="text-sm">Carregando...</span>
+            </div>
+          )}
         </div>
+
+        {/* Informações de paginação */}
+        {residencePagination && (
+          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+            <div>
+              Mostrando {residencePagination.from} a {residencePagination.to} de {residencePagination.total} residências
+            </div>
+            <div>
+              Página {residencePagination.current_page} de {residencePagination.last_page}
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           {/* Loading inicial */}
@@ -148,13 +300,13 @@ const ResidenceManagement: React.FC = () => {
             <thead>
               <tr className="bg-gray-50">
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Residência
+                  Nome da Residência
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Proprietário
+                  Endereço
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contato
+                  Número
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ações
@@ -162,7 +314,7 @@ const ResidenceManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredResidences.map((residence) => (
+              {residences.map((residence) => (
                 <tr key={residence.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -171,17 +323,16 @@ const ResidenceManagement: React.FC = () => {
                       </div>
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          Bloco {residence.bloco} - Apt {residence.apartamento}
+                          {residence.name}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {residence.proprietario}
+                    {residence.street}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div>{residence.email}</div>
-                    <div className="text-gray-500">{residence.telefone}</div>
+                    {residence.number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -215,10 +366,24 @@ const ResidenceManagement: React.FC = () => {
           )}
         </div>
 
-        {filteredResidences.length === 0 && !initialLoading && (
+        {residences.length === 0 && !loading && !initialLoading && (
           <div className="text-center py-8">
             <Home className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhuma residência encontrada</p>
+            <p className="text-gray-500">
+              {searchTerm ? 'Nenhuma residência encontrada para a busca realizada' : 'Nenhuma residência encontrada'}
+            </p>
+          </div>
+        )}
+
+        {/* Controles de paginação */}
+        {residencePagination && residencePagination.last_page > 1 && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-600">
+              {residencePagination.total} {residencePagination.total === 1 ? 'residência' : 'residências'} no total
+            </div>
+            <div className="flex items-center space-x-1">
+              {renderPaginationButtons()}
+            </div>
           </div>
         )}
       </div>
@@ -227,7 +392,7 @@ const ResidenceManagement: React.FC = () => {
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <ResidenceForm
           residence={editingResidence}
-          onClose={handleCloseModal}
+          onClose={handleFormSuccess}
         />
       </Modal>
 
@@ -237,7 +402,7 @@ const ResidenceManagement: React.FC = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Confirmar Exclusão"
-        message={`Tem certeza que deseja excluir a residência "Bloco ${deleteConfirmation.residence?.bloco} - Apt ${deleteConfirmation.residence?.apartamento}"? Esta ação não pode ser desfeita e todos os moradores relacionados também serão removidos.`}
+        message={`Tem certeza que deseja excluir a residência "${deleteConfirmation.residence?.name}"? Esta ação não pode ser desfeita e todos os moradores relacionados também serão removidos.`}
         confirmText="Excluir Residência"
         cancelText="Cancelar"
         type="danger"

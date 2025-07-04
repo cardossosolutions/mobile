@@ -35,11 +35,29 @@ interface CompanyResponse {
 
 interface Residence {
   id: string;
-  bloco: string;
-  apartamento: string;
-  proprietario: string;
-  telefone: string;
-  email: string;
+  name: string;
+  street: string;
+  number: string;
+}
+
+interface ResidenceResponse {
+  current_page: number;
+  data: Residence[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
 }
 
 interface Resident {
@@ -80,12 +98,13 @@ interface DataContextType {
   companies: Company[];
   companyPagination: CompanyResponse | null;
   residences: Residence[];
+  residencePagination: ResidenceResponse | null;
   residents: Resident[];
   employees: Employee[];
   guests: Guest[];
   appointments: Appointment[];
   loadCompanies: (page?: number, search?: string) => Promise<void>;
-  loadResidences: () => Promise<void>;
+  loadResidences: (page?: number, search?: string) => Promise<void>;
   loadResidents: () => Promise<void>;
   loadEmployees: () => Promise<void>;
   loadGuests: () => Promise<void>;
@@ -161,43 +180,21 @@ const mockCompanies: Company[] = [
 const mockResidences: Residence[] = [
   {
     id: '1',
-    bloco: 'A',
-    apartamento: '101',
-    proprietario: 'João Silva Santos',
-    telefone: '(11) 99999-1111',
-    email: 'joao.silva@email.com'
+    name: 'Apartamento 101 - Bloco A',
+    street: 'Rua das Flores',
+    number: '123'
   },
   {
     id: '2',
-    bloco: 'A',
-    apartamento: '102',
-    proprietario: 'Maria Oliveira Costa',
-    telefone: '(11) 88888-2222',
-    email: 'maria.oliveira@email.com'
+    name: 'Casa Verde',
+    street: 'Avenida Central',
+    number: '456'
   },
   {
     id: '3',
-    bloco: 'B',
-    apartamento: '201',
-    proprietario: 'Carlos Eduardo Ferreira',
-    telefone: '(11) 77777-3333',
-    email: 'carlos.ferreira@email.com'
-  },
-  {
-    id: '4',
-    bloco: 'B',
-    apartamento: '202',
-    proprietario: 'Ana Paula Rodrigues',
-    telefone: '(11) 66666-4444',
-    email: 'ana.rodrigues@email.com'
-  },
-  {
-    id: '5',
-    bloco: 'C',
-    apartamento: '301',
-    proprietario: 'Roberto Lima Souza',
-    telefone: '(11) 55555-5555',
-    email: 'roberto.lima@email.com'
+    name: 'Cobertura Premium',
+    street: 'Rua do Sol',
+    number: '789'
   }
 ];
 
@@ -425,6 +422,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyPagination, setCompanyPagination] = useState<CompanyResponse | null>(null);
   const [residences, setResidences] = useState<Residence[]>([]);
+  const [residencePagination, setResidencePagination] = useState<ResidenceResponse | null>(null);
   const [residents, setResidents] = useState<Resident[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -499,24 +497,40 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Função específica para carregar residências
-  const loadResidences = async () => {
+  const loadResidences = async (page: number = 1, search?: string) => {
     try {
-      console.log('🔄 Carregando residências...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES, {
+      console.log(`🔄 Carregando residências - Página: ${page}, Busca: ${search || 'N/A'}`);
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.RESIDENCES}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await apiRequest(url, {
         method: 'GET'
       });
       
       console.log('✅ Resposta das residências:', response);
       
-      if (response && response.data) {
-        setResidences(response.data);
-      } else if (response) {
-        setResidences(response);
+      if (response) {
+        // Converter os dados da API para o formato esperado
+        const residencesData: Residence[] = response.data.map((residence: any) => ({
+          id: residence.id.toString(),
+          name: residence.name,
+          street: residence.street,
+          number: residence.number
+        }));
+        
+        setResidences(residencesData);
+        setResidencePagination(response);
+        console.log('💾 Residências carregadas:', residencesData);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar residências:', error);
       // Usar dados mock em caso de erro
       setResidences(mockResidences);
+      setResidencePagination(null);
     }
   };
 
@@ -902,6 +916,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       companies,
       companyPagination,
       residences,
+      residencePagination,
       residents,
       employees,
       guests,
