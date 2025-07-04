@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { MapPin, Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { MapPin, Loader2, Search, X } from 'lucide-react';
 import { useStatesAndCities } from '../../hooks/useStatesAndCities';
 
 interface StatesCitiesSelectorProps {
@@ -34,109 +34,148 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
     clearCities
   } = useStatesAndCities();
 
+  const [stateSearchTerm, setStateSearchTerm] = useState('');
+  const [citySearchTerm, setCitySearchTerm] = useState('');
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+
   // Carregar cidades quando o estado mudar
   useEffect(() => {
     const stateIdNumber = Number(selectedStateId);
     if (selectedStateId && stateIdNumber > 0) {
-      console.log(`🏙️ Carregando cidades para o estado ID: ${stateIdNumber}`);
       loadCities(stateIdNumber);
     } else {
       clearCities();
     }
   }, [selectedStateId]);
 
-  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    console.log(`🗺️ Valor selecionado no select: "${value}"`);
-    
-    // Se valor vazio, limpar seleção
-    if (!value || value === '' || value === '0') {
-      console.log('🔄 Limpando seleção de estado');
-      onStateChange(0, '', '');
-      onCityChange(0, '');
-      return;
-    }
-    
-    const stateId = Number(value);
-    console.log(`🗺️ Estado ID convertido: ${stateId}`);
-    
-    if (stateId > 0) {
-      const selectedState = states.find(state => state.id === stateId);
-      if (selectedState) {
-        console.log(`✅ Estado encontrado:`, selectedState);
-        onStateChange(stateId, selectedState.name, selectedState.sigla);
-        // Limpar cidade selecionada quando mudar o estado
-        onCityChange(0, '');
-      } else {
-        console.error(`❌ Estado com ID ${stateId} não encontrado na lista`);
-      }
-    }
+  // Filtrar estados baseado na pesquisa
+  const filteredStates = states.filter(state =>
+    state.name.toLowerCase().includes(stateSearchTerm.toLowerCase()) ||
+    state.sigla.toLowerCase().includes(stateSearchTerm.toLowerCase())
+  );
+
+  // Filtrar cidades baseado na pesquisa
+  const filteredCities = cities.filter(city =>
+    city.name.toLowerCase().includes(citySearchTerm.toLowerCase())
+  );
+
+  // Obter nome do estado selecionado
+  const selectedStateName = states.find(state => state.id === Number(selectedStateId))?.name || '';
+  const selectedStateAbbr = states.find(state => state.id === Number(selectedStateId))?.sigla || '';
+
+  // Obter nome da cidade selecionada
+  const selectedCityName = cities.find(city => city.id === Number(selectedCityId))?.name || '';
+
+  const handleStateSelect = (state: any) => {
+    onStateChange(state.id, state.name, state.sigla);
+    onCityChange(0, ''); // Limpar cidade
+    setStateSearchTerm('');
+    setShowStateDropdown(false);
   };
 
-  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    console.log(`🏙️ Valor selecionado no select de cidade: "${value}"`);
-    
-    // Se valor vazio, limpar seleção
-    if (!value || value === '' || value === '0') {
-      console.log('🔄 Limpando seleção de cidade');
-      onCityChange(0, '');
-      return;
-    }
-    
-    const cityId = Number(value);
-    console.log(`🏙️ Cidade ID convertido: ${cityId}`);
-    
-    if (cityId > 0) {
-      const selectedCity = cities.find(city => city.id === cityId);
-      if (selectedCity) {
-        console.log(`✅ Cidade encontrada:`, selectedCity);
-        onCityChange(cityId, selectedCity.name);
-      } else {
-        console.error(`❌ Cidade com ID ${cityId} não encontrada na lista`);
-      }
-    }
+  const handleCitySelect = (city: any) => {
+    onCityChange(city.id, city.name);
+    setCitySearchTerm('');
+    setShowCityDropdown(false);
   };
 
-  // Garantir que os valores sejam strings válidas para o select
-  const stateValue = selectedStateId && Number(selectedStateId) > 0 ? String(selectedStateId) : '';
-  const cityValue = selectedCityId && Number(selectedCityId) > 0 ? String(selectedCityId) : '';
+  const clearStateSelection = () => {
+    onStateChange(0, '', '');
+    onCityChange(0, '');
+    setStateSearchTerm('');
+    setShowStateDropdown(false);
+  };
 
-  console.log(`🔍 StatesCitiesSelector - Estado: ${selectedStateId} -> "${stateValue}", Cidade: ${selectedCityId} -> "${cityValue}"`);
-  console.log(`📋 Estados disponíveis:`, states.map(s => ({ id: s.id, name: s.name })));
+  const clearCitySelection = () => {
+    onCityChange(0, '');
+    setCitySearchTerm('');
+    setShowCityDropdown(false);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Estado */}
-      <div>
+      <div className="relative">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           <div className="flex items-center space-x-2">
             <MapPin className="w-4 h-4" />
             <span>Estado {required && <span className="text-red-500">*</span>}</span>
           </div>
         </label>
+        
         <div className="relative">
-          <select
-            value={stateValue}
-            onChange={handleStateChange}
-            disabled={disabled || loadingStates}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          <div
+            className={`w-full px-3 py-2 border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-pointer ${
               stateError || statesError ? 'border-red-500' : 'border-gray-300'
-            } ${disabled || loadingStates ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            } ${disabled || loadingStates ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+            onClick={() => !disabled && !loadingStates && setShowStateDropdown(!showStateDropdown)}
           >
-            <option value="">
-              {loadingStates ? 'Carregando estados...' : 'Selecione o estado'}
-            </option>
-            {states.map(state => (
-              <option key={state.id} value={String(state.id)}>
-                {state.sigla} - {state.name}
-              </option>
-            ))}
-          </select>
-          
-          {loadingStates && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            <div className="flex items-center justify-between">
+              <span className={selectedStateName ? 'text-gray-900' : 'text-gray-500'}>
+                {loadingStates 
+                  ? 'Carregando estados...' 
+                  : selectedStateName 
+                    ? `${selectedStateAbbr} - ${selectedStateName}`
+                    : 'Selecione o estado'
+                }
+              </span>
+              <div className="flex items-center space-x-2">
+                {selectedStateName && !disabled && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearStateSelection();
+                    }}
+                    className="text-gray-400 hover:text-gray-600 p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                {loadingStates ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                ) : (
+                  <Search className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Dropdown de Estados */}
+          {showStateDropdown && !disabled && !loadingStates && (
+            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+              <div className="p-3 border-b border-gray-200">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Pesquisar estado..."
+                    value={stateSearchTerm}
+                    onChange={(e) => setStateSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="max-h-40 overflow-y-auto">
+                {filteredStates.length > 0 ? (
+                  filteredStates.map(state => (
+                    <button
+                      key={state.id}
+                      type="button"
+                      onClick={() => handleStateSelect(state)}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                    >
+                      <span className="font-medium">{state.sigla}</span> - {state.name}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-gray-500 text-sm">
+                    Nenhum estado encontrado
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -150,50 +189,95 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
             ⚠️ Usando lista padrão de estados brasileiros
           </p>
         )}
-        
-        {/* Debug info - remover em produção */}
-        <div className="text-xs text-gray-400 mt-1">
-          Debug: selectedStateId={selectedStateId}, stateValue="{stateValue}", states.length={states.length}
-        </div>
       </div>
 
       {/* Cidade */}
-      <div>
+      <div className="relative">
         <label className="block text-sm font-medium text-gray-700 mb-1">
           <div className="flex items-center space-x-2">
             <MapPin className="w-4 h-4" />
             <span>Cidade {required && <span className="text-red-500">*</span>}</span>
           </div>
         </label>
+        
         <div className="relative">
-          <select
-            value={cityValue}
-            onChange={handleCityChange}
-            disabled={disabled || loadingCities || !selectedStateId || Number(selectedStateId) === 0}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          <div
+            className={`w-full px-3 py-2 border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-pointer ${
               cityError || citiesError ? 'border-red-500' : 'border-gray-300'
-            } ${disabled || loadingCities || !selectedStateId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-          >
-            <option value="">
-              {!selectedStateId || Number(selectedStateId) === 0
-                ? 'Selecione um estado primeiro'
-                : loadingCities
-                ? 'Carregando cidades...'
-                : cities.length === 0
-                ? 'Nenhuma cidade encontrada'
-                : 'Selecione a cidade'
+            } ${disabled || loadingCities || !selectedStateId || Number(selectedStateId) === 0 ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+            onClick={() => {
+              if (!disabled && !loadingCities && selectedStateId && Number(selectedStateId) > 0) {
+                setShowCityDropdown(!showCityDropdown);
               }
-            </option>
-            {cities.map(city => (
-              <option key={city.id} value={String(city.id)}>
-                {city.name}
-              </option>
-            ))}
-          </select>
-          
-          {loadingCities && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className={selectedCityName ? 'text-gray-900' : 'text-gray-500'}>
+                {!selectedStateId || Number(selectedStateId) === 0
+                  ? 'Selecione um estado primeiro'
+                  : loadingCities
+                  ? 'Carregando cidades...'
+                  : cities.length === 0
+                  ? 'Nenhuma cidade encontrada'
+                  : selectedCityName || 'Selecione a cidade'
+                }
+              </span>
+              <div className="flex items-center space-x-2">
+                {selectedCityName && !disabled && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearCitySelection();
+                    }}
+                    className="text-gray-400 hover:text-gray-600 p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                {loadingCities ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                ) : selectedStateId && Number(selectedStateId) > 0 ? (
+                  <Search className="w-4 h-4 text-gray-400" />
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Dropdown de Cidades */}
+          {showCityDropdown && !disabled && !loadingCities && selectedStateId && Number(selectedStateId) > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+              <div className="p-3 border-b border-gray-200">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Pesquisar cidade..."
+                    value={citySearchTerm}
+                    onChange={(e) => setCitySearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="max-h-40 overflow-y-auto">
+                {filteredCities.length > 0 ? (
+                  filteredCities.map(city => (
+                    <button
+                      key={city.id}
+                      type="button"
+                      onClick={() => handleCitySelect(city)}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                    >
+                      {city.name}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-gray-500 text-sm">
+                    Nenhuma cidade encontrada
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -211,12 +295,18 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
             ⚠️ Nenhuma cidade encontrada para este estado
           </p>
         )}
-        
-        {/* Debug info - remover em produção */}
-        <div className="text-xs text-gray-400 mt-1">
-          Debug: selectedCityId={selectedCityId}, cityValue="{cityValue}", cities.length={cities.length}
-        </div>
       </div>
+
+      {/* Overlay para fechar dropdowns */}
+      {(showStateDropdown || showCityDropdown) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setShowStateDropdown(false);
+            setShowCityDropdown(false);
+          }}
+        />
+      )}
     </div>
   );
 };

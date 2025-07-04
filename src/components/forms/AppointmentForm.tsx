@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Search, X } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 interface AppointmentFormProps {
@@ -22,6 +22,20 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
     observacoes: appointment?.observacoes || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  
+  // Estados para pesquisa de convidado
+  const [guestSearchTerm, setGuestSearchTerm] = useState('');
+  const [showGuestDropdown, setShowGuestDropdown] = useState(false);
+
+  // Filtrar convidados baseado na pesquisa
+  const filteredGuests = guests.filter(guest =>
+    guest.nome.toLowerCase().includes(guestSearchTerm.toLowerCase()) ||
+    guest.cpf.includes(guestSearchTerm) ||
+    guest.rg.includes(guestSearchTerm)
+  );
+
+  // Obter nome do convidado selecionado
+  const selectedGuestName = guests.find(guest => guest.id === formData.guestId)?.nome || '';
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -82,6 +96,32 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
     }
   };
 
+  const handleGuestSelect = (guest: any) => {
+    setFormData({
+      ...formData,
+      guestId: guest.id
+    });
+    setGuestSearchTerm('');
+    setShowGuestDropdown(false);
+    
+    // Clear error
+    if (errors.guestId) {
+      setErrors({
+        ...errors,
+        guestId: undefined
+      });
+    }
+  };
+
+  const clearGuestSelection = () => {
+    setFormData({
+      ...formData,
+      guestId: ''
+    });
+    setGuestSearchTerm('');
+    setShowGuestDropdown(false);
+  };
+
   return (
     <div>
       <div className="flex items-center space-x-3 mb-6">
@@ -94,23 +134,82 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+        {/* Convidado com Pesquisa */}
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Convidado <span className="text-red-500">*</span>
           </label>
-          <select
-            name="guestId"
-            value={formData.guestId}
-            onChange={handleChange}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.guestId ? 'border-red-500' : 'border-gray-300'
-            }`}
-          >
-            <option value="">Selecione o convidado</option>
-            {guests.map(guest => (
-              <option key={guest.id} value={guest.id}>{guest.nome}</option>
-            ))}
-          </select>
+          
+          <div className="relative">
+            <div
+              className={`w-full px-3 py-2 border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-pointer ${
+                errors.guestId ? 'border-red-500' : 'border-gray-300'
+              } bg-white`}
+              onClick={() => setShowGuestDropdown(!showGuestDropdown)}
+            >
+              <div className="flex items-center justify-between">
+                <span className={selectedGuestName ? 'text-gray-900' : 'text-gray-500'}>
+                  {selectedGuestName || 'Selecione o convidado'}
+                </span>
+                <div className="flex items-center space-x-2">
+                  {selectedGuestName && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearGuestSelection();
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  <Search className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            {/* Dropdown de Convidados */}
+            {showGuestDropdown && (
+              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                <div className="p-3 border-b border-gray-200">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Pesquisar por nome, CPF ou RG..."
+                      value={guestSearchTerm}
+                      onChange={(e) => setGuestSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  {filteredGuests.length > 0 ? (
+                    filteredGuests.map(guest => (
+                      <button
+                        key={guest.id}
+                        type="button"
+                        onClick={() => handleGuestSelect(guest)}
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                      >
+                        <div>
+                          <div className="font-medium">{guest.nome}</div>
+                          <div className="text-sm text-gray-500">CPF: {guest.cpf} | RG: {guest.rg}</div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-gray-500 text-sm">
+                      Nenhum convidado encontrado
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
           {errors.guestId && (
             <p className="text-red-500 text-sm mt-1">{errors.guestId}</p>
           )}
@@ -162,6 +261,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
             value={formData.observacoes}
             onChange={handleChange}
             rows={3}
+            placeholder="Informações adicionais sobre o agendamento..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -182,6 +282,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
           </button>
         </div>
       </form>
+
+      {/* Overlay para fechar dropdown */}
+      {showGuestDropdown && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowGuestDropdown(false)}
+        />
+      )}
     </div>
   );
 };
