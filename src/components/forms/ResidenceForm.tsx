@@ -101,7 +101,6 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
     // Preparar dados para envio
     const dataToSubmit = {
       nameResidence: formData.nome,
-      responsible: 42, // ID do responsável - você pode ajustar conforme necessário
       active: formData.status === 'Ativo',
       cep: formData.cep.replace(/\D/g, ''),
       street: formData.logradouro,

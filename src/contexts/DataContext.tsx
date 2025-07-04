@@ -703,7 +703,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (response && response.data) {
-        setResidences(prev => [...prev, response.data]);
+        // Recarregar a lista de residências após adicionar
+        await loadResidences();
         showSuccess('Residência adicionada!', 'A residência foi cadastrada com sucesso.');
       } else {
         setResidences(prev => [...prev, { ...residence, id: generateId() }]);
