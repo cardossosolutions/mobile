@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, Home, Users, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { apiRequest, API_CONFIG } from '../../config/api';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
 import ResidenceForm from '../forms/ResidenceForm';
@@ -11,6 +12,7 @@ const ResidenceManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
+  const [loadingResidenceData, setLoadingResidenceData] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selectedResidenceId, setSelectedResidenceId] = useState<string | null>(null);
@@ -72,9 +74,54 @@ const ResidenceManagement: React.FC = () => {
     }
   };
 
-  const handleEdit = (residence: any) => {
-    setEditingResidence(residence);
-    setIsModalOpen(true);
+  const handleEdit = async (residence: any) => {
+    setLoadingResidenceData(true);
+    try {
+      console.log(`📝 Carregando dados da residência ${residence.id} para edição...`);
+      
+      // Fazer requisição para obter dados completos da residência
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${residence.id}`, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Dados da residência carregados:', response);
+      
+      if (response) {
+        // Converter dados da API para o formato esperado pelo formulário
+        const residenceData = {
+          id: residence.id,
+          nome: response.name,
+          status: response.active ? 'Ativo' : 'Inativo',
+          cep: response.cep,
+          logradouro: response.street,
+          numero: response.number,
+          complemento: response.complement || '',
+          bairro: response.neighborhood,
+          cidadeId: response.city,
+          cidadeNome: response.city_name,
+          estadoId: response.state,
+          estadoNome: response.name_state,
+          estadoSigla: '', // Será preenchido pelo StatesCitiesSelector
+          telefone: '', // Não está na resposta da API
+          email: '' // Não está na resposta da API
+        };
+        
+        setEditingResidence(residenceData);
+        setIsModalOpen(true);
+      } else {
+        console.error('❌ Dados da residência não encontrados');
+        // Fallback para dados básicos se a API falhar
+        setEditingResidence(residence);
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados da residência:', error);
+      // Fallback para dados básicos se a API falhar
+      setEditingResidence(residence);
+      setIsModalOpen(true);
+    } finally {
+      setLoadingResidenceData(false);
+    }
   };
 
   const handleDeleteClick = (residence: any) => {
@@ -345,10 +392,15 @@ const ResidenceManagement: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleEdit(residence)}
+                        disabled={loadingResidenceData}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4" />
+                        {loadingResidenceData ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Edit className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(residence)}

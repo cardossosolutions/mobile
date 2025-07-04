@@ -28,16 +28,16 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
   // Inicializar com valores corretos, garantindo que IDs sejam números
   const [formData, setFormData] = useState({
     nome: residence?.nome || '',
-    status: residence?.status || 'Ativo',
+    status: residence?.status !== undefined ? residence.status : 'Ativo',
     cep: residence?.cep || '',
     logradouro: residence?.logradouro || residence?.rua || '',
     numero: residence?.numero || '',
     complemento: residence?.complemento || '',
     bairro: residence?.bairro || '',
-    cidadeId: residence?.cidadeId || residence?.city_id ? Number(residence.cidadeId || residence.city_id) : 0,
-    cidadeNome: residence?.cidade || residence?.city_name || '',
-    estadoId: residence?.estadoId || residence?.state_id ? Number(residence.estadoId || residence.state_id) : 0,
-    estadoNome: residence?.estado || residence?.state_name || '',
+    cidadeId: residence?.cidadeId || residence?.city_id || residence?.city ? Number(residence.cidadeId || residence.city_id || residence.city) : 0,
+    cidadeNome: residence?.cidadeNome || residence?.cidade || residence?.city_name || '',
+    estadoId: residence?.estadoId || residence?.state_id || residence?.state ? Number(residence.estadoId || residence.state_id || residence.state) : 0,
+    estadoNome: residence?.estadoNome || residence?.estado || residence?.state_name || residence?.name_state || '',
     estadoSigla: residence?.estadoSigla || residence?.state || '',
     telefone: residence?.telefone || residence?.phone || '',
     email: residence?.email || ''
@@ -97,18 +97,15 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
 
     // Preparar dados para envio
     const dataToSubmit = {
-      nome: formData.nome,
-      status: formData.status,
+      name: formData.nome,
+      active: formData.status === 'Ativo',
       cep: formData.cep.replace(/\D/g, ''),
-      rua: formData.logradouro,
+      street: formData.logradouro,
       numero: formData.numero,
       complemento: formData.complemento,
-      bairro: formData.bairro,
-      city_id: Number(formData.cidadeId),
-      city_name: formData.cidadeNome,
-      state_id: Number(formData.estadoId),
+      neighborhood: formData.bairro,
+      city: Number(formData.cidadeId),
       state: formData.estadoSigla,
-      state_name: formData.estadoNome,
       telefone: phoneMasks.unmask(formData.telefone),
       email: formData.email
     };
