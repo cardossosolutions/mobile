@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import LoginScreen from './components/auth/LoginScreen';
 import Dashboard from './components/layout/Dashboard';
@@ -39,9 +39,7 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <AppContent />
   );
 }
 
