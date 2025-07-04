@@ -36,8 +36,10 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
 
   // Carregar cidades quando o estado mudar
   useEffect(() => {
-    if (selectedStateId && Number(selectedStateId) > 0) {
-      loadCities(Number(selectedStateId));
+    const stateIdNumber = Number(selectedStateId);
+    if (selectedStateId && stateIdNumber > 0) {
+      console.log(`🏙️ Carregando cidades para o estado ID: ${stateIdNumber}`);
+      loadCities(stateIdNumber);
     } else {
       clearCities();
     }
@@ -46,12 +48,16 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const stateId = Number(e.target.value);
     
+    console.log(`🗺️ Estado selecionado - ID: ${stateId}`);
+    
     if (stateId > 0) {
       const selectedState = states.find(state => state.id === stateId);
       if (selectedState) {
+        console.log(`✅ Estado encontrado:`, selectedState);
         onStateChange(stateId, selectedState.name, selectedState.sigla);
       }
     } else {
+      console.log('🔄 Limpando seleção de estado');
       onStateChange(0, '', '');
     }
     
@@ -62,15 +68,25 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const cityId = Number(e.target.value);
     
+    console.log(`🏙️ Cidade selecionada - ID: ${cityId}`);
+    
     if (cityId > 0) {
       const selectedCity = cities.find(city => city.id === cityId);
       if (selectedCity) {
+        console.log(`✅ Cidade encontrada:`, selectedCity);
         onCityChange(cityId, selectedCity.name);
       }
     } else {
+      console.log('🔄 Limpando seleção de cidade');
       onCityChange(0, '');
     }
   };
+
+  // Converter selectedStateId para string para comparação no select
+  const stateValue = selectedStateId ? String(selectedStateId) : '';
+  const cityValue = selectedCityId ? String(selectedCityId) : '';
+
+  console.log(`🔍 StatesCitiesSelector - Estado selecionado: ${stateValue}, Cidade selecionada: ${cityValue}`);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -84,7 +100,7 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
         </label>
         <div className="relative">
           <select
-            value={selectedStateId || ''}
+            value={stateValue}
             onChange={handleStateChange}
             disabled={disabled || loadingStates}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -111,6 +127,12 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
         {(stateError || statesError) && (
           <p className="text-red-500 text-sm mt-1">{stateError || statesError}</p>
         )}
+        
+        {statesError && (
+          <p className="text-yellow-600 text-xs mt-1">
+            ⚠️ Usando lista padrão de estados brasileiros
+          </p>
+        )}
       </div>
 
       {/* Cidade */}
@@ -123,7 +145,7 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
         </label>
         <div className="relative">
           <select
-            value={selectedCityId || ''}
+            value={cityValue}
             onChange={handleCityChange}
             disabled={disabled || loadingCities || !selectedStateId || Number(selectedStateId) === 0}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -160,6 +182,12 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
         
         {!selectedStateId && (
           <p className="text-gray-500 text-xs mt-1">Selecione um estado para ver as cidades</p>
+        )}
+        
+        {selectedStateId && cities.length === 0 && !loadingCities && !citiesError && (
+          <p className="text-yellow-600 text-xs mt-1">
+            ⚠️ Nenhuma cidade encontrada para este estado
+          </p>
         )}
       </div>
     </div>

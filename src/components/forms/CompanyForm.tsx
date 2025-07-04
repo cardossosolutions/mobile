@@ -24,6 +24,8 @@ interface FormErrors {
 
 const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
   const { addCompany, updateCompany } = useData();
+  
+  // Inicializar com valores corretos, convertendo para number quando necessário
   const [formData, setFormData] = useState({
     cnpj: company?.cnpj || '',
     razaoSocial: company?.razaoSocial || company?.corporate_name || '',
@@ -33,16 +35,19 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
     numero: company?.numero || '',
     complemento: company?.complemento || '',
     bairro: company?.bairro || '',
-    cidadeId: company?.cidadeId || company?.city_id || '',
+    cidadeId: company?.cidadeId || company?.city_id || 0,
     cidadeNome: company?.cidade || company?.city_name || '',
-    estadoId: company?.estadoId || company?.state_id || '',
-    estadoNome: company?.estado || company?.state || '',
-    estadoSigla: company?.estadoSigla || company?.state_abbreviation || '',
+    estadoId: company?.estadoId || company?.state_id || 0,
+    estadoNome: company?.estado || company?.state_name || '',
+    estadoSigla: company?.estadoSigla || company?.state || '',
     email: company?.email || '',
     telefone: company?.telefone || company?.phone_number || '',
     celular: company?.celular || company?.mobile_number || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
+
+  console.log('📝 CompanyForm - Dados iniciais:', formData);
+  console.log('📝 CompanyForm - Company prop:', company);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -120,6 +125,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
       mobile_number: phoneMasks.unmask(formData.celular)
     };
 
+    console.log('📤 Enviando dados da empresa:', dataToSubmit);
+
     if (company) {
       updateCompany(company.id, dataToSubmit);
     } else {
@@ -165,12 +172,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
   };
 
   const handleStateChange = (stateId: number, stateName: string, stateAbbreviation: string) => {
+    console.log(`🗺️ Estado alterado - ID: ${stateId}, Nome: ${stateName}, Sigla: ${stateAbbreviation}`);
+    
     setFormData({
       ...formData,
-      estadoId: stateId.toString(),
+      estadoId: stateId,
       estadoNome: stateName,
       estadoSigla: stateAbbreviation,
-      cidadeId: '', // Limpar cidade quando mudar estado
+      cidadeId: 0, // Limpar cidade quando mudar estado
       cidadeNome: ''
     });
 
@@ -184,9 +193,11 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
   };
 
   const handleCityChange = (cityId: number, cityName: string) => {
+    console.log(`🏙️ Cidade alterada - ID: ${cityId}, Nome: ${cityName}`);
+    
     setFormData({
       ...formData,
-      cidadeId: cityId.toString(),
+      cidadeId: cityId,
       cidadeNome: cityName
     });
 
