@@ -39,6 +39,7 @@ interface Residence {
   name: string;
   street: string;
   number: string;
+  active: boolean;
 }
 
 interface ResidenceResponse {
@@ -183,19 +184,22 @@ const mockResidences: Residence[] = [
     id: '1',
     name: 'Apartamento 101 - Bloco A',
     street: 'Rua das Flores',
-    number: '123'
+    number: '123',
+    active: true
   },
   {
     id: '2',
     name: 'Casa Verde',
     street: 'Avenida Central',
-    number: '456'
+    number: '456',
+    active: true
   },
   {
     id: '3',
     name: 'Cobertura Premium',
     street: 'Rua do Sol',
-    number: '789'
+    number: '789',
+    active: false
   }
 ];
 
@@ -521,7 +525,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: residence.id.toString(),
           name: residence.name,
           street: residence.street,
-          number: residence.number
+          number: residence.number,
+          active: residence.active
         }));
         
         setResidences(residencesData);
