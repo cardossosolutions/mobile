@@ -11,7 +11,7 @@ const CompanyManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any>(null);
-  const [loadingCompanyData, setLoadingCompanyData] = useState(false);
+  const [loadingCompanyData, setLoadingCompanyData] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -70,7 +70,7 @@ const CompanyManagement: React.FC = () => {
   };
 
   const handleEdit = async (company: any) => {
-    setLoadingCompanyData(true);
+    setLoadingCompanyData(prev => ({ ...prev, [company.id]: true }));
     try {
       console.log(`📝 Carregando dados da empresa ${company.id} para edição...`);
       
@@ -114,7 +114,7 @@ const CompanyManagement: React.FC = () => {
       setEditingCompany(company);
       setIsModalOpen(true);
     } finally {
-      setLoadingCompanyData(false);
+      setLoadingCompanyData(prev => ({ ...prev, [company.id]: false }));
     }
   };
 
@@ -382,11 +382,11 @@ const CompanyManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(company)}
-                        disabled={loadingCompanyData}
+                        disabled={loadingCompanyData[company.id]}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        {loadingCompanyData ? (
+                        {loadingCompanyData[company.id] ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Edit className="w-4 h-4" />

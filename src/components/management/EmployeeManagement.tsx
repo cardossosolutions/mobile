@@ -12,6 +12,7 @@ const EmployeeManagement: React.FC = () => {
   const [permissionFilter, setPermissionFilter] = useState('');
   const [initialLoading, setInitialLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadingEmployeeData, setLoadingEmployeeData] = useState<Record<string, boolean>>({});
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -52,9 +53,15 @@ const EmployeeManagement: React.FC = () => {
     return matchesSearch && matchesStatus && matchesPermission;
   });
 
-  const handleEdit = (employee: any) => {
-    setEditingEmployee(employee);
-    setIsModalOpen(true);
+  const handleEdit = async (employee: any) => {
+    setLoadingEmployeeData(prev => ({ ...prev, [employee.id]: true }));
+    try {
+      // Para funcionários, podemos usar os dados já carregados ou fazer uma requisição específica
+      setEditingEmployee(employee);
+      setIsModalOpen(true);
+    } finally {
+      setLoadingEmployeeData(prev => ({ ...prev, [employee.id]: false }));
+    }
   };
 
   const handleDeleteClick = (employee: any) => {
@@ -231,10 +238,15 @@ const EmployeeManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(employee)}
+                        disabled={loadingEmployeeData[employee.id]}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4" />
+                        {loadingEmployeeData[employee.id] ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Edit className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(employee)}

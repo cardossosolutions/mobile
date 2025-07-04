@@ -13,7 +13,7 @@ const ResidenceManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
-  const [loadingResidenceData, setLoadingResidenceData] = useState(false);
+  const [loadingResidenceData, setLoadingResidenceData] = useState<Record<string, boolean>>({});
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selectedResidenceId, setSelectedResidenceId] = useState<string | null>(null);
@@ -88,7 +88,7 @@ const ResidenceManagement: React.FC = () => {
   };
 
   const handleEdit = async (residence: any) => {
-    setLoadingResidenceData(true);
+    setLoadingResidenceData(prev => ({ ...prev, [residence.id]: true }));
     try {
       console.log(`📝 Carregando dados da residência ${residence.id} para edição...`);
       
@@ -133,7 +133,7 @@ const ResidenceManagement: React.FC = () => {
       setEditingResidence(residence);
       setIsModalOpen(true);
     } finally {
-      setLoadingResidenceData(false);
+      setLoadingResidenceData(prev => ({ ...prev, [residence.id]: false }));
     }
   };
 
@@ -428,11 +428,11 @@ const ResidenceManagement: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleEdit(residence)}
-                        disabled={loadingResidenceData}
+                        disabled={loadingResidenceData[residence.id]}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        {loadingResidenceData ? (
+                        {loadingResidenceData[residence.id] ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Edit className="w-4 h-4" />

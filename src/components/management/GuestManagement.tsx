@@ -11,6 +11,7 @@ const GuestManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingGuestData, setLoadingGuestData] = useState<Record<string, boolean>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     guest: any | null;
@@ -42,9 +43,15 @@ const GuestManagement: React.FC = () => {
     guest.placaVeiculo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (guest: any) => {
-    setEditingGuest(guest);
-    setIsModalOpen(true);
+  const handleEdit = async (guest: any) => {
+    setLoadingGuestData(prev => ({ ...prev, [guest.id]: true }));
+    try {
+      // Para convidados, podemos usar os dados já carregados ou fazer uma requisição específica
+      setEditingGuest(guest);
+      setIsModalOpen(true);
+    } finally {
+      setLoadingGuestData(prev => ({ ...prev, [guest.id]: false }));
+    }
   };
 
   const handleDeleteClick = (guest: any) => {
@@ -174,10 +181,15 @@ const GuestManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(guest)}
+                        disabled={loadingGuestData[guest.id]}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4" />
+                        {loadingGuestData[guest.id] ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Edit className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(guest)}

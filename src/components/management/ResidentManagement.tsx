@@ -15,6 +15,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResident, setEditingResident] = useState<any>(null);
+  const [loadingResidentData, setLoadingResidentData] = useState<Record<string, boolean>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     resident: any | null;
@@ -33,9 +34,15 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
     resident.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (resident: any) => {
-    setEditingResident(resident);
-    setIsModalOpen(true);
+  const handleEdit = async (resident: any) => {
+    setLoadingResidentData(prev => ({ ...prev, [resident.id]: true }));
+    try {
+      // Para moradores, podemos usar os dados já carregados ou fazer uma requisição específica
+      setEditingResident(resident);
+      setIsModalOpen(true);
+    } finally {
+      setLoadingResidentData(prev => ({ ...prev, [resident.id]: false }));
+    }
   };
 
   const handleDeleteClick = (resident: any) => {
@@ -157,10 +164,15 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(resident)}
+                        disabled={loadingResidentData[resident.id]}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4" />
+                        {loadingResidentData[resident.id] ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Edit className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(resident)}

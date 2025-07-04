@@ -12,6 +12,7 @@ const AppointmentManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [loadingAppointmentData, setLoadingAppointmentData] = useState<Record<string, boolean>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     appointment: any | null;
@@ -51,9 +52,15 @@ const AppointmentManagement: React.FC = () => {
     return matchesSearch && matchesDate;
   });
 
-  const handleEdit = (appointment: any) => {
-    setEditingAppointment(appointment);
-    setIsModalOpen(true);
+  const handleEdit = async (appointment: any) => {
+    setLoadingAppointmentData(prev => ({ ...prev, [appointment.id]: true }));
+    try {
+      // Para agendamentos, podemos usar os dados já carregados ou fazer uma requisição específica
+      setEditingAppointment(appointment);
+      setIsModalOpen(true);
+    } finally {
+      setLoadingAppointmentData(prev => ({ ...prev, [appointment.id]: false }));
+    }
   };
 
   const handleDeleteClick = (appointment: any) => {
@@ -233,10 +240,15 @@ const AppointmentManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(appointment)}
+                        disabled={loadingAppointmentData[appointment.id]}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4" />
+                        {loadingAppointmentData[appointment.id] ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Edit className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(appointment)}
