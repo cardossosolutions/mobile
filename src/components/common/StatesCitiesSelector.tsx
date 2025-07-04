@@ -46,47 +46,64 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
   }, [selectedStateId]);
 
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const stateId = Number(e.target.value);
+    const value = e.target.value;
+    console.log(`🗺️ Valor selecionado no select: "${value}"`);
     
-    console.log(`🗺️ Estado selecionado - ID: ${stateId}`);
+    // Se valor vazio, limpar seleção
+    if (!value || value === '' || value === '0') {
+      console.log('🔄 Limpando seleção de estado');
+      onStateChange(0, '', '');
+      onCityChange(0, '');
+      return;
+    }
+    
+    const stateId = Number(value);
+    console.log(`🗺️ Estado ID convertido: ${stateId}`);
     
     if (stateId > 0) {
       const selectedState = states.find(state => state.id === stateId);
       if (selectedState) {
         console.log(`✅ Estado encontrado:`, selectedState);
         onStateChange(stateId, selectedState.name, selectedState.sigla);
+        // Limpar cidade selecionada quando mudar o estado
+        onCityChange(0, '');
+      } else {
+        console.error(`❌ Estado com ID ${stateId} não encontrado na lista`);
       }
-    } else {
-      console.log('🔄 Limpando seleção de estado');
-      onStateChange(0, '', '');
     }
-    
-    // Limpar cidade selecionada quando mudar o estado
-    onCityChange(0, '');
   };
 
   const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const cityId = Number(e.target.value);
+    const value = e.target.value;
+    console.log(`🏙️ Valor selecionado no select de cidade: "${value}"`);
     
-    console.log(`🏙️ Cidade selecionada - ID: ${cityId}`);
+    // Se valor vazio, limpar seleção
+    if (!value || value === '' || value === '0') {
+      console.log('🔄 Limpando seleção de cidade');
+      onCityChange(0, '');
+      return;
+    }
+    
+    const cityId = Number(value);
+    console.log(`🏙️ Cidade ID convertido: ${cityId}`);
     
     if (cityId > 0) {
       const selectedCity = cities.find(city => city.id === cityId);
       if (selectedCity) {
         console.log(`✅ Cidade encontrada:`, selectedCity);
         onCityChange(cityId, selectedCity.name);
+      } else {
+        console.error(`❌ Cidade com ID ${cityId} não encontrada na lista`);
       }
-    } else {
-      console.log('🔄 Limpando seleção de cidade');
-      onCityChange(0, '');
     }
   };
 
-  // Converter selectedStateId para string para comparação no select
-  const stateValue = selectedStateId ? String(selectedStateId) : '';
-  const cityValue = selectedCityId ? String(selectedCityId) : '';
+  // Garantir que os valores sejam strings válidas para o select
+  const stateValue = selectedStateId && Number(selectedStateId) > 0 ? String(selectedStateId) : '';
+  const cityValue = selectedCityId && Number(selectedCityId) > 0 ? String(selectedCityId) : '';
 
-  console.log(`🔍 StatesCitiesSelector - Estado selecionado: ${stateValue}, Cidade selecionada: ${cityValue}`);
+  console.log(`🔍 StatesCitiesSelector - Estado: ${selectedStateId} -> "${stateValue}", Cidade: ${selectedCityId} -> "${cityValue}"`);
+  console.log(`📋 Estados disponíveis:`, states.map(s => ({ id: s.id, name: s.name })));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -111,7 +128,7 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
               {loadingStates ? 'Carregando estados...' : 'Selecione o estado'}
             </option>
             {states.map(state => (
-              <option key={state.id} value={state.id}>
+              <option key={state.id} value={String(state.id)}>
                 {state.sigla} - {state.name}
               </option>
             ))}
@@ -133,6 +150,11 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
             ⚠️ Usando lista padrão de estados brasileiros
           </p>
         )}
+        
+        {/* Debug info - remover em produção */}
+        <div className="text-xs text-gray-400 mt-1">
+          Debug: selectedStateId={selectedStateId}, stateValue="{stateValue}", states.length={states.length}
+        </div>
       </div>
 
       {/* Cidade */}
@@ -163,7 +185,7 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
               }
             </option>
             {cities.map(city => (
-              <option key={city.id} value={city.id}>
+              <option key={city.id} value={String(city.id)}>
                 {city.name}
               </option>
             ))}
@@ -189,6 +211,11 @@ const StatesCitiesSelector: React.FC<StatesCitiesSelectorProps> = ({
             ⚠️ Nenhuma cidade encontrada para este estado
           </p>
         )}
+        
+        {/* Debug info - remover em produção */}
+        <div className="text-xs text-gray-400 mt-1">
+          Debug: selectedCityId={selectedCityId}, cityValue="{cityValue}", cities.length={cities.length}
+        </div>
       </div>
     </div>
   );
