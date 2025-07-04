@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, UserCheck } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, UserCheck, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -10,6 +10,7 @@ const GuestManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<any>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     guest: any | null;
@@ -23,7 +24,15 @@ const GuestManagement: React.FC = () => {
   // Carregar convidados quando o componente for montado
   useEffect(() => {
     console.log('👤 GuestManagement montado - carregando convidados...');
-    loadGuests();
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await loadGuests();
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadInitialData();
   }, []);
 
   const filteredGuests = guests.filter(guest =>
@@ -106,6 +115,18 @@ const GuestManagement: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
+          {/* Loading inicial */}
+          {initialLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center space-x-3 text-orange-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-lg font-medium">Carregando convidados...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tabela de convidados */}
+          {!initialLoading && (
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-50">
@@ -171,9 +192,10 @@ const GuestManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
-        {filteredGuests.length === 0 && (
+        {filteredGuests.length === 0 && !initialLoading && (
           <div className="text-center py-8">
             <UserCheck className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">Nenhum convidado encontrado</p>

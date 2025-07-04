@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Home, Users } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Home, Users, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -11,6 +11,7 @@ const ResidenceManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [selectedResidenceId, setSelectedResidenceId] = useState<string | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -25,8 +26,18 @@ const ResidenceManagement: React.FC = () => {
   // Carregar residências quando o componente for montado
   useEffect(() => {
     console.log('🏠 ResidenceManagement montado - carregando residências...');
-    loadResidences();
-    loadResidents(); // Carregar moradores também para o gerenciamento
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await Promise.all([
+          loadResidences(),
+          loadResidents() // Carregar moradores também para o gerenciamento
+        ]);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadInitialData();
   }, []);
 
   const filteredResidences = residences.filter(residence =>
@@ -121,6 +132,18 @@ const ResidenceManagement: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
+          {/* Loading inicial */}
+          {initialLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center space-x-3 text-green-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-lg font-medium">Carregando residências...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tabela de residências */}
+          {!initialLoading && (
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-50">
@@ -189,9 +212,10 @@ const ResidenceManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
-        {filteredResidences.length === 0 && (
+        {filteredResidences.length === 0 && !initialLoading && (
           <div className="text-center py-8">
             <Home className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">Nenhuma residência encontrada</p>

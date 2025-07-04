@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Calendar, Clock } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Calendar, Clock, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -10,6 +10,7 @@ const AppointmentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -24,8 +25,18 @@ const AppointmentManagement: React.FC = () => {
   // Carregar agendamentos e convidados quando o componente for montado
   useEffect(() => {
     console.log('📅 AppointmentManagement montado - carregando agendamentos e convidados...');
-    loadAppointments();
-    loadGuests(); // Necessário para mostrar nomes dos convidados
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await Promise.all([
+          loadAppointments(),
+          loadGuests() // Necessário para mostrar nomes dos convidados
+        ]);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadInitialData();
   }, []);
 
   const filteredAppointments = appointments.filter(appointment => {
@@ -156,6 +167,18 @@ const AppointmentManagement: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
+          {/* Loading inicial */}
+          {initialLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center space-x-3 text-red-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-lg font-medium">Carregando agendamentos...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tabela de agendamentos */}
+          {!initialLoading && (
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-50">
@@ -228,9 +251,10 @@ const AppointmentManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
-        {filteredAppointments.length === 0 && (
+        {filteredAppointments.length === 0 && !initialLoading && (
           <div className="text-center py-8">
             <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">Nenhum agendamento encontrado</p>

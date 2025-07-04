@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Building, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Building, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { apiRequest, API_CONFIG } from '../../config/api';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
 import CompanyForm from '../forms/CompanyForm';
@@ -10,7 +11,9 @@ const CompanyManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any>(null);
+  const [loadingCompanyData, setLoadingCompanyData] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     company: any | null;
@@ -24,7 +27,15 @@ const CompanyManagement: React.FC = () => {
   // Carregar empresas quando o componente for montado
   useEffect(() => {
     console.log('📋 CompanyManagement montado - carregando empresas...');
-    loadCompanies();
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await loadCompanies();
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadInitialData();
   }, []);
 
   // Debounce para busca
@@ -58,9 +69,53 @@ const CompanyManagement: React.FC = () => {
     }
   };
 
-  const handleEdit = (company: any) => {
-    setEditingCompany(company);
-    setIsModalOpen(true);
+  const handleEdit = async (company: any) => {
+    setLoadingCompanyData(true);
+    try {
+      console.log(`📝 Carregando dados da empresa ${company.id} para edição...`);
+      
+      // Fazer requisição para obter dados completos da empresa
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${company.id}`, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Dados da empresa carregados:', response);
+      
+      if (response) {
+        // Converter dados da API para o formato esperado pelo formulário
+        const companyData = {
+          id: response.id,
+          cnpj: response.cnpj,
+          razaoSocial: response.corporate_name,
+          nomeFantasia: response.fantasy_name,
+          cep: response.cep,
+          logradouro: response.street,
+          numero: response.number,
+          complemento: response.complement || '',
+          bairro: response.neighborhood,
+          cidadeId: response.city_id,
+          estadoId: response.state_id,
+          email: response.email,
+          telefone: response.phone_number || '',
+          celular: response.mobile_number || ''
+        };
+        
+        setEditingCompany(companyData);
+        setIsModalOpen(true);
+      } else {
+        console.error('❌ Dados da empresa não encontrados');
+        // Fallback para dados básicos se a API falhar
+        setEditingCompany(company);
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados da empresa:', error);
+      // Fallback para dados básicos se a API falhar
+      setEditingCompany(company);
+      setIsModalOpen(true);
+    } finally {
+      setLoadingCompanyData(false);
+    }
   };
 
   const handleDeleteClick = (company: any) => {
@@ -259,6 +314,18 @@ const CompanyManagement: React.FC = () => {
         )}
 
         <div className="overflow-x-auto">
+          {/* Loading inicial */}
+          {initialLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center space-x-3 text-blue-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-lg font-medium">Carregando empresas...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tabela de empresas */}
+          {!initialLoading && (
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-50">
@@ -315,10 +382,15 @@ const CompanyManagement: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(company)}
+                        disabled={loadingCompanyData}
                         className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4" />
+                        {loadingCompanyData ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Edit className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(company)}
@@ -333,9 +405,10 @@ const CompanyManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
-        {companies.length === 0 && !loading && (
+        {companies.length === 0 && !loading && !initialLoading && (
           <div className="text-center py-8">
             <Building className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">
@@ -345,7 +418,7 @@ const CompanyManagement: React.FC = () => {
         )}
 
         {/* Controles de paginação */}
-        {companyPagination && companyPagination.last_page > 1 && (
+        {companyPagination && companyPagination.last_page > 1 && !initialLoading && (
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-gray-600">
               {companyPagination.total} {companyPagination.total === 1 ? 'empresa' : 'empresas'} no total

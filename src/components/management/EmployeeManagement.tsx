@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Users, Filter } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Filter, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -10,6 +10,7 @@ const EmployeeManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [permissionFilter, setPermissionFilter] = useState('');
+  const [initialLoading, setInitialLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -28,8 +29,18 @@ const EmployeeManagement: React.FC = () => {
   // Carregar funcionários e empresas quando o componente for montado
   useEffect(() => {
     console.log('👥 EmployeeManagement montado - carregando funcionários e empresas...');
-    loadEmployees();
-    loadCompanies(); // Necessário para o dropdown de empresas
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await Promise.all([
+          loadEmployees(),
+          loadCompanies() // Necessário para o dropdown de empresas
+        ]);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadInitialData();
   }, []);
 
   const filteredEmployees = employees.filter(employee => {
@@ -157,6 +168,18 @@ const EmployeeManagement: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
+          {/* Loading inicial */}
+          {initialLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center space-x-3 text-blue-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-lg font-medium">Carregando funcionários...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tabela de funcionários */}
+          {!initialLoading && (
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-50">
@@ -226,9 +249,10 @@ const EmployeeManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
-        {filteredEmployees.length === 0 && (
+        {filteredEmployees.length === 0 && !initialLoading && (
           <div className="text-center py-8">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">Nenhum funcionário encontrado</p>
