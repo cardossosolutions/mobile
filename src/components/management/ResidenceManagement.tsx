@@ -10,6 +10,7 @@ import ResidentManagement from './ResidentManagement';
 const ResidenceManagement: React.FC = () => {
   const { residences, residencePagination, loadResidences, loadResidents, deleteResidence } = useData();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResidence, setEditingResidence] = useState<any>(null);
   const [loadingResidenceData, setLoadingResidenceData] = useState(false);
@@ -46,7 +47,7 @@ const ResidenceManagement: React.FC = () => {
   // Debounce para busca
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchTerm !== '') {
+      if (searchTerm !== '' || statusFilter !== '') {
         handleSearch();
       } else {
         loadResidences(1); // Recarregar primeira página sem busca
@@ -54,12 +55,18 @@ const ResidenceManagement: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, statusFilter]);
 
   const handleSearch = async () => {
     setLoading(true);
     try {
-      await loadResidences(1, searchTerm);
+      // Construir parâmetros de busca
+      const searchParams = new URLSearchParams();
+      if (searchTerm) searchParams.append('search', searchTerm);
+      if (statusFilter) searchParams.append('status', statusFilter);
+      
+      const searchQuery = searchParams.toString();
+      await loadResidences(1, searchQuery);
     } finally {
       setLoading(false);
     }
@@ -68,7 +75,13 @@ const ResidenceManagement: React.FC = () => {
   const handlePageChange = async (page: number) => {
     setLoading(true);
     try {
-      await loadResidences(page, searchTerm);
+      // Construir parâmetros de busca
+      const searchParams = new URLSearchParams();
+      if (searchTerm) searchParams.append('search', searchTerm);
+      if (statusFilter) searchParams.append('status', statusFilter);
+      
+      const searchQuery = searchParams.toString();
+      await loadResidences(page, searchQuery);
     } finally {
       setLoading(false);
     }
@@ -148,7 +161,14 @@ const ResidenceManagement: React.FC = () => {
 
       // Recarregar a página atual após exclusão
       const currentPage = residencePagination?.current_page || 1;
-      await loadResidences(currentPage, searchTerm);
+      
+      // Construir parâmetros de busca
+      const searchParams = new URLSearchParams();
+      if (searchTerm) searchParams.append('search', searchTerm);
+      if (statusFilter) searchParams.append('status', statusFilter);
+      
+      const searchQuery = searchParams.toString();
+      await loadResidences(currentPage, searchQuery);
     } catch (error) {
       console.error('Erro ao excluir residência:', error);
       setDeleteConfirmation(prev => ({ ...prev, loading: false }));
@@ -172,7 +192,14 @@ const ResidenceManagement: React.FC = () => {
     handleCloseModal();
     // Recarregar a página atual após sucesso
     const currentPage = residencePagination?.current_page || 1;
-    loadResidences(currentPage, searchTerm);
+    
+    // Construir parâmetros de busca
+    const searchParams = new URLSearchParams();
+    if (searchTerm) searchParams.append('search', searchTerm);
+    if (statusFilter) searchParams.append('status', statusFilter);
+    
+    const searchQuery = searchParams.toString();
+    loadResidences(currentPage, searchQuery);
   };
 
   // Função para renderizar os botões de paginação
@@ -310,6 +337,15 @@ const ResidenceManagement: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todos os Status</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+          </select>
           {loading && (
             <div className="flex items-center space-x-2 text-green-600">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>

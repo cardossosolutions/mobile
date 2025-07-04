@@ -499,12 +499,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Função específica para carregar residências
   const loadResidences = async (page: number = 1, search?: string) => {
     try {
-      console.log(`🔄 Carregando residências - Página: ${page}, Busca: ${search || 'N/A'}`);
+      console.log(`🔄 Carregando residências - Página: ${page}, Parâmetros: ${search || 'N/A'}`);
       
-      // Construir URL com parâmetros de paginação e busca
+      // Construir URL com parâmetros de paginação e filtros
       let url = `${API_CONFIG.ENDPOINTS.RESIDENCES}?page=${page}`;
       if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
+        url += `&${search.trim()}`;
       }
       
       const response = await apiRequest(url, {
