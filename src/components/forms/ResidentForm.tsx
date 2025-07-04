@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from 'lucide-react';
+import { User, Save, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { phoneMasks } from '../../utils/masks';
 
@@ -23,6 +23,7 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
     celular: resident?.celular || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -54,18 +55,28 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
       return;
     }
 
+    setLoading(true);
+
     // Remover máscara do celular antes de enviar
     const dataToSubmit = {
       ...formData,
       celular: phoneMasks.unmask(formData.celular)
     };
 
-    if (resident) {
-      updateResident(resident.id, dataToSubmit);
-    } else {
-      addResident({ ...dataToSubmit, residenceId });
-    }
-    onClose();
+    const operation = resident 
+      ? updateResident(resident.id, dataToSubmit)
+      : addResident({ ...dataToSubmit, residenceId });
+
+    operation
+      .then(() => {
+        onClose();
+      })
+      .catch(() => {
+        // Erro já tratado no DataContext
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,9 +183,17 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
           </button>
           <button
             type="submit"
+            disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {resident ? 'Atualizar' : 'Salvar'}
+            <div className="flex items-center space-x-2">
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{loading ? 'Salvando...' : (resident ? 'Atualizar' : 'Salvar')}</span>
+            </div>
           </button>
         </div>
       </form>

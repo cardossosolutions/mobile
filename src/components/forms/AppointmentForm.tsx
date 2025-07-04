@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Search, X } from 'lucide-react';
+import { Calendar, Search, X, Save, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 interface AppointmentFormProps {
@@ -22,6 +22,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
     observacoes: appointment?.observacoes || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
   
   // Estados para pesquisa de convidado
   const [guestSearchTerm, setGuestSearchTerm] = useState('');
@@ -72,12 +73,22 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
       return;
     }
 
-    if (appointment) {
-      updateAppointment(appointment.id, formData);
-    } else {
-      addAppointment(formData);
-    }
-    onClose();
+    setLoading(true);
+
+    const operation = appointment 
+      ? updateAppointment(appointment.id, formData)
+      : addAppointment(formData);
+
+    operation
+      .then(() => {
+        onClose();
+      })
+      .catch(() => {
+        // Erro já tratado no DataContext
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -276,9 +287,17 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
           </button>
           <button
             type="submit"
+            disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {appointment ? 'Atualizar' : 'Salvar'}
+            <div className="flex items-center space-x-2">
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{loading ? 'Salvando...' : (appointment ? 'Atualizar' : 'Salvar')}</span>
+            </div>
           </button>
         </div>
       </form>

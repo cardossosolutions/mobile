@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building, Search, Loader2 } from 'lucide-react';
+import { Building, Search, Loader2, Save } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { phoneMasks, otherMasks } from '../../utils/masks';
 import StatesCitiesSelector from '../common/StatesCitiesSelector';
@@ -47,6 +47,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
     celular: company?.celular || company?.mobile_number || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
 
   console.log('📝 CompanyForm - Dados iniciais do formulário:', formData);
   console.log('📝 CompanyForm - Company prop recebida:', company);
@@ -107,6 +108,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
       return;
     }
 
+    setLoading(true);
+
     // Remover máscaras antes de enviar
     const dataToSubmit = {
       cnpj: otherMasks.cnpj(formData.cnpj).replace(/\D/g, ''),
@@ -129,12 +132,20 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
 
     console.log('📤 Enviando dados da empresa:', dataToSubmit);
 
-    if (company) {
-      updateCompany(company.id, dataToSubmit);
-    } else {
-      addCompany(dataToSubmit);
-    }
-    onClose();
+    const operation = company 
+      ? updateCompany(company.id, dataToSubmit)
+      : addCompany(dataToSubmit);
+
+    operation
+      .then(() => {
+        onClose();
+      })
+      .catch(() => {
+        // Erro já tratado no DataContext
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -522,9 +533,17 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ company, onClose }) => {
           </button>
           <button
             type="submit"
+            disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {company ? 'Atualizar' : 'Salvar'}
+            <div className="flex items-center space-x-2">
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{loading ? 'Salvando...' : (company ? 'Atualizar' : 'Salvar')}</span>
+            </div>
           </button>
         </div>
       </form>

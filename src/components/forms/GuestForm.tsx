@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, Save, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { otherMasks } from '../../utils/masks';
 
@@ -24,6 +24,7 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
     observacoes: guest?.observacoes || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -51,6 +52,8 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
       return;
     }
 
+    setLoading(true);
+
     // Remover máscaras antes de enviar
     const dataToSubmit = {
       ...formData,
@@ -58,12 +61,20 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
       placaVeiculo: formData.placaVeiculo.toUpperCase()
     };
 
-    if (guest) {
-      updateGuest(guest.id, dataToSubmit);
-    } else {
-      addGuest(dataToSubmit);
-    }
-    onClose();
+    const operation = guest 
+      ? updateGuest(guest.id, dataToSubmit)
+      : addGuest(dataToSubmit);
+
+    operation
+      .then(() => {
+        onClose();
+      })
+      .catch(() => {
+        // Erro já tratado no DataContext
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -214,9 +225,17 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
           </button>
           <button
             type="submit"
+            disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {guest ? 'Atualizar' : 'Salvar'}
+            <div className="flex items-center space-x-2">
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{loading ? 'Salvando...' : (guest ? 'Atualizar' : 'Salvar')}</span>
+            </div>
           </button>
         </div>
       </form>

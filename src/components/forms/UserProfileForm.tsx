@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { User, Lock, Mail, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Mail, Save, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../hooks/useToast';
 import { phoneMasks } from '../../utils/masks';
 
 interface UserProfileFormProps {
@@ -20,6 +21,7 @@ interface PasswordErrors {
 
 const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
   const { user, updateUserProfile } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState('profile');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -124,13 +126,13 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage('');
 
     if (!validateProfile()) {
       return;
     }
 
     setLoading(true);
+    setMessage('');
 
     try {
       // Remover máscara do telefone antes de enviar
@@ -140,9 +142,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
       };
 
       await updateUserProfile(dataToSubmit);
-      setMessage('Perfil atualizado com sucesso!');
+      showSuccess('Perfil atualizado!', 'Seus dados foram atualizados com sucesso.');
     } catch (error) {
-      setMessage('Erro ao atualizar perfil. Tente novamente.');
+      showError('Erro ao atualizar perfil', 'Não foi possível atualizar seus dados. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -150,25 +152,25 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage('');
 
     if (!validatePassword()) {
       return;
     }
 
     setLoading(true);
+    setMessage('');
 
     try {
       // Mock password update - replace with real API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      setMessage('Senha alterada com sucesso!');
+      showSuccess('Senha alterada!', 'Sua senha foi alterada com sucesso.');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
     } catch (error) {
-      setMessage('Erro ao alterar senha. Verifique a senha atual.');
+      showError('Erro ao alterar senha', 'Verifique a senha atual e tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -214,16 +216,6 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
           </button>
         </nav>
       </div>
-
-      {message && (
-        <div className={`mb-4 p-3 rounded-lg ${
-          message.includes('sucesso') 
-            ? 'bg-green-100 text-green-700 border border-green-200' 
-            : 'bg-red-100 text-red-700 border border-red-200'
-        }`}>
-          {message}
-        </div>
-      )}
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
@@ -331,7 +323,11 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
             >
-              <Save className="w-4 h-4" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
               <span>{loading ? 'Salvando...' : 'Salvar Alterações'}</span>
             </button>
           </div>
@@ -459,7 +455,11 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
             >
-              <Lock className="w-4 h-4" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Lock className="w-4 h-4" />
+              )}
               <span>{loading ? 'Alterando...' : 'Alterar Senha'}</span>
             </button>
           </div>

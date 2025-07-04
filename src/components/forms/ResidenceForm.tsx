@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Search, Loader2 } from 'lucide-react';
+import { Home, Search, Loader2, Save } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { phoneMasks } from '../../utils/masks';
 import StatesCitiesSelector from '../common/StatesCitiesSelector';
@@ -43,6 +43,7 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
     email: residence?.email || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
 
   console.log('📝 ResidenceForm - Dados iniciais do formulário:', formData);
   console.log('📝 ResidenceForm - Residence prop recebida:', residence);
@@ -95,6 +96,8 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
       return;
     }
 
+    setLoading(true);
+
     // Preparar dados para envio
     const dataToSubmit = {
       nameResidence: formData.nome,
@@ -111,12 +114,20 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
 
     console.log('📤 Enviando dados da residência:', dataToSubmit);
 
-    if (residence) {
-      updateResidence(residence.id, dataToSubmit);
-    } else {
-      addResidence(dataToSubmit);
-    }
-    onClose();
+    const operation = residence 
+      ? updateResidence(residence.id, dataToSubmit)
+      : addResidence(dataToSubmit);
+
+    operation
+      .then(() => {
+        onClose();
+      })
+      .catch(() => {
+        // Erro já tratado no DataContext
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -430,9 +441,17 @@ const ResidenceForm: React.FC<ResidenceFormProps> = ({ residence, onClose }) => 
           </button>
           <button
             type="submit"
+            disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {residence ? 'Atualizar' : 'Salvar'}
+            <div className="flex items-center space-x-2">
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{loading ? 'Salvando...' : (residence ? 'Atualizar' : 'Salvar')}</span>
+            </div>
           </button>
         </div>
       </form>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { apiRequest, API_CONFIG } from '../config/api';
+import { useToast } from '../hooks/useToast';
 
 interface Company {
   id: string;
@@ -427,6 +428,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const { showSuccess, showError } = useToast();
 
   const generateId = () => Date.now().toString();
 
@@ -625,6 +627,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Funções para empresas
   const addCompany = async (company: Omit<Company, 'id'>) => {
     try {
+      console.log('📤 Adicionando empresa...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.COMPANIES, {
         method: 'POST',
         body: JSON.stringify(company)
@@ -633,12 +636,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (response && response.data) {
         // Recarregar a lista de empresas após adicionar
         await loadCompanies();
+        showSuccess('Empresa adicionada!', 'A empresa foi cadastrada com sucesso.');
       } else {
         // Fallback para mock
         setCompanies(prev => [...prev, { ...company, id: generateId() }]);
+        showSuccess('Empresa adicionada!', 'A empresa foi cadastrada com sucesso.');
       }
     } catch (error) {
       console.error('Error adding company:', error);
+      showError('Erro ao adicionar empresa', 'Não foi possível cadastrar a empresa. Tente novamente.');
       // Fallback para mock
       setCompanies(prev => [...prev, { ...company, id: generateId() }]);
     }
@@ -646,6 +652,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateCompany = async (id: string, company: Partial<Company>) => {
     try {
+      console.log('📝 Atualizando empresa...');
       const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(company)
@@ -654,9 +661,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (response) {
         // Recarregar a lista de empresas após atualizar
         await loadCompanies();
+        showSuccess('Empresa atualizada!', 'Os dados da empresa foram atualizados com sucesso.');
+      } else {
+        // Fallback para mock
+        setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
+        showSuccess('Empresa atualizada!', 'Os dados da empresa foram atualizados com sucesso.');
       }
     } catch (error) {
       console.error('Error updating company:', error);
+      showError('Erro ao atualizar empresa', 'Não foi possível atualizar a empresa. Tente novamente.');
       // Fallback para mock
       setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
     }
@@ -664,14 +677,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteCompany = async (id: string) => {
     try {
+      console.log('🗑️ Excluindo empresa...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
         method: 'DELETE'
       });
       
       // Recarregar a lista de empresas após deletar
       await loadCompanies();
+      showSuccess('Empresa excluída!', 'A empresa foi removida com sucesso.');
     } catch (error) {
       console.error('Error deleting company:', error);
+      showError('Erro ao excluir empresa', 'Não foi possível excluir a empresa. Tente novamente.');
       // Fallback para mock
       setCompanies(prev => prev.filter(c => c.id !== id));
     }
@@ -680,6 +696,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Funções para residências
   const addResidence = async (residence: Omit<Residence, 'id'>) => {
     try {
+      console.log('📤 Adicionando residência...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES, {
         method: 'POST',
         body: JSON.stringify(residence)
@@ -687,17 +704,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (response && response.data) {
         setResidences(prev => [...prev, response.data]);
+        showSuccess('Residência adicionada!', 'A residência foi cadastrada com sucesso.');
       } else {
         setResidences(prev => [...prev, { ...residence, id: generateId() }]);
+        showSuccess('Residência adicionada!', 'A residência foi cadastrada com sucesso.');
       }
     } catch (error) {
       console.error('Error adding residence:', error);
+      showError('Erro ao adicionar residência', 'Não foi possível cadastrar a residência. Tente novamente.');
       setResidences(prev => [...prev, { ...residence, id: generateId() }]);
     }
   };
 
   const updateResidence = async (id: string, residence: Partial<Residence>) => {
     try {
+      console.log('📝 Atualizando residência...');
       const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(residence)
@@ -707,8 +728,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Recarregar a lista de residências após atualizar
       await loadResidences();
+      showSuccess('Residência atualizada!', 'Os dados da residência foram atualizados com sucesso.');
     } catch (error) {
       console.error('Error updating residence:', error);
+      showError('Erro ao atualizar residência', 'Não foi possível atualizar a residência. Tente novamente.');
       // Fallback para mock
       setResidences(prev => prev.map(r => r.id === id ? { ...r, ...residence } : r));
     }
@@ -716,14 +739,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteResidence = async (id: string) => {
     try {
+      console.log('🗑️ Excluindo residência...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
         method: 'DELETE'
       });
       
       setResidences(prev => prev.filter(r => r.id !== id));
       setResidents(prev => prev.filter(r => r.residenceId !== id));
+      showSuccess('Residência excluída!', 'A residência foi removida com sucesso.');
     } catch (error) {
       console.error('Error deleting residence:', error);
+      showError('Erro ao excluir residência', 'Não foi possível excluir a residência. Tente novamente.');
       setResidences(prev => prev.filter(r => r.id !== id));
       setResidents(prev => prev.filter(r => r.residenceId !== id));
     }
@@ -732,6 +758,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Funções para moradores
   const addResident = async (resident: Omit<Resident, 'id'>) => {
     try {
+      console.log('📤 Adicionando morador...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
         method: 'POST',
         body: JSON.stringify(resident)
@@ -739,38 +766,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (response && response.data) {
         setResidents(prev => [...prev, response.data]);
+        showSuccess('Morador adicionado!', 'O morador foi cadastrado com sucesso.');
       } else {
         setResidents(prev => [...prev, { ...resident, id: generateId() }]);
+        showSuccess('Morador adicionado!', 'O morador foi cadastrado com sucesso.');
       }
     } catch (error) {
       console.error('Error adding resident:', error);
+      showError('Erro ao adicionar morador', 'Não foi possível cadastrar o morador. Tente novamente.');
       setResidents(prev => [...prev, { ...resident, id: generateId() }]);
     }
   };
 
   const updateResident = async (id: string, resident: Partial<Resident>) => {
     try {
+      console.log('📝 Atualizando morador...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(resident)
       });
       
       setResidents(prev => prev.map(r => r.id === id ? { ...r, ...resident } : r));
+      showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
     } catch (error) {
       console.error('Error updating resident:', error);
+      showError('Erro ao atualizar morador', 'Não foi possível atualizar o morador. Tente novamente.');
       setResidents(prev => prev.map(r => r.id === id ? { ...r, ...resident } : r));
     }
   };
 
   const deleteResident = async (id: string) => {
     try {
+      console.log('🗑️ Excluindo morador...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
         method: 'DELETE'
       });
       
       setResidents(prev => prev.filter(r => r.id !== id));
+      showSuccess('Morador excluído!', 'O morador foi removido com sucesso.');
     } catch (error) {
       console.error('Error deleting resident:', error);
+      showError('Erro ao excluir morador', 'Não foi possível excluir o morador. Tente novamente.');
       setResidents(prev => prev.filter(r => r.id !== id));
     }
   };
@@ -778,6 +814,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Funções para funcionários
   const addEmployee = async (employee: Omit<Employee, 'id'>) => {
     try {
+      console.log('📤 Adicionando funcionário...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
         method: 'POST',
         body: JSON.stringify(employee)
@@ -785,38 +822,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (response && response.data) {
         setEmployees(prev => [...prev, response.data]);
+        showSuccess('Funcionário adicionado!', 'O funcionário foi cadastrado com sucesso.');
       } else {
         setEmployees(prev => [...prev, { ...employee, id: generateId() }]);
+        showSuccess('Funcionário adicionado!', 'O funcionário foi cadastrado com sucesso.');
       }
     } catch (error) {
       console.error('Error adding employee:', error);
+      showError('Erro ao adicionar funcionário', 'Não foi possível cadastrar o funcionário. Tente novamente.');
       setEmployees(prev => [...prev, { ...employee, id: generateId() }]);
     }
   };
 
   const updateEmployee = async (id: string, employee: Partial<Employee>) => {
     try {
+      console.log('📝 Atualizando funcionário...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(employee)
       });
       
       setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+      showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
     } catch (error) {
       console.error('Error updating employee:', error);
+      showError('Erro ao atualizar funcionário', 'Não foi possível atualizar o funcionário. Tente novamente.');
       setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
     }
   };
 
   const deleteEmployee = async (id: string) => {
     try {
+      console.log('🗑️ Excluindo funcionário...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
         method: 'DELETE'
       });
       
       setEmployees(prev => prev.filter(e => e.id !== id));
+      showSuccess('Funcionário excluído!', 'O funcionário foi removido com sucesso.');
     } catch (error) {
       console.error('Error deleting employee:', error);
+      showError('Erro ao excluir funcionário', 'Não foi possível excluir o funcionário. Tente novamente.');
       setEmployees(prev => prev.filter(e => e.id !== id));
     }
   };
@@ -824,6 +870,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Funções para convidados
   const addGuest = async (guest: Omit<Guest, 'id'>) => {
     try {
+      console.log('📤 Adicionando convidado...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS, {
         method: 'POST',
         body: JSON.stringify(guest)
@@ -831,39 +878,48 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (response && response.data) {
         setGuests(prev => [...prev, response.data]);
+        showSuccess('Convidado adicionado!', 'O convidado foi cadastrado com sucesso.');
       } else {
         setGuests(prev => [...prev, { ...guest, id: generateId() }]);
+        showSuccess('Convidado adicionado!', 'O convidado foi cadastrado com sucesso.');
       }
     } catch (error) {
       console.error('Error adding guest:', error);
+      showError('Erro ao adicionar convidado', 'Não foi possível cadastrar o convidado. Tente novamente.');
       setGuests(prev => [...prev, { ...guest, id: generateId() }]);
     }
   };
 
   const updateGuest = async (id: string, guest: Partial<Guest>) => {
     try {
+      console.log('📝 Atualizando convidado...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(guest)
       });
       
       setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
+      showSuccess('Convidado atualizado!', 'Os dados do convidado foram atualizados com sucesso.');
     } catch (error) {
       console.error('Error updating guest:', error);
+      showError('Erro ao atualizar convidado', 'Não foi possível atualizar o convidado. Tente novamente.');
       setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
     }
   };
 
   const deleteGuest = async (id: string) => {
     try {
+      console.log('🗑️ Excluindo convidado...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
         method: 'DELETE'
       });
       
       setGuests(prev => prev.filter(g => g.id !== id));
       setAppointments(prev => prev.filter(a => a.guestId !== id));
+      showSuccess('Convidado excluído!', 'O convidado foi removido com sucesso.');
     } catch (error) {
       console.error('Error deleting guest:', error);
+      showError('Erro ao excluir convidado', 'Não foi possível excluir o convidado. Tente novamente.');
       setGuests(prev => prev.filter(g => g.id !== id));
       setAppointments(prev => prev.filter(a => a.guestId !== id));
     }
@@ -872,6 +928,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Funções para agendamentos
   const addAppointment = async (appointment: Omit<Appointment, 'id'>) => {
     try {
+      console.log('📤 Adicionando agendamento...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS, {
         method: 'POST',
         body: JSON.stringify(appointment)
@@ -879,38 +936,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (response && response.data) {
         setAppointments(prev => [...prev, response.data]);
+        showSuccess('Agendamento criado!', 'O agendamento foi criado com sucesso.');
       } else {
         setAppointments(prev => [...prev, { ...appointment, id: generateId() }]);
+        showSuccess('Agendamento criado!', 'O agendamento foi criado com sucesso.');
       }
     } catch (error) {
       console.error('Error adding appointment:', error);
+      showError('Erro ao criar agendamento', 'Não foi possível criar o agendamento. Tente novamente.');
       setAppointments(prev => [...prev, { ...appointment, id: generateId() }]);
     }
   };
 
   const updateAppointment = async (id: string, appointment: Partial<Appointment>) => {
     try {
+      console.log('📝 Atualizando agendamento...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(appointment)
       });
       
       setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...appointment } : a));
+      showSuccess('Agendamento atualizado!', 'O agendamento foi atualizado com sucesso.');
     } catch (error) {
       console.error('Error updating appointment:', error);
+      showError('Erro ao atualizar agendamento', 'Não foi possível atualizar o agendamento. Tente novamente.');
       setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...appointment } : a));
     }
   };
 
   const deleteAppointment = async (id: string) => {
     try {
+      console.log('🗑️ Excluindo agendamento...');
       await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS}/${id}`, {
         method: 'DELETE'
       });
       
       setAppointments(prev => prev.filter(a => a.id !== id));
+      showSuccess('Agendamento excluído!', 'O agendamento foi removido com sucesso.');
     } catch (error) {
       console.error('Error deleting appointment:', error);
+      showError('Erro ao excluir agendamento', 'Não foi possível excluir o agendamento. Tente novamente.');
       setAppointments(prev => prev.filter(a => a.id !== id));
     }
   };

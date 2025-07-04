@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Search, X } from 'lucide-react';
+import { Users, Search, X, Save, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 interface EmployeeFormProps {
@@ -25,6 +25,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     status: employee?.status || 'Ativo'
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [loading, setLoading] = useState(false);
   
   // Estados para pesquisa de empresa
   const [companySearchTerm, setCompanySearchTerm] = useState('');
@@ -87,12 +88,22 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       return;
     }
 
-    if (employee) {
-      updateEmployee(employee.id, formData);
-    } else {
-      addEmployee(formData);
-    }
-    onClose();
+    setLoading(true);
+
+    const operation = employee 
+      ? updateEmployee(employee.id, formData)
+      : addEmployee(formData);
+
+    operation
+      .then(() => {
+        onClose();
+      })
+      .catch(() => {
+        // Erro já tratado no DataContext
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -406,9 +417,17 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           </button>
           <button
             type="submit"
+            disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {employee ? 'Atualizar' : 'Salvar'}
+            <div className="flex items-center space-x-2">
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              <span>{loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Salvar')}</span>
+            </div>
           </button>
         </div>
       </form>
