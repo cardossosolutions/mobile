@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
-import { useToast } from './hooks/useToast';
-import { useToast as useToastContext } from './contexts/ToastContext';
+import { useToast } from './contexts/ToastContext';
 import ToastContainer from './components/common/ToastContainer';
 import LoginScreen from './components/auth/LoginScreen';
 import Dashboard from './components/layout/Dashboard';
@@ -21,7 +20,7 @@ const LoadingScreen: React.FC = () => {
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { toasts, removeToast } = useToastContext();
+  const { toasts, removeToast } = useToast();
 
   // Mostrar loading enquanto verifica autenticação
   if (isLoading) {
@@ -43,9 +42,7 @@ function AppContent() {
 }
 
 function App() {
-  return (
-    <AppContent />
-  );
+  return <AppContent />;
 }
 
 export default App;
