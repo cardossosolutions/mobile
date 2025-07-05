@@ -20,7 +20,6 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
   const [loadingResidentData, setLoadingResidentData] = useState<Record<string, boolean>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResident, setEditingResident] = useState<any>(null);
-  const [loadingResidentData, setLoadingResidentData] = useState<Record<string, boolean>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     resident: any | null;
@@ -84,22 +83,6 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
       console.log(`📝 Carregando dados do morador ${resident.id} para edição...`);
       
       // Para moradores, podemos usar os dados já carregados
-      setEditingResident(resident);
-      setIsModalOpen(true);
-    } finally {
-      setLoadingResidentData(prev => ({ ...prev, [resident.id]: false }));
-    }
-  };
-
-  const filteredResidents = residenceResidents.filter(resident =>
-    resident.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resident.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleEdit = async (resident: any) => {
-    setLoadingResidentData(prev => ({ ...prev, [resident.id]: true }));
-    try {
-      // Para moradores, podemos usar os dados já carregados ou fazer uma requisição específica
       setEditingResident(resident);
       setIsModalOpen(true);
     } finally {

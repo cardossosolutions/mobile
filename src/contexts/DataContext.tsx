@@ -863,42 +863,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const deleteResident = async (id: string, residenceId: string) => {
-    try {
-      console.log('🗑️ Excluindo morador...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}/${residenceId}`, {
-        method: 'DELETE'
-      });
-      
-      // Recarregar a lista de moradores após deletar
-      await loadResidents(residenceId);
-      showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
-    } catch (error) {
-      console.error('Error updating resident:', error);
-      showError('Erro ao atualizar morador', 'Não foi possível atualizar o morador. Tente novamente.');
-      // Fallback para mock
-      setResidents(prev => prev.filter(r => r.id !== id));
-    }
-  };
-
-  const deleteResident = async (id: string, residenceId: string) => {
-    try {
-      console.log('🗑️ Excluindo morador...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}/${residenceId}`, {
-        method: 'DELETE'
-      });
-      
-      // Recarregar a lista de moradores após deletar
-      await loadResidents(residenceId);
-      showSuccess('Morador excluído!', 'O morador foi removido com sucesso.');
-    } catch (error) {
-      console.error('Error deleting resident:', error);
-      showError('Erro ao excluir morador', 'Não foi possível excluir o morador. Tente novamente.');
-      // Fallback para mock
-      setResidents(prev => prev.filter(r => r.id !== id));
-    }
-  };
-
   // Funções para funcionários
   const addEmployee = async (employee: Omit<Employee, 'id'>) => {
     try {
