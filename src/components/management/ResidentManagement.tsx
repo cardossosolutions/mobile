@@ -304,7 +304,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
                       <button
                         onClick={() => handleEdit(resident)}
                         disabled={loadingResidentData[resident.id]}
-                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors disabled:opacity-50"
                         title="Editar"
                       >
                         {loadingResidentData[resident.id] ? (
