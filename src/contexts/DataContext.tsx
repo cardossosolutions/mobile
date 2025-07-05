@@ -831,9 +831,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateResident = async (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => {
     try {
       console.log('📝 Atualizando morador...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(resident)
+        body: JSON.stringify({
+          name: resident.name,
+          email: resident.email,
+          mobile: resident.mobile
+        })
       });
       
       if (response) {
