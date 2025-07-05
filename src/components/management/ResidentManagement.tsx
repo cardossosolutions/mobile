@@ -198,14 +198,16 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
         <div className="flex items-center space-x-4">
           <button
             onClick={onBack}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex items-center space-x-2 px-3 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            title="Voltar para Residências"
           >
             <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Voltar</span>
           </button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Moradores</h1>
             <p className="text-gray-600">
-              {residence ? `Bloco ${residence.bloco} - Apt ${residence.apartamento}` : 'Residência não encontrada'}
+              {residence ? residence.name : 'Residência não encontrada'}
             </p>
           </div>
         </div>
