@@ -64,10 +64,29 @@ interface ResidenceResponse {
 
 interface Resident {
   id: string;
-  residenceId: string;
-  nome: string;
+  name: string;
   email: string;
-  celular: string;
+  mobile: string;
+}
+
+interface ResidentResponse {
+  current_page: number;
+  data: Resident[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
 }
 
 interface Employee {
@@ -102,12 +121,13 @@ interface DataContextType {
   residences: Residence[];
   residencePagination: ResidenceResponse | null;
   residents: Resident[];
+  residentPagination: ResidentResponse | null;
   employees: Employee[];
   guests: Guest[];
   appointments: Appointment[];
   loadCompanies: (page?: number, search?: string) => Promise<void>;
   loadResidences: (page?: number, search?: string) => Promise<void>;
-  loadResidents: () => Promise<void>;
+  loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
   loadEmployees: () => Promise<void>;
   loadGuests: () => Promise<void>;
   loadAppointments: () => Promise<void>;
@@ -117,9 +137,9 @@ interface DataContextType {
   addResidence: (residence: Omit<Residence, 'id'>) => Promise<void>;
   updateResidence: (id: string, residence: Partial<Residence>) => Promise<void>;
   deleteResidence: (id: string) => Promise<void>;
-  addResident: (resident: Omit<Resident, 'id'>) => Promise<void>;
-  updateResident: (id: string, resident: Partial<Resident>) => Promise<void>;
-  deleteResident: (id: string) => Promise<void>;
+  addResident: (resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
+  updateResident: (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
+  deleteResident: (id: string, residenceId: string) => Promise<void>;
   addEmployee: (employee: Omit<Employee, 'id'>) => Promise<void>;
   updateEmployee: (id: string, employee: Partial<Employee>) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
@@ -206,59 +226,51 @@ const mockResidences: Residence[] = [
 const mockResidents: Resident[] = [
   {
     id: '1',
-    residenceId: '1',
-    nome: 'João Silva Santos',
+    name: 'João Silva Santos',
     email: 'joao.silva@email.com',
-    celular: '(11) 99999-1111'
+    mobile: '11999991111'
   },
   {
     id: '2',
-    residenceId: '1',
-    nome: 'Fernanda Silva Santos',
+    name: 'Fernanda Silva Santos',
     email: 'fernanda.silva@email.com',
-    celular: '(11) 99999-1112'
+    mobile: '11999991112'
   },
   {
     id: '3',
-    residenceId: '2',
-    nome: 'Maria Oliveira Costa',
+    name: 'Maria Oliveira Costa',
     email: 'maria.oliveira@email.com',
-    celular: '(11) 88888-2222'
+    mobile: '11888882222'
   },
   {
     id: '4',
-    residenceId: '3',
-    nome: 'Carlos Eduardo Ferreira',
+    name: 'Carlos Eduardo Ferreira',
     email: 'carlos.ferreira@email.com',
-    celular: '(11) 77777-3333'
+    mobile: '11777773333'
   },
   {
     id: '5',
-    residenceId: '3',
-    nome: 'Lucia Ferreira',
+    name: 'Lucia Ferreira',
     email: 'lucia.ferreira@email.com',
-    celular: '(11) 77777-3334'
+    mobile: '11777773334'
   },
   {
     id: '6',
-    residenceId: '4',
-    nome: 'Ana Paula Rodrigues',
+    name: 'Ana Paula Rodrigues',
     email: 'ana.rodrigues@email.com',
-    celular: '(11) 66666-4444'
+    mobile: '11666664444'
   },
   {
     id: '7',
-    residenceId: '5',
-    nome: 'Roberto Lima Souza',
+    name: 'Roberto Lima Souza',
     email: 'roberto.lima@email.com',
-    celular: '(11) 55555-5555'
+    mobile: '11555555555'
   },
   {
     id: '8',
-    residenceId: '5',
-    nome: 'Claudia Lima Souza',
+    name: 'Claudia Lima Souza',
     email: 'claudia.lima@email.com',
-    celular: '(11) 55555-5556'
+    mobile: '11555555556'
   }
 ];
 
@@ -429,6 +441,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [residences, setResidences] = useState<Residence[]>([]);
   const [residencePagination, setResidencePagination] = useState<ResidenceResponse | null>(null);
   const [residents, setResidents] = useState<Resident[]>([]);
+  const [residentPagination, setResidentPagination] = useState<ResidentResponse | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -542,24 +555,40 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Função específica para carregar moradores
-  const loadResidents = async () => {
+  const loadResidents = async (residenceId: string, page: number = 1, search?: string) => {
     try {
-      console.log('🔄 Carregando moradores...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
+      console.log(`🔄 Carregando moradores da residência ${residenceId} - Página: ${page}, Busca: ${search || 'N/A'}`);
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.RESIDENTS}/${residenceId}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await apiRequest(url, {
         method: 'GET'
       });
       
       console.log('✅ Resposta dos moradores:', response);
       
-      if (response && response.data) {
-        setResidents(response.data);
-      } else if (response) {
-        setResidents(response);
+      if (response) {
+        // Converter os dados da API para o formato esperado
+        const residentsData: Resident[] = response.data.map((resident: any) => ({
+          id: resident.id.toString(),
+          name: resident.name,
+          email: resident.email,
+          mobile: resident.mobile
+        }));
+        
+        setResidents(residentsData);
+        setResidentPagination(response);
+        console.log('💾 Moradores carregados:', residentsData);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar moradores:', error);
       // Usar dados mock em caso de erro
       setResidents(mockResidents);
+      setResidentPagination(null);
     }
   };
 
@@ -762,7 +791,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Funções para moradores
-  const addResident = async (resident: Omit<Resident, 'id'>) => {
+  const addResident = async (resident: { residence_id: string; name: string; email: string; mobile: string }) => {
     try {
       console.log('📤 Adicionando morador...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
@@ -771,48 +800,101 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (response && response.data) {
-        setResidents(prev => [...prev, response.data]);
+        // Recarregar a lista de moradores após adicionar
+        await loadResidents(resident.residence_id);
         showSuccess('Morador adicionado!', 'O morador foi cadastrado com sucesso.');
       } else {
-        setResidents(prev => [...prev, { ...resident, id: generateId() }]);
+        // Fallback para mock
+        const newResident = {
+          id: generateId(),
+          name: resident.name,
+          email: resident.email,
+          mobile: resident.mobile
+        };
+        setResidents(prev => [...prev, newResident]);
         showSuccess('Morador adicionado!', 'O morador foi cadastrado com sucesso.');
       }
     } catch (error) {
       console.error('Error adding resident:', error);
       showError('Erro ao adicionar morador', 'Não foi possível cadastrar o morador. Tente novamente.');
-      setResidents(prev => [...prev, { ...resident, id: generateId() }]);
+      // Fallback para mock
+      const newResident = {
+        id: generateId(),
+        name: resident.name,
+        email: resident.email,
+        mobile: resident.mobile
+      };
+      setResidents(prev => [...prev, newResident]);
     }
   };
 
-  const updateResident = async (id: string, resident: Partial<Resident>) => {
+  const updateResident = async (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => {
     try {
       console.log('📝 Atualizando morador...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
         method: 'PUT',
         body: JSON.stringify(resident)
       });
       
-      setResidents(prev => prev.map(r => r.id === id ? { ...r, ...resident } : r));
+      if (response) {
+        // Recarregar a lista de moradores após atualizar
+        await loadResidents(resident.residence_id);
+        showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
+      } else {
+        // Fallback para mock
+        setResidents(prev => prev.map(r => r.id === id ? { 
+          ...r, 
+          name: resident.name,
+          email: resident.email,
+          mobile: resident.mobile
+        } : r));
+        showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
+      }
+    } catch (error) {
+      console.error('Error updating resident:', error);
+      showError('Erro ao atualizar morador', 'Não foi possível atualizar o morador. Tente novamente.');
+      // Fallback para mock
+      setResidents(prev => prev.map(r => r.id === id ? { 
+        ...r, 
+        name: resident.name,
+        email: resident.email,
+        mobile: resident.mobile
+      } : r));
+    }
+  };
+
+  const deleteResident = async (id: string, residenceId: string) => {
+    try {
+      console.log('🗑️ Excluindo morador...');
+      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}/${residenceId}`, {
+        method: 'DELETE'
+      });
+      
+      // Recarregar a lista de moradores após deletar
+      await loadResidents(residenceId);
       showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
     } catch (error) {
       console.error('Error updating resident:', error);
       showError('Erro ao atualizar morador', 'Não foi possível atualizar o morador. Tente novamente.');
-      setResidents(prev => prev.map(r => r.id === id ? { ...r, ...resident } : r));
+      // Fallback para mock
+      setResidents(prev => prev.filter(r => r.id !== id));
     }
   };
 
-  const deleteResident = async (id: string) => {
+  const deleteResident = async (id: string, residenceId: string) => {
     try {
       console.log('🗑️ Excluindo morador...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}/${residenceId}`, {
         method: 'DELETE'
       });
       
-      setResidents(prev => prev.filter(r => r.id !== id));
+      // Recarregar a lista de moradores após deletar
+      await loadResidents(residenceId);
       showSuccess('Morador excluído!', 'O morador foi removido com sucesso.');
     } catch (error) {
       console.error('Error deleting resident:', error);
       showError('Erro ao excluir morador', 'Não foi possível excluir o morador. Tente novamente.');
+      // Fallback para mock
       setResidents(prev => prev.filter(r => r.id !== id));
     }
   };
@@ -994,6 +1076,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       residences,
       residencePagination,
       residents,
+      residentPagination,
       employees,
       guests,
       appointments,

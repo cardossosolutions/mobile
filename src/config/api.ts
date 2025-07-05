@@ -10,7 +10,7 @@ export const API_CONFIG = {
     USER_PROFILE: '/user/me',
     COMPANIES: '/company',
     RESIDENCES: '/residence',
-    RESIDENTS: '/residents',
+    RESIDENTS: '/resident',
     EMPLOYEES: '/employees',
     GUESTS: '/guests',
     APPOINTMENTS: '/appointments',

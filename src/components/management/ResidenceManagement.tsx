@@ -33,10 +33,7 @@ const ResidenceManagement: React.FC = () => {
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
-        await Promise.all([
-          loadResidences(),
-          loadResidents() // Carregar moradores também para o gerenciamento
-        ]);
+        await loadResidences();
       } finally {
         setInitialLoading(false);
       }

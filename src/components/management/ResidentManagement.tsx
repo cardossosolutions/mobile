@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, ArrowLeft, User } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ArrowLeft, User, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { apiRequest, API_CONFIG } from '../../config/api';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
 import ResidentForm from '../forms/ResidentForm';
+import { useEffect } from 'react';
 
 interface ResidentManagementProps {
   residenceId: string;
@@ -11,8 +13,11 @@ interface ResidentManagementProps {
 }
 
 const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, onBack }) => {
-  const { residents, residences, deleteResident } = useData();
+  const { residents, residentPagination, residences, loadResidents, deleteResident } = useData();
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingResidentData, setLoadingResidentData] = useState<Record<string, boolean>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingResident, setEditingResident] = useState<any>(null);
   const [loadingResidentData, setLoadingResidentData] = useState<Record<string, boolean>>({});
@@ -27,7 +32,64 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
   });
 
   const residence = residences.find(r => r.id === residenceId);
-  const residenceResidents = residents.filter(r => r.residenceId === residenceId);
+
+  // Carregar moradores quando o componente for montado
+  useEffect(() => {
+    console.log(`👥 ResidentManagement montado - carregando moradores da residência ${residenceId}...`);
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await loadResidents(residenceId);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    loadInitialData();
+  }, [residenceId]);
+
+  // Debounce para busca
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        handleSearch();
+      } else {
+        loadResidents(residenceId, 1); // Recarregar primeira página sem busca
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      await loadResidents(residenceId, 1, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    setLoading(true);
+    try {
+      await loadResidents(residenceId, page, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = async (resident: any) => {
+    setLoadingResidentData(prev => ({ ...prev, [resident.id]: true }));
+    try {
+      console.log(`📝 Carregando dados do morador ${resident.id} para edição...`);
+      
+      // Para moradores, podemos usar os dados já carregados
+      setEditingResident(resident);
+      setIsModalOpen(true);
+    } finally {
+      setLoadingResidentData(prev => ({ ...prev, [resident.id]: false }));
+    }
+  };
 
   const filteredResidents = residenceResidents.filter(resident =>
     resident.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,7 +121,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
     setDeleteConfirmation(prev => ({ ...prev, loading: true }));
 
     try {
-      await deleteResident(deleteConfirmation.resident.id);
+      await deleteResident(deleteConfirmation.resident.id, residenceId);
       
       setDeleteConfirmation({
         isOpen: false,
@@ -83,6 +145,68 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingResident(null);
+  };
+
+  const handleFormSuccess = () => {
+    handleCloseModal();
+    // Recarregar a página atual após sucesso
+    const currentPage = residentPagination?.current_page || 1;
+    loadResidents(residenceId, currentPage, searchTerm);
+  };
+
+  // Função para renderizar os botões de paginação
+  const renderPaginationButtons = () => {
+    if (!residentPagination || residentPagination.last_page <= 1) {
+      return null;
+    }
+
+    const buttons = [];
+    const currentPage = residentPagination.current_page;
+    const lastPage = residentPagination.last_page;
+
+    // Botão "Anterior"
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1 || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+    );
+
+    // Botões de páginas (simplificado para economizar espaço)
+    for (let page = Math.max(1, currentPage - 1); page <= Math.min(lastPage, currentPage + 1); page++) {
+      buttons.push(
+        <button
+          key={page}
+          onClick={() => handlePageChange(page)}
+          disabled={loading}
+          className={`px-3 py-2 text-sm font-medium border border-gray-300 disabled:opacity-50 ${
+            page === currentPage
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-500 bg-white hover:bg-gray-50'
+          }`}
+        >
+          {page}
+        </button>
+      );
+    }
+
+    // Botão "Próximo"
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === lastPage || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    );
+
+    return buttons;
   };
 
   return (
@@ -123,9 +247,39 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {loading && (
+            <div className="flex items-center space-x-2 text-purple-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+              <span className="text-sm">Carregando...</span>
+            </div>
+          )}
         </div>
 
+        {/* Informações de paginação */}
+        {residentPagination && (
+          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+            <div>
+              Mostrando {residentPagination.from} a {residentPagination.to} de {residentPagination.total} moradores
+            </div>
+            <div>
+              Página {residentPagination.current_page} de {residentPagination.last_page}
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
+          {/* Loading inicial */}
+          {initialLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center space-x-3 text-purple-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-lg font-medium">Carregando moradores...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Tabela de moradores */}
+          {!initialLoading && (
           <table className="w-full table-auto">
             <thead>
               <tr className="bg-gray-50">
@@ -144,21 +298,21 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredResidents.map((resident) => (
+              {residents.map((resident) => (
                 <tr key={resident.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="bg-purple-100 p-2 rounded-full mr-3">
                         <User className="w-5 h-5 text-purple-600" />
                       </div>
-                      <div className="text-sm font-medium text-gray-900">{resident.nome}</div>
+                      <div className="text-sm font-medium text-gray-900">{resident.name}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {resident.email}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {resident.celular}
+                    {resident.mobile}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -187,22 +341,37 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
-        {filteredResidents.length === 0 && (
+        {residents.length === 0 && !loading && !initialLoading && (
           <div className="text-center py-8">
             <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhum morador encontrado</p>
+            <p className="text-gray-500">
+              {searchTerm ? 'Nenhum morador encontrado para a busca realizada' : 'Nenhum morador encontrado'}
+            </p>
+          </div>
+        )}
+
+        {/* Controles de paginação */}
+        {residentPagination && residentPagination.last_page > 1 && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-600">
+              {residentPagination.total} {residentPagination.total === 1 ? 'morador' : 'moradores'} no total
+            </div>
+            <div className="flex items-center space-x-1">
+              {renderPaginationButtons()}
+            </div>
           </div>
         )}
       </div>
 
       {/* Modal de Formulário */}
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+      <Modal isOpen={isModalOpen} onClose={handleFormSuccess}>
         <ResidentForm
           resident={editingResident}
           residenceId={residenceId}
-          onClose={handleCloseModal}
+          onClose={handleFormSuccess}
         />
       </Modal>
 
@@ -212,7 +381,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Confirmar Exclusão"
-        message={`Tem certeza que deseja excluir o morador "${deleteConfirmation.resident?.nome}"? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir o morador "${deleteConfirmation.resident?.name}"? Esta ação não pode ser desfeita.`}
         confirmText="Excluir Morador"
         cancelText="Cancelar"
         type="danger"

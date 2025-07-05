@@ -10,17 +10,17 @@ interface ResidentFormProps {
 }
 
 interface FormErrors {
-  nome?: string;
+  name?: string;
   email?: string;
-  celular?: string;
+  mobile?: string;
 }
 
 const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onClose }) => {
   const { addResident, updateResident } = useData();
   const [formData, setFormData] = useState({
-    nome: resident?.nome || '',
+    name: resident?.name || '',
     email: resident?.email || '',
-    celular: resident?.celular || ''
+    mobile: resident?.mobile || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
@@ -28,8 +28,8 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.nome) {
-      newErrors.nome = 'Nome é obrigatório';
+    if (!formData.name) {
+      newErrors.name = 'Nome é obrigatório';
     }
 
     if (!formData.email) {
@@ -38,10 +38,10 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
       newErrors.email = 'Email deve ter um formato válido';
     }
 
-    if (!formData.celular) {
-      newErrors.celular = 'Celular é obrigatório';
-    } else if (!phoneMasks.isValid(formData.celular)) {
-      newErrors.celular = 'Celular deve ter um formato válido';
+    if (!formData.mobile) {
+      newErrors.mobile = 'Celular é obrigatório';
+    } else if (!phoneMasks.isValid(formData.mobile)) {
+      newErrors.mobile = 'Celular deve ter um formato válido';
     }
 
     setErrors(newErrors);
@@ -57,15 +57,17 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
 
     setLoading(true);
 
-    // Remover máscara do celular antes de enviar
+    // Preparar dados para envio
     const dataToSubmit = {
-      ...formData,
-      celular: phoneMasks.unmask(formData.celular)
+      residence_id: residenceId,
+      name: formData.name,
+      email: formData.email,
+      mobile: phoneMasks.unmask(formData.mobile)
     };
 
     const operation = resident 
       ? updateResident(resident.id, dataToSubmit)
-      : addResident({ ...dataToSubmit, residenceId });
+      : addResident(dataToSubmit);
 
     operation
       .then(() => {
@@ -84,7 +86,7 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
     let maskedValue = value;
 
     // Aplicar máscara para celular
-    if (name === 'celular') {
+    if (name === 'mobile') {
       maskedValue = phoneMasks.mobile(value);
     }
 
@@ -120,16 +122,16 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
           </label>
           <input
             type="text"
-            name="nome"
-            value={formData.nome}
+            name="name"
+            value={formData.name}
             onChange={handleChange}
             placeholder="Nome completo do morador"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.nome ? 'border-red-500' : 'border-gray-300'
+              errors.name ? 'border-red-500' : 'border-gray-300'
             }`}
           />
-          {errors.nome && (
-            <p className="text-red-500 text-sm mt-1">{errors.nome}</p>
+          {errors.name && (
+            <p className="text-red-500 text-sm mt-1">{errors.name}</p>
           )}
         </div>
 
@@ -158,17 +160,17 @@ const ResidentForm: React.FC<ResidentFormProps> = ({ resident, residenceId, onCl
           </label>
           <input
             type="text"
-            name="celular"
-            value={formData.celular}
+            name="mobile"
+            value={formData.mobile}
             onChange={handleChange}
             placeholder="(11) 99999-9999"
             maxLength={15}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.celular ? 'border-red-500' : 'border-gray-300'
+              errors.mobile ? 'border-red-500' : 'border-gray-300'
             }`}
           />
-          {errors.celular && (
-            <p className="text-red-500 text-sm mt-1">{errors.celular}</p>
+          {errors.mobile && (
+            <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>
           )}
           <p className="text-xs text-gray-500 mt-1">Número do celular com DDD</p>
         </div>
