@@ -12,8 +12,6 @@ const GuestManagement: React.FC = () => {
   const [editingGuest, setEditingGuest] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingGuestData, setLoadingGuestData] = useState<Record<string, boolean>>({});
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [loadingGuestData, setLoadingGuestData] = useState<Record<string, boolean>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     guest: any | null;
@@ -36,14 +34,6 @@ const GuestManagement: React.FC = () => {
       }
     };
     loadInitialData();
-      setInitialLoading(true);
-      try {
-        await loadGuests();
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-    loadInitialData();
   }, []);
 
   const filteredGuests = guests.filter(guest =>
@@ -56,12 +46,6 @@ const GuestManagement: React.FC = () => {
   const handleEdit = async (guest: any) => {
     setLoadingGuestData(prev => ({ ...prev, [guest.id]: true }));
     try {
-      // Para convidados, podemos usar os dados já carregados ou fazer uma requisição específica
-      setEditingGuest(guest);
-      setIsModalOpen(true);
-    } finally {
-      setLoadingGuestData(prev => ({ ...prev, [guest.id]: false }));
-    }
       // Para convidados, podemos usar os dados já carregados ou fazer uma requisição específica
       setEditingGuest(guest);
       setIsModalOpen(true);
@@ -150,94 +134,76 @@ const GuestManagement: React.FC = () => {
 
           {/* Tabela de convidados */}
           {!initialLoading && (
-          {/* Loading inicial */}
-          {initialLoading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center space-x-3 text-orange-600">
-                <Loader2 className="w-6 h-6 animate-spin" />
-                <span className="text-lg font-medium">Carregando convidados...</span>
-              </div>
-            </div>
-          )}
-
-          {/* Tabela de convidados */}
-          {!initialLoading && (
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nome
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Documentos
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Veículo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Observações
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredGuests.map((guest) => (
-                <tr key={guest.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="bg-orange-100 p-2 rounded-full mr-3">
-                        <UserCheck className="w-5 h-5 text-orange-600" />
-                      </div>
-                      <div className="text-sm font-medium text-gray-900">{guest.nome}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div>CPF: {guest.cpf}</div>
-                    <div className="text-gray-500">RG: {guest.rg}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {guest.placaVeiculo || 'Não informado'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="max-w-xs truncate">
-                      {guest.observacoes || 'Sem observações'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEdit(guest)}
-                        disabled={loadingGuestData[guest.id]}
-                        disabled={loadingGuestData[guest.id]}
-                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                        title="Editar"
-                      >
-                        {loadingGuestData[guest.id] ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Edit className="w-4 h-4" />
-                        )}
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Edit className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(guest)}
-                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nome
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Documentos
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Veículo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Observações
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ações
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          )}
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredGuests.map((guest) => (
+                  <tr key={guest.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="bg-orange-100 p-2 rounded-full mr-3">
+                          <UserCheck className="w-5 h-5 text-orange-600" />
+                        </div>
+                        <div className="text-sm font-medium text-gray-900">{guest.nome}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div>CPF: {guest.cpf}</div>
+                      <div className="text-gray-500">RG: {guest.rg}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {guest.placaVeiculo || 'Não informado'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="max-w-xs truncate">
+                        {guest.observacoes || 'Sem observações'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEdit(guest)}
+                          disabled={loadingGuestData[guest.id]}
+                          className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                          title="Editar"
+                        >
+                          {loadingGuestData[guest.id] ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Edit className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(guest)}
+                          className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
 
