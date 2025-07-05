@@ -834,6 +834,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
         method: 'PUT',
         body: JSON.stringify({
+          residence_id: Number(resident.residence_id),
           name: resident.name,
           email: resident.email,
           mobile: resident.mobile
