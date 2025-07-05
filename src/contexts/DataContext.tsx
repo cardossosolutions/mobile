@@ -863,6 +863,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const deleteResident = async (id: string, residenceId: string) => {
+    try {
+      console.log('🗑️ Excluindo morador...');
+      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}/${residenceId}`, {
+        method: 'DELETE'
+      });
+      
+      setResidents(prev => prev.filter(r => r.id !== id));
+      showSuccess('Morador excluído!', 'O morador foi removido com sucesso.');
+    } catch (error) {
+      console.error('Error deleting resident:', error);
+      showError('Erro ao excluir morador', 'Não foi possível excluir o morador. Tente novamente.');
+      setResidents(prev => prev.filter(r => r.id !== id));
+    }
+  };
+
   // Funções para funcionários
   const addEmployee = async (employee: Omit<Employee, 'id'>) => {
     try {
