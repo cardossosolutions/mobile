@@ -204,11 +204,13 @@ const EmployeeManagement: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const statusColors = {
       'active': 'bg-green-100 text-green-800',
-      'inactive': 'bg-red-100 text-red-800'
+      'inactive': 'bg-red-100 text-red-800',
+      'no-active': 'bg-red-100 text-red-800'
     };
     const statusLabels = {
       'active': 'Ativo',
-      'inactive': 'Inativo'
+      'inactive': 'Inativo',
+      'no-active': 'Inativo'
     };
     return {
       color: statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800',
