@@ -19,7 +19,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const [formData, setFormData] = useState({
     name: employee?.name || '',
     email: employee?.email || '',
-    role: employee?.permission === 'Administrador' ? 1 : employee?.permission === 'Funcionário' ? 3 : 3,
+    role: employee?.permission === 'Administrador' ? 2 : employee?.permission === 'Funcionário' ? 3 : 3,
     status: employee?.status === 'active' ? 1 : (employee?.status === 'inactive' || employee?.status === 'no-active') ? 2 : 1
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -27,8 +27,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const [passwordData, setPasswordData] = useState<{ message: string; password: string } | null>(null);
 
   const roleOptions = [
-    { value: 1, label: 'Administrador' },
-    { value: 2, label: 'Funcionário' }
+    { value: 2, label: 'Administrador' },
+    { value: 3, label: 'Funcionário' }
   ];
 
   const statusOptions = [

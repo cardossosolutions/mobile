@@ -939,7 +939,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const newEmployee = { 
           ...employee, 
           id: generateId(), 
-          permission: employee.role === 1 ? 'Administrador' : 'Funcionário', 
+          permission: employee.role === 2 ? 'Administrador' : 'Funcionário', 
           status: employee.status === 1 ? 'active' : 'inactive' 
         };
         setEmployees(prev => [...prev, newEmployee]);
@@ -970,7 +970,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const updatedEmployee = {
           name: employee.name,
           email: employee.email,
-          permission: employee.role === 1 ? 'Administrador' : 'Funcionário',
+          permission: employee.role === 2 ? 'Administrador' : 'Funcionário',
           status: employee.status === 1 ? 'active' : 'inactive'
         };
         setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updatedEmployee } : e));
@@ -983,7 +983,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const updatedEmployee = {
         name: employee.name,
         email: employee.email,
-        permission: employee.role === 1 ? 'Administrador' : 'Funcionário',
+        permission: employee.role === 2 ? 'Administrador' : 'Funcionário',
         status: employee.status === 1 ? 'active' : 'inactive'
       };
       setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updatedEmployee } : e));
