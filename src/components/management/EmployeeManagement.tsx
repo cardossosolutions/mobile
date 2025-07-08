@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Users, Filter, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Users, Filter, Loader2, ChevronLeft, ChevronRight, Key } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { apiRequest, API_CONFIG } from '../../config/api';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
 import EmployeeForm from '../forms/EmployeeForm';
+import PasswordDisplayModal from '../common/PasswordDisplayModal';
 
 const EmployeeManagement: React.FC = () => {
-  const { employees, companies, loadEmployees, loadCompanies, deleteEmployee } = useData();
+  const { employees, employeePagination, loadEmployees, deleteEmployee, resetEmployeePassword } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [permissionFilter, setPermissionFilter] = useState('');
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingEmployeeData, setLoadingEmployeeData] = useState<Record<string, boolean>>({});
+  const [loadingPasswordReset, setLoadingPasswordReset] = useState<Record<string, boolean>>({});
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [passwordData, setPasswordData] = useState<{ message: string; password: string } | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     employee: any | null;
@@ -24,19 +29,16 @@ const EmployeeManagement: React.FC = () => {
     loading: false
   });
 
-  const statusOptions = ['Ativo', 'Inativo', 'Suspenso'];
-  const permissionOptions = ['Administrador', 'Operador', 'Visitante'];
+  const statusOptions = ['active', 'inactive'];
+  const permissionOptions = ['Administrador', 'Funcionário'];
 
-  // Carregar funcionários e empresas quando o componente for montado
+  // Carregar funcionários quando o componente for montado
   useEffect(() => {
-    console.log('👥 EmployeeManagement montado - carregando funcionários e empresas...');
+    console.log('👥 EmployeeManagement montado - carregando funcionários...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
-        await Promise.all([
-          loadEmployees(),
-          loadCompanies() // Necessário para o dropdown de empresas
-        ]);
+        await loadEmployees();
       } finally {
         setInitialLoading(false);
       }
@@ -44,23 +46,91 @@ const EmployeeManagement: React.FC = () => {
     loadInitialData();
   }, []);
 
-  const filteredEmployees = employees.filter(employee => {
-    const matchesSearch = employee.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || employee.status === statusFilter;
-    const matchesPermission = !permissionFilter || employee.permissao === permissionFilter;
-    
-    return matchesSearch && matchesStatus && matchesPermission;
-  });
+  // Debounce para busca
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '' || statusFilter !== '' || permissionFilter !== '') {
+        handleSearch();
+      } else {
+        loadEmployees(1); // Recarregar primeira página sem busca
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, statusFilter, permissionFilter]);
+
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      // Construir parâmetros de busca
+      const searchParams = new URLSearchParams();
+      if (searchTerm) searchParams.append('search', searchTerm);
+      if (statusFilter) searchParams.append('status', statusFilter);
+      if (permissionFilter) searchParams.append('permission', permissionFilter);
+      
+      const searchQuery = searchParams.toString();
+      await loadEmployees(1, searchQuery);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    setLoading(true);
+    try {
+      // Construir parâmetros de busca
+      const searchParams = new URLSearchParams();
+      if (searchTerm) searchParams.append('search', searchTerm);
+      if (statusFilter) searchParams.append('status', statusFilter);
+      if (permissionFilter) searchParams.append('permission', permissionFilter);
+      
+      const searchQuery = searchParams.toString();
+      await loadEmployees(page, searchQuery);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = async (employee: any) => {
     setLoadingEmployeeData(prev => ({ ...prev, [employee.id]: true }));
     try {
-      // Para funcionários, podemos usar os dados já carregados ou fazer uma requisição específica
+      console.log(`📝 Carregando dados do funcionário ${employee.id} para edição...`);
+      
+      // Fazer requisição para obter dados completos do funcionário
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${employee.id}`, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Dados do funcionário carregados:', response);
+      
+      if (response) {
+        setEditingEmployee(response);
+        setIsModalOpen(true);
+      } else {
+        console.error('❌ Dados do funcionário não encontrados');
+        // Fallback para dados básicos se a API falhar
+        setEditingEmployee(employee);
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados do funcionário:', error);
+      // Fallback para dados básicos se a API falhar
       setEditingEmployee(employee);
       setIsModalOpen(true);
     } finally {
       setLoadingEmployeeData(prev => ({ ...prev, [employee.id]: false }));
+    }
+  };
+
+  const handleResetPassword = async (employee: any) => {
+    setLoadingPasswordReset(prev => ({ ...prev, [employee.id]: true }));
+    try {
+      const result = await resetEmployeePassword(employee.id);
+      setPasswordData(result);
+    } catch (error) {
+      console.error('Erro ao resetar senha:', error);
+    } finally {
+      setLoadingPasswordReset(prev => ({ ...prev, [employee.id]: false }));
     }
   };
 
@@ -85,6 +155,18 @@ const EmployeeManagement: React.FC = () => {
         employee: null,
         loading: false
       });
+
+      // Recarregar a página atual após exclusão
+      const currentPage = employeePagination?.current_page || 1;
+      
+      // Construir parâmetros de busca
+      const searchParams = new URLSearchParams();
+      if (searchTerm) searchParams.append('search', searchTerm);
+      if (statusFilter) searchParams.append('status', statusFilter);
+      if (permissionFilter) searchParams.append('permission', permissionFilter);
+      
+      const searchQuery = searchParams.toString();
+      await loadEmployees(currentPage, searchQuery);
     } catch (error) {
       console.error('Erro ao excluir funcionário:', error);
       setDeleteConfirmation(prev => ({ ...prev, loading: false }));
@@ -104,27 +186,140 @@ const EmployeeManagement: React.FC = () => {
     setEditingEmployee(null);
   };
 
-  const getCompanyName = (companyId: string) => {
-    const company = companies.find(c => c.id === companyId);
-    return company ? company.fantasy_name : 'Empresa não encontrada';
+  const handleFormSuccess = () => {
+    handleCloseModal();
+    // Recarregar a página atual após sucesso
+    const currentPage = employeePagination?.current_page || 1;
+    
+    // Construir parâmetros de busca
+    const searchParams = new URLSearchParams();
+    if (searchTerm) searchParams.append('search', searchTerm);
+    if (statusFilter) searchParams.append('status', statusFilter);
+    if (permissionFilter) searchParams.append('permission', permissionFilter);
+    
+    const searchQuery = searchParams.toString();
+    loadEmployees(currentPage, searchQuery);
   };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
-      'Ativo': 'bg-green-100 text-green-800',
-      'Inativo': 'bg-gray-100 text-gray-800',
-      'Suspenso': 'bg-red-100 text-red-800'
+      'active': 'bg-green-100 text-green-800',
+      'inactive': 'bg-red-100 text-red-800'
     };
-    return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
+    const statusLabels = {
+      'active': 'Ativo',
+      'inactive': 'Inativo'
+    };
+    return {
+      color: statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800',
+      label: statusLabels[status as keyof typeof statusLabels] || status
+    };
   };
 
   const getPermissionBadge = (permission: string) => {
     const permissionColors = {
       'Administrador': 'bg-purple-100 text-purple-800',
-      'Operador': 'bg-blue-100 text-blue-800',
-      'Visitante': 'bg-yellow-100 text-yellow-800'
+      'Funcionário': 'bg-blue-100 text-blue-800'
     };
     return permissionColors[permission as keyof typeof permissionColors] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Função para renderizar os botões de paginação
+  const renderPaginationButtons = () => {
+    if (!employeePagination || employeePagination.last_page <= 1) {
+      return null;
+    }
+
+    const buttons = [];
+    const currentPage = employeePagination.current_page;
+    const lastPage = employeePagination.last_page;
+
+    // Botão "Anterior"
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1 || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+    );
+
+    // Botões de páginas
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(lastPage, currentPage + 2);
+
+    if (startPage > 1) {
+      buttons.push(
+        <button
+          key={1}
+          onClick={() => handlePageChange(1)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(
+          <span key="ellipsis1" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+    }
+
+    for (let page = startPage; page <= endPage; page++) {
+      buttons.push(
+        <button
+          key={page}
+          onClick={() => handlePageChange(page)}
+          disabled={loading}
+          className={`px-3 py-2 text-sm font-medium border border-gray-300 disabled:opacity-50 ${
+            page === currentPage
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-500 bg-white hover:bg-gray-50'
+          }`}
+        >
+          {page}
+        </button>
+      );
+    }
+
+    if (endPage < lastPage) {
+      if (endPage < lastPage - 1) {
+        buttons.push(
+          <span key="ellipsis2" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+      buttons.push(
+        <button
+          key={lastPage}
+          onClick={() => handlePageChange(lastPage)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {lastPage}
+        </button>
+      );
+    }
+
+    // Botão "Próximo"
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === lastPage || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    );
+
+    return buttons;
   };
 
   return (
@@ -159,7 +354,9 @@ const EmployeeManagement: React.FC = () => {
           >
             <option value="">Todos os Status</option>
             {statusOptions.map(status => (
-              <option key={status} value={status}>{status}</option>
+              <option key={status} value={status}>
+                {status === 'active' ? 'Ativo' : 'Inativo'}
+              </option>
             ))}
           </select>
           <select
@@ -172,7 +369,25 @@ const EmployeeManagement: React.FC = () => {
               <option key={permission} value={permission}>{permission}</option>
             ))}
           </select>
+          {loading && (
+            <div className="flex items-center space-x-2 text-blue-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm">Carregando...</span>
+            </div>
+          )}
         </div>
+
+        {/* Informações de paginação */}
+        {employeePagination && (
+          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+            <div>
+              Mostrando {employeePagination.from} a {employeePagination.to} de {employeePagination.total} funcionários
+            </div>
+            <div>
+              Página {employeePagination.current_page} de {employeePagination.last_page}
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           {/* Loading inicial */}
@@ -194,9 +409,6 @@ const EmployeeManagement: React.FC = () => {
                   Funcionário
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Empresa
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Permissão
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -208,66 +420,92 @@ const EmployeeManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="bg-blue-100 p-2 rounded-full mr-3">
-                        <Users className="w-5 h-5 text-blue-600" />
+              {employees.map((employee) => {
+                const statusBadge = getStatusBadge(employee.status);
+                return (
+                  <tr key={employee.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="bg-blue-100 p-2 rounded-full mr-3">
+                          <Users className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                          <div className="text-sm text-gray-500">{employee.email}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{employee.nome}</div>
-                        <div className="text-sm text-gray-500">{employee.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPermissionBadge(employee.permission)}`}>
+                        {employee.permission}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusBadge.color}`}>
+                        {statusBadge.label}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleResetPassword(employee)}
+                          disabled={loadingPasswordReset[employee.id]}
+                          className="text-orange-600 hover:text-orange-800 p-1 rounded-full hover:bg-orange-50 transition-colors"
+                          title="Resetar Senha"
+                        >
+                          {loadingPasswordReset[employee.id] ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Key className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleEdit(employee)}
+                          disabled={loadingEmployeeData[employee.id]}
+                          className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                          title="Editar"
+                        >
+                          {loadingEmployeeData[employee.id] ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Edit className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(employee)}
+                          className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {getCompanyName(employee.companyId)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPermissionBadge(employee.permissao)}`}>
-                      {employee.permissao}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(employee.status)}`}>
-                      {employee.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEdit(employee)}
-                        disabled={loadingEmployeeData[employee.id]}
-                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                        title="Editar"
-                      >
-                        {loadingEmployeeData[employee.id] ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Edit className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(employee)}
-                        className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50 transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           )}
         </div>
 
-        {filteredEmployees.length === 0 && !initialLoading && (
+        {employees.length === 0 && !loading && !initialLoading && (
           <div className="text-center py-8">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhum funcionário encontrado</p>
+            <p className="text-gray-500">
+              {searchTerm ? 'Nenhum funcionário encontrado para a busca realizada' : 'Nenhum funcionário encontrado'}
+            </p>
+          </div>
+        )}
+
+        {/* Controles de paginação */}
+        {employeePagination && employeePagination.last_page > 1 && !initialLoading && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-600">
+              {employeePagination.total} {employeePagination.total === 1 ? 'funcionário' : 'funcionários'} no total
+            </div>
+            <div className="flex items-center space-x-1">
+              {renderPaginationButtons()}
+            </div>
           </div>
         )}
       </div>
@@ -276,9 +514,16 @@ const EmployeeManagement: React.FC = () => {
       <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
         <EmployeeForm
           employee={editingEmployee}
-          onClose={handleCloseModal}
+          onClose={handleFormSuccess}
         />
       </Modal>
+
+      {/* Modal de Exibição de Senha */}
+      <PasswordDisplayModal
+        isOpen={!!passwordData}
+        onClose={() => setPasswordData(null)}
+        passwordData={passwordData}
+      />
 
       {/* Modal de Confirmação de Exclusão */}
       <ConfirmationModal
@@ -286,7 +531,7 @@ const EmployeeManagement: React.FC = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Confirmar Exclusão"
-        message={`Tem certeza que deseja excluir o funcionário "${deleteConfirmation.employee?.nome}"? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir o funcionário "${deleteConfirmation.employee?.name}"? Esta ação não pode ser desfeita.`}
         confirmText="Excluir Funcionário"
         cancelText="Cancelar"
         type="danger"

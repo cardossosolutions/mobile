@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Users, Search, X, Save, Loader2 } from 'lucide-react';
+import { Users, Save, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import PasswordDisplayModal from '../common/PasswordDisplayModal';
 
 interface EmployeeFormProps {
   employee?: any;
@@ -8,55 +9,32 @@ interface EmployeeFormProps {
 }
 
 interface FormErrors {
-  nome?: string;
+  name?: string;
   email?: string;
-  companyId?: string;
-  permissao?: string;
-  status?: string;
+  role?: string;
 }
 
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
-  const { addEmployee, updateEmployee, companies } = useData();
+  const { addEmployee, updateEmployee } = useData();
   const [formData, setFormData] = useState({
-    nome: employee?.nome || '',
+    name: employee?.name || '',
     email: employee?.email || '',
-    companyId: employee?.companyId || '',
-    permissao: employee?.permissao || '',
-    status: employee?.status || 'Ativo'
+    role: employee?.permission === 'Administrador' ? 1 : employee?.permission === 'Funcionário' ? 3 : 3
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
-  
-  // Estados para pesquisa de empresa
-  const [companySearchTerm, setCompanySearchTerm] = useState('');
-  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
-  
-  // Estados para pesquisa de permissão
-  const [permissionSearchTerm, setPermissionSearchTerm] = useState('');
-  const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
+  const [passwordData, setPasswordData] = useState<{ message: string; password: string } | null>(null);
 
-  const permissionOptions = ['Administrador', 'Operador', 'Visitante'];
-  const statusOptions = ['Ativo', 'Inativo', 'Suspenso'];
-
-  // Filtrar empresas baseado na pesquisa
-  const filteredCompanies = companies.filter(company =>
-    company.fantasy_name?.toLowerCase().includes(companySearchTerm.toLowerCase()) ||
-    company.corporate_name?.toLowerCase().includes(companySearchTerm.toLowerCase())
-  );
-
-  // Filtrar permissões baseado na pesquisa
-  const filteredPermissions = permissionOptions.filter(permission =>
-    permission.toLowerCase().includes(permissionSearchTerm.toLowerCase())
-  );
-
-  // Obter nome da empresa selecionada
-  const selectedCompanyName = companies.find(company => company.id === formData.companyId)?.fantasy_name || '';
+  const roleOptions = [
+    { value: 1, label: 'Administrador' },
+    { value: 3, label: 'Funcionário' }
+  ];
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.nome) {
-      newErrors.nome = 'Nome é obrigatório';
+    if (!formData.name) {
+      newErrors.name = 'Nome é obrigatório';
     }
 
     if (!formData.email) {
@@ -65,23 +43,15 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       newErrors.email = 'Email deve ter um formato válido';
     }
 
-    if (!formData.companyId) {
-      newErrors.companyId = 'Empresa é obrigatória';
-    }
-
-    if (!formData.permissao) {
-      newErrors.permissao = 'Permissão é obrigatória';
-    }
-
-    if (!formData.status) {
-      newErrors.status = 'Status é obrigatório';
+    if (!formData.role) {
+      newErrors.role = 'Função é obrigatória';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -90,27 +60,40 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
     setLoading(true);
 
-    const operation = employee 
-      ? updateEmployee(employee.id, formData)
-      : addEmployee(formData);
-
-    operation
-      .then(() => {
+    try {
+      if (employee) {
+        // Atualizar funcionário existente
+        const updateData = {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role
+        };
+        
+        await updateEmployee(employee.id, updateData);
         onClose();
-      })
-      .catch(() => {
-        // Erro já tratado no DataContext
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      } else {
+        // Adicionar novo funcionário
+        const result = await addEmployee({
+          name: formData.name,
+          email: formData.email,
+          role: formData.role
+        });
+        
+        // Mostrar a senha gerada
+        setPasswordData(result);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar funcionário:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: name === 'role' ? Number(value) : value
     });
 
     // Clear error when user starts typing
@@ -122,327 +105,127 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     }
   };
 
-  const handleCompanySelect = (company: any) => {
-    setFormData({
-      ...formData,
-      companyId: company.id
-    });
-    setCompanySearchTerm('');
-    setShowCompanyDropdown(false);
-    
-    // Clear error
-    if (errors.companyId) {
-      setErrors({
-        ...errors,
-        companyId: undefined
-      });
-    }
-  };
-
-  const handlePermissionSelect = (permission: string) => {
-    setFormData({
-      ...formData,
-      permissao: permission
-    });
-    setPermissionSearchTerm('');
-    setShowPermissionDropdown(false);
-    
-    // Clear error
-    if (errors.permissao) {
-      setErrors({
-        ...errors,
-        permissao: undefined
-      });
-    }
-  };
-
-  const clearCompanySelection = () => {
-    setFormData({
-      ...formData,
-      companyId: ''
-    });
-    setCompanySearchTerm('');
-    setShowCompanyDropdown(false);
-  };
-
-  const clearPermissionSelection = () => {
-    setFormData({
-      ...formData,
-      permissao: ''
-    });
-    setPermissionSearchTerm('');
-    setShowPermissionDropdown(false);
+  const handlePasswordModalClose = () => {
+    setPasswordData(null);
+    onClose();
   };
 
   return (
-    <div>
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="bg-blue-100 p-3 rounded-full">
-          <Users className="w-6 h-6 text-blue-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          {employee ? 'Editar Funcionário' : 'Novo Funcionário'}
-        </h2>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nome <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="nome"
-            value={formData.nome}
-            onChange={handleChange}
-            placeholder="Nome completo do funcionário"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.nome ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
-          {errors.nome && (
-            <p className="text-red-500 text-sm mt-1">{errors.nome}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="email@empresa.com"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.email ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-          )}
-        </div>
-
-        {/* Empresa com Pesquisa */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Empresa <span className="text-red-500">*</span>
-          </label>
-          
-          <div className="relative">
-            <div
-              className={`w-full px-3 py-2 border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-pointer ${
-                errors.companyId ? 'border-red-500' : 'border-gray-300'
-              } bg-white`}
-              onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-            >
-              <div className="flex items-center justify-between">
-                <span className={selectedCompanyName ? 'text-gray-900' : 'text-gray-500'}>
-                  {selectedCompanyName || 'Selecione a empresa'}
-                </span>
-                <div className="flex items-center space-x-2">
-                  {selectedCompanyName && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearCompanySelection();
-                      }}
-                      className="text-gray-400 hover:text-gray-600 p-1"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                  <Search className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Dropdown de Empresas */}
-            {showCompanyDropdown && (
-              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
-                <div className="p-3 border-b border-gray-200">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Pesquisar empresa..."
-                      value={companySearchTerm}
-                      onChange={(e) => setCompanySearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-                <div className="max-h-40 overflow-y-auto">
-                  {filteredCompanies.length > 0 ? (
-                    filteredCompanies.map(company => (
-                      <button
-                        key={company.id}
-                        type="button"
-                        onClick={() => handleCompanySelect(company)}
-                        className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-                      >
-                        <div>
-                          <div className="font-medium">{company.fantasy_name}</div>
-                          <div className="text-sm text-gray-500">{company.corporate_name}</div>
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-4 py-2 text-gray-500 text-sm">
-                      Nenhuma empresa encontrada
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+    <>
+      <div>
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="bg-blue-100 p-3 rounded-full">
+            <Users className="w-6 h-6 text-blue-600" />
           </div>
-          
-          {errors.companyId && (
-            <p className="text-red-500 text-sm mt-1">{errors.companyId}</p>
-          )}
+          <h2 className="text-2xl font-bold text-gray-900">
+            {employee ? 'Editar Funcionário' : 'Novo Funcionário'}
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Permissão com Pesquisa */}
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Permissão <span className="text-red-500">*</span>
-            </label>
-            
-            <div className="relative">
-              <div
-                className={`w-full px-3 py-2 border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-pointer ${
-                  errors.permissao ? 'border-red-500' : 'border-gray-300'
-                } bg-white`}
-                onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={formData.permissao ? 'text-gray-900' : 'text-gray-500'}>
-                    {formData.permissao || 'Selecione a permissão'}
-                  </span>
-                  <div className="flex items-center space-x-2">
-                    {formData.permissao && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearPermissionSelection();
-                        }}
-                        className="text-gray-400 hover:text-gray-600 p-1"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                    <Search className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Dropdown de Permissões */}
-              {showPermissionDropdown && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
-                  <div className="p-3 border-b border-gray-200">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="text"
-                        placeholder="Pesquisar permissão..."
-                        value={permissionSearchTerm}
-                        onChange={(e) => setPermissionSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {filteredPermissions.length > 0 ? (
-                      filteredPermissions.map(permission => (
-                        <button
-                          key={permission}
-                          type="button"
-                          onClick={() => handlePermissionSelect(permission)}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-                        >
-                          {permission}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-4 py-2 text-gray-500 text-sm">
-                        Nenhuma permissão encontrada
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {errors.permissao && (
-              <p className="text-red-500 text-sm mt-1">{errors.permissao}</p>
-            )}
-          </div>
-
-          {/* Status (select normal) */}
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status <span className="text-red-500">*</span>
+              Nome <span className="text-red-500">*</span>
             </label>
-            <select
-              name="status"
-              value={formData.status}
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
+              placeholder="Nome completo do funcionário"
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.status ? 'border-red-500' : 'border-gray-300'
+                errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
-            >
-              {statusOptions.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-            {errors.status && (
-              <p className="text-red-500 text-sm mt-1">{errors.status}</p>
+            />
+            {errors.name && (
+              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
             )}
           </div>
-        </div>
 
-        <div className="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <div className="flex items-center space-x-2">
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              <span>{loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Salvar')}</span>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="email@empresa.com"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.email ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Função <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.role ? 'border-red-500' : 'border-gray-300'
+              }`}
+            >
+              <option value="">Selecione a função</option>
+              {roleOptions.map(role => (
+                <option key={role.value} value={role.value}>{role.label}</option>
+              ))}
+            </select>
+            {errors.role && (
+              <p className="text-red-500 text-sm mt-1">{errors.role}</p>
+            )}
+          </div>
+
+          {!employee && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">Informação importante:</h4>
+              <p className="text-sm text-blue-700">
+                Uma senha será gerada automaticamente para o novo funcionário. 
+                Certifique-se de anotar a senha que será exibida após o cadastro.
+              </p>
             </div>
-          </button>
-        </div>
-      </form>
+          )}
 
-      {/* Overlay para fechar dropdowns */}
-      {(showCompanyDropdown || showPermissionDropdown) && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => {
-            setShowCompanyDropdown(false);
-            setShowPermissionDropdown(false);
-          }}
-        />
-      )}
-    </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <div className="flex items-center space-x-2">
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span>{loading ? 'Salvando...' : (employee ? 'Atualizar' : 'Salvar')}</span>
+              </div>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Modal de Exibição de Senha */}
+      <PasswordDisplayModal
+        isOpen={!!passwordData}
+        onClose={handlePasswordModalClose}
+        passwordData={passwordData}
+      />
+    </>
   );
 };
 

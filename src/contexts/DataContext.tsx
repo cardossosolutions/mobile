@@ -91,11 +91,30 @@ interface ResidentResponse {
 
 interface Employee {
   id: string;
-  companyId: string;
-  nome: string;
+  name: string;
   email: string;
-  permissao: string;
+  permission: string;
   status: string;
+}
+
+interface EmployeeResponse {
+  current_page: number;
+  data: Employee[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
 }
 
 interface Guest {
@@ -123,12 +142,13 @@ interface DataContextType {
   residents: Resident[];
   residentPagination: ResidentResponse | null;
   employees: Employee[];
+  employeePagination: EmployeeResponse | null;
   guests: Guest[];
   appointments: Appointment[];
   loadCompanies: (page?: number, search?: string) => Promise<void>;
   loadResidences: (page?: number, search?: string) => Promise<void>;
   loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
-  loadEmployees: () => Promise<void>;
+  loadEmployees: (page?: number, search?: string) => Promise<void>;
   loadGuests: () => Promise<void>;
   loadAppointments: () => Promise<void>;
   addCompany: (company: Omit<Company, 'id'>) => Promise<void>;
@@ -140,9 +160,10 @@ interface DataContextType {
   addResident: (resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
   updateResident: (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
   deleteResident: (id: string, residenceId: string) => Promise<void>;
-  addEmployee: (employee: Omit<Employee, 'id'>) => Promise<void>;
+  addEmployee: (employee: { name: string; email: string; role: number }) => Promise<{ message: string; password: string }>;
   updateEmployee: (id: string, employee: Partial<Employee>) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
+  resetEmployeePassword: (id: string) => Promise<{ message: string; password: string }>;
   addGuest: (guest: Omit<Guest, 'id'>) => Promise<void>;
   updateGuest: (id: string, guest: Partial<Guest>) => Promise<void>;
   deleteGuest: (id: string) => Promise<void>;
@@ -277,35 +298,31 @@ const mockResidents: Resident[] = [
 const mockEmployees: Employee[] = [
   {
     id: '1',
-    companyId: '1',
-    nome: 'Pedro Henrique Silva',
+    name: 'Pedro Henrique Silva',
     email: 'pedro.silva@sectotal.com.br',
-    permissao: 'Administrador',
-    status: 'Ativo'
+    permission: 'Administrador',
+    status: 'active'
   },
   {
     id: '2',
-    companyId: '1',
-    nome: 'Marcos Antonio Santos',
+    name: 'Marcos Antonio Santos',
     email: 'marcos.santos@sectotal.com.br',
-    permissao: 'Operador',
-    status: 'Ativo'
+    permission: 'Funcionário',
+    status: 'active'
   },
   {
     id: '3',
-    companyId: '2',
-    nome: 'Juliana Costa Lima',
+    name: 'Juliana Costa Lima',
     email: 'juliana.lima@cleanexpress.com.br',
-    permissao: 'Operador',
-    status: 'Ativo'
+    permission: 'Funcionário',
+    status: 'active'
   },
   {
     id: '4',
-    companyId: '2',
-    nome: 'Ricardo Pereira',
+    name: 'Ricardo Pereira',
     email: 'ricardo.pereira@cleanexpress.com.br',
-    permissao: 'Visitante',
-    status: 'Inativo'
+    permission: 'Funcionário',
+    status: 'inactive'
   },
   {
     id: '5',
@@ -443,6 +460,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [residents, setResidents] = useState<Resident[]>([]);
   const [residentPagination, setResidentPagination] = useState<ResidentResponse | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeePagination, setEmployeePagination] = useState<EmployeeResponse | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const { showSuccess, showError } = useToast();
@@ -593,24 +611,41 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Função específica para carregar funcionários
-  const loadEmployees = async () => {
+  const loadEmployees = async (page: number = 1, search?: string) => {
     try {
-      console.log('🔄 Carregando funcionários...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
+      console.log(`🔄 Carregando funcionários - Página: ${page}, Busca: ${search || 'N/A'}`);
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.EMPLOYEES}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await apiRequest(url, {
         method: 'GET'
       });
       
       console.log('✅ Resposta dos funcionários:', response);
       
-      if (response && response.data) {
-        setEmployees(response.data);
-      } else if (response) {
-        setEmployees(response);
+      if (response) {
+        // Converter os dados da API para o formato esperado
+        const employeesData: Employee[] = response.data.map((employee: any) => ({
+          id: employee.id.toString(),
+          name: employee.name,
+          email: employee.email,
+          permission: employee.permission,
+          status: employee.status
+        }));
+        
+        setEmployees(employeesData);
+        setEmployeePagination(response);
+        console.log('💾 Funcionários carregados:', employeesData);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar funcionários:', error);
       // Usar dados mock em caso de erro
       setEmployees(mockEmployees);
+      setEmployeePagination(null);
     }
   };
 
@@ -885,7 +920,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Funções para funcionários
-  const addEmployee = async (employee: Omit<Employee, 'id'>) => {
+  const addEmployee = async (employee: { name: string; email: string; role: number }): Promise<{ message: string; password: string }> => {
     try {
       console.log('📤 Adicionando funcionário...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
@@ -893,34 +928,72 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         body: JSON.stringify(employee)
       });
       
-      if (response && response.data) {
-        setEmployees(prev => [...prev, response.data]);
+      if (response && response.message) {
+        // Recarregar a lista de funcionários após adicionar
+        await loadEmployees();
         showSuccess('Funcionário adicionado!', 'O funcionário foi cadastrado com sucesso.');
+        return { message: response.message, password: response.password };
       } else {
-        setEmployees(prev => [...prev, { ...employee, id: generateId() }]);
+        // Fallback para mock
+        const newEmployee = { ...employee, id: generateId(), permission: 'Funcionário', status: 'active' };
+        setEmployees(prev => [...prev, newEmployee]);
         showSuccess('Funcionário adicionado!', 'O funcionário foi cadastrado com sucesso.');
+        return { message: 'Funcionário cadastrado', password: 'mock123' };
       }
     } catch (error) {
       console.error('Error adding employee:', error);
       showError('Erro ao adicionar funcionário', 'Não foi possível cadastrar o funcionário. Tente novamente.');
-      setEmployees(prev => [...prev, { ...employee, id: generateId() }]);
+      throw error;
     }
   };
 
   const updateEmployee = async (id: string, employee: Partial<Employee>) => {
     try {
       console.log('📝 Atualizando funcionário...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(employee)
       });
       
-      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
-      showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
+      if (response) {
+        // Recarregar a lista de funcionários após atualizar
+        await loadEmployees();
+        showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
+      } else {
+        // Fallback para mock
+        setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+        showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
+      }
     } catch (error) {
       console.error('Error updating employee:', error);
       showError('Erro ao atualizar funcionário', 'Não foi possível atualizar o funcionário. Tente novamente.');
+      // Fallback para mock
       setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+    }
+  };
+
+  const resetEmployeePassword = async (id: string): Promise<{ message: string; password: string }> => {
+    try {
+      console.log('🔄 Resetando senha do funcionário...');
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/reset/${id}`, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Senha resetada:', response);
+      
+      if (response && response.message) {
+        showSuccess('Senha resetada!', 'A nova senha foi gerada com sucesso.');
+        return { message: response.message, password: response.password };
+      } else {
+        // Fallback para mock
+        const mockPassword = 'mock' + Math.random().toString(36).substr(2, 6);
+        showSuccess('Senha resetada!', 'A nova senha foi gerada com sucesso.');
+        return { message: 'Senha resetada com sucesso', password: mockPassword };
+      }
+    } catch (error) {
+      console.error('Error resetting employee password:', error);
+      showError('Erro ao resetar senha', 'Não foi possível resetar a senha. Tente novamente.');
+      throw error;
     }
   };
 
@@ -932,11 +1005,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       setEmployees(prev => prev.filter(e => e.id !== id));
-      showSuccess('Funcionário excluído!', 'O funcionário foi removido com sucesso.');
+      showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
     } catch (error) {
-      console.error('Error deleting employee:', error);
-      showError('Erro ao excluir funcionário', 'Não foi possível excluir o funcionário. Tente novamente.');
-      setEmployees(prev => prev.filter(e => e.id !== id));
+      console.error('Error updating employee:', error);
+      showError('Erro ao atualizar funcionário', 'Não foi possível atualizar o funcionário. Tente novamente.');
+      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
     }
   };
 
@@ -1063,6 +1136,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       residents,
       residentPagination,
       employees,
+      employeePagination,
       guests,
       appointments,
       loadCompanies,
@@ -1083,6 +1157,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addEmployee,
       updateEmployee,
       deleteEmployee,
+      resetEmployeePassword,
       addGuest,
       updateGuest,
       deleteGuest,
