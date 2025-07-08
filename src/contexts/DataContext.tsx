@@ -161,7 +161,8 @@ interface DataContextType {
   updateResident: (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
   deleteResident: (id: string, residenceId: string) => Promise<void>;
   addEmployee: (employee: { name: string; email: string; role: number }) => Promise<{ message: string; password: string }>;
-  updateEmployee: (id: string, employee: Partial<Employee>) => Promise<void>;
+  addEmployee: (employee: { name: string; email: string; role: number; status: number }) => Promise<{ message: string; password: string }>;
+  updateEmployee: (id: string, employee: { name: string; email: string; role: number; status: number }) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
   resetEmployeePassword: (id: string) => Promise<{ message: string; password: string }>;
   addGuest: (guest: Omit<Guest, 'id'>) => Promise<void>;
@@ -920,7 +921,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Funções para funcionários
-  const addEmployee = async (employee: { name: string; email: string; role: number }): Promise<{ message: string; password: string }> => {
+  const addEmployee = async (employee: { name: string; email: string; role: number; status: number }): Promise<{ message: string; password: string }> => {
     try {
       console.log('📤 Adicionando funcionário...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
@@ -935,7 +936,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { message: response.message, password: response.password };
       } else {
         // Fallback para mock
-        const newEmployee = { ...employee, id: generateId(), permission: 'Funcionário', status: 'active' };
+        const newEmployee = { 
+          ...employee, 
+          id: generateId(), 
+          permission: employee.role === 1 ? 'Administrador' : 'Funcionário', 
+          status: employee.status === 1 ? 'active' : 'inactive' 
+        };
         setEmployees(prev => [...prev, newEmployee]);
         showSuccess('Funcionário adicionado!', 'O funcionário foi cadastrado com sucesso.');
         return { message: 'Funcionário cadastrado', password: 'mock123' };
@@ -947,7 +953,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateEmployee = async (id: string, employee: Partial<Employee>) => {
+  const updateEmployee = async (id: string, employee: { name: string; email: string; role: number; status: number }) => {
     try {
       console.log('📝 Atualizando funcionário...');
       const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
@@ -961,14 +967,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
       } else {
         // Fallback para mock
-        setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+        const updatedEmployee = {
+          name: employee.name,
+          email: employee.email,
+          permission: employee.role === 1 ? 'Administrador' : 'Funcionário',
+          status: employee.status === 1 ? 'active' : 'inactive'
+        };
+        setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updatedEmployee } : e));
         showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
       }
     } catch (error) {
       console.error('Error updating employee:', error);
       showError('Erro ao atualizar funcionário', 'Não foi possível atualizar o funcionário. Tente novamente.');
       // Fallback para mock
-      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+      const updatedEmployee = {
+        name: employee.name,
+        email: employee.email,
+        permission: employee.role === 1 ? 'Administrador' : 'Funcionário',
+        status: employee.status === 1 ? 'active' : 'inactive'
+      };
+      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updatedEmployee } : e));
     }
   };
 

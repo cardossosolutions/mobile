@@ -19,7 +19,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const [formData, setFormData] = useState({
     name: employee?.name || '',
     email: employee?.email || '',
-    role: employee?.permission === 'Administrador' ? 1 : employee?.permission === 'Funcionário' ? 3 : 3
+    role: employee?.permission === 'Administrador' ? 1 : employee?.permission === 'Funcionário' ? 3 : 3,
+    status: employee?.status === 'active' ? 1 : employee?.status === 'inactive' ? 2 : 1
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
@@ -28,6 +29,11 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const roleOptions = [
     { value: 1, label: 'Administrador' },
     { value: 3, label: 'Funcionário' }
+  ];
+
+  const statusOptions = [
+    { value: 1, label: 'Ativo' },
+    { value: 2, label: 'Inativo' }
   ];
 
   const validateForm = (): boolean => {
@@ -66,7 +72,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         const updateData = {
           name: formData.name,
           email: formData.email,
-          role: formData.role
+          role: formData.role,
+          status: formData.status
         };
         
         await updateEmployee(employee.id, updateData);
@@ -76,7 +83,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         const result = await addEmployee({
           name: formData.name,
           email: formData.email,
-          role: formData.role
+          role: formData.role,
+          status: formData.status
         });
         
         // Mostrar a senha gerada
@@ -93,7 +101,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'role' ? Number(value) : value
+      [name]: (name === 'role' || name === 'status') ? Number(value) : value
     });
 
     // Clear error when user starts typing
@@ -181,6 +189,22 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
             {errors.role && (
               <p className="text-red-500 text-sm mt-1">{errors.role}</p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {statusOptions.map(status => (
+                <option key={status.value} value={status.value}>{status.label}</option>
+              ))}
+            </select>
           </div>
 
           {!employee && (
