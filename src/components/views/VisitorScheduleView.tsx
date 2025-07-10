@@ -8,13 +8,16 @@ interface VisitorDetails {
   visitor_name: string;
   visitor_id: number;
   cpf: string;
-  mobile: string;
+  visitor_mobile: string;
   rg: string | null;
   plate: string | null;
   observation: string;
-  responsible: string;
   dateBegin: string;
   dateEnding: string;
+  responsibles: Array<{
+    name: string;
+    mobile: string;
+  }>;
 }
 
 const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
@@ -98,7 +101,10 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
             <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0">
               <User className="w-4 h-4 text-green-600" />
             </div>
-            <span className="font-medium">Responsável: {visitor.responsible}</span>
+            <span className="font-medium">
+              Responsáveis: {visitor.responsibles.map(r => r.name).join(', ')}
+              {visitor.responsibles.length > 2 && ` e mais ${visitor.responsibles.length - 2}`}
+            </span>
           </div>
           
           <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -131,7 +137,7 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-xs text-gray-500">
               <Phone className="w-3 h-3 flex-shrink-0" />
-              <span className="break-all">{visitor.mobile}</span>
+              <span className="break-all">{visitor.visitor_mobile}</span>
             </div>
             <div className="flex items-center space-x-1 text-blue-600 flex-shrink-0">
               <Eye className="w-4 h-4" />
@@ -205,7 +211,7 @@ const VisitorDetailsModal: React.FC<{
                     
                     <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
                       <Phone className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-900">{visitor.mobile}</span>
+                      <span className="text-gray-900">{visitor.visitor_mobile}</span>
                     </div>
                   </div>
                 </div>
@@ -227,8 +233,10 @@ const VisitorDetailsModal: React.FC<{
                   <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
                     <User className="w-5 h-5 text-green-600" />
                     <div>
-                      <span className="font-medium text-gray-700">Responsável:</span>
-                      <p className="text-gray-900">{visitor.responsible}</p>
+                      <span className="font-medium text-gray-700">Responsáveis:</span>
+                      {visitor.responsibles.map((responsible, index) => (
+                        <p key={index} className="text-gray-900">{responsible.name}</p>
+                      ))}
                     </div>
                   </div>
 
@@ -245,7 +253,7 @@ const VisitorDetailsModal: React.FC<{
             {/* Residence and Vehicle Information */}
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Residência de Destino</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Moradores da Residência</h3>
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 space-y-4">
                   <div className="flex items-center space-x-4">
                     <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-full shadow-lg">
@@ -253,27 +261,21 @@ const VisitorDetailsModal: React.FC<{
                     </div>
                     <div>
                       <h4 className="text-xl font-semibold text-gray-900">
-                        Residência do Responsável
+                        Moradores Responsáveis
                       </h4>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <User className="w-4 h-4 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">Proprietário:</span>
-                        <p className="text-gray-900">{visitor.responsible}</p>
+                    {visitor.responsibles.map((responsible, index) => (
+                      <div key={index} className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                        <User className="w-4 h-4 text-gray-500" />
+                        <div>
+                          <p className="font-medium text-gray-900">{responsible.name}</p>
+                          <p className="text-sm text-gray-600">{responsible.mobile}</p>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">Telefone:</span>
-                        <p className="text-gray-900">{visitor.mobile}</p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
