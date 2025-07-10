@@ -8,6 +8,7 @@ interface VisitorDetails {
   visitor_name: string;
   visitor_id: number;
   cpf: string;
+  residence: string;
   visitor_mobile: string;
   rg: string | null;
   plate: string | null;
@@ -99,12 +100,9 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
         <div className="space-y-3 flex-grow">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0">
-              <User className="w-4 h-4 text-green-600" />
+              <Home className="w-4 h-4 text-green-600" />
             </div>
-            <span className="font-medium">
-              Responsáveis: {visitor.responsibles.map(r => r.name).join(', ')}
-              {visitor.responsibles.length > 2 && ` e mais ${visitor.responsibles.length - 2}`}
-            </span>
+            <span className="font-medium">Residência: {visitor.residence}</span>
           </div>
           
           <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -177,8 +175,9 @@ const VisitorDetailsModal: React.FC<{
         
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Visitor Information */}
+            {/* Left Column - Visitor Information and Residents */}
             <div className="space-y-6">
+              {/* Visitor Information */}
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações do Visitante</h2>
                 
@@ -217,41 +216,7 @@ const VisitorDetailsModal: React.FC<{
                 </div>
               </div>
 
-              {/* Appointment Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Agendamento</h3>
-                <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <span className="font-medium text-gray-700">Período da Estadia:</span>
-                      <p className="text-gray-900">Início: {visitor.dateBegin}</p>
-                      <p className="text-gray-900">Fim: {visitor.dateEnding}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <User className="w-5 h-5 text-green-600" />
-                    <div>
-                      <span className="font-medium text-gray-700">Responsáveis:</span>
-                      {visitor.responsibles.map((responsible, index) => (
-                        <p key={index} className="text-gray-900">{responsible.name}</p>
-                      ))}
-                    </div>
-                  </div>
-
-                  {visitor.observation && (
-                    <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <span className="font-medium text-gray-700">Observações:</span>
-                      <p className="text-gray-900 mt-2">{visitor.observation}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Residence and Vehicle Information */}
-            <div className="space-y-6">
+              {/* Residents Information */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Moradores da Residência</h3>
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 space-y-4">
@@ -261,7 +226,7 @@ const VisitorDetailsModal: React.FC<{
                     </div>
                     <div>
                       <h4 className="text-xl font-semibold text-gray-900">
-                        Moradores Responsáveis
+                        {visitor.residence}
                       </h4>
                     </div>
                   </div>
@@ -277,6 +242,31 @@ const VisitorDetailsModal: React.FC<{
                       </div>
                     ))}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Appointment Details, Vehicle and Actions */}
+            <div className="space-y-6">
+              {/* Appointment Details */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Agendamento</h3>
+                <div className="bg-gray-50 p-6 rounded-xl space-y-4">
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <span className="font-medium text-gray-700">Período da Estadia:</span>
+                      <p className="text-gray-900">Início: {visitor.dateBegin}</p>
+                      <p className="text-gray-900">Fim: {visitor.dateEnding}</p>
+                    </div>
+                  </div>
+
+                  {visitor.observation && (
+                    <div className="p-4 bg-white rounded-lg border border-gray-200">
+                      <span className="font-medium text-gray-700">Observações:</span>
+                      <p className="text-gray-900 mt-2">{visitor.observation}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -296,7 +286,7 @@ const VisitorDetailsModal: React.FC<{
                 </div>
               )}
 
-              {/* Quick Actions */}
+              {/* Ações Rápidas */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h4 className="font-semibold text-gray-900 mb-4">Ações Rápidas</h4>
                 <div className="space-y-3">
