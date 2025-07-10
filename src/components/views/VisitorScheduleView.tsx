@@ -248,16 +248,18 @@ const VisitorDetailsModal: React.FC<{
 
                   <div className="space-y-3">
                     {visitor.responsibles.map((responsible, index) => (
-                      <div key={index} className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <div className="flex items-center space-x-3">
                         <User className="w-4 h-4 text-gray-500" />
                         <div>
                           <p className="font-medium text-gray-900">{responsible.name}</p>
                           <p className="text-sm text-gray-600">{responsible.mobile}</p>
                         </div>
+                        </div>
                         {responsible.mobile && (
                           <button
                             onClick={() => openWhatsApp(responsible.mobile, visitor.visitor_name, visitor.residence)}
-                            className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors shadow-md hover:shadow-lg transform hover:scale-105"
+                            className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex-shrink-0"
                             title={`Enviar mensagem no WhatsApp para ${responsible.name}`}
                           >
                             <MessageCircle className="w-4 h-4" />
