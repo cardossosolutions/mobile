@@ -119,11 +119,14 @@ interface EmployeeResponse {
 
 interface Guest {
   id: string;
-  nome: string;
-  rg: string;
+  name: string;
+  residence: string;
   cpf: string;
-  placaVeiculo: string;
-  observacoes: string;
+  rg: string;
+  plate: string | null;
+  observation: string;
+  type: string;
+  description: string;
 }
 
 interface Appointment {
@@ -346,27 +349,36 @@ const mockEmployees: Employee[] = [
 const mockGuests: Guest[] = [
   {
     id: '1',
-    nome: 'Amanda Cristina Souza',
-    rg: '12.345.678-9',
+    name: 'Amanda Cristina Souza',
+    residence: 'Apartamento 101 - Bloco A',
     cpf: '123.456.789-00',
-    placaVeiculo: 'ABC-1234',
-    observacoes: 'Visitante frequente, amiga da família Silva'
+    rg: '12.345.678-9',
+    plate: 'ABC-1234',
+    observation: 'Visitante frequente, amiga da família Silva',
+    type: 'visitor',
+    description: 'Amanda Cristina Souza - Cpf: 123.456.789-00 - Placa: ABC-1234'
   },
   {
     id: '2',
-    nome: 'Bruno Henrique Costa',
-    rg: '98.765.432-1',
+    name: 'Bruno Henrique Costa',
+    residence: 'Casa Verde',
     cpf: '987.654.321-00',
-    placaVeiculo: 'XYZ-9876',
-    observacoes: 'Entregador autorizado'
+    rg: '98.765.432-1',
+    plate: 'XYZ-9876',
+    observation: 'Entregador autorizado',
+    type: 'visitor',
+    description: 'Bruno Henrique Costa - Cpf: 987.654.321-00 - Placa: XYZ-9876'
   },
   {
     id: '3',
-    nome: 'Carla Regina Oliveira',
-    rg: '11.222.333-4',
+    name: 'Carla Regina Oliveira',
+    residence: 'Cobertura Premium',
     cpf: '111.222.333-44',
-    placaVeiculo: '',
-    observacoes: 'Professora particular dos filhos'
+    rg: '11.222.333-4',
+    plate: null,
+    observation: 'Professora particular dos filhos',
+    type: 'visitor',
+    description: 'Carla Regina Oliveira - Cpf: 111.222.333-44 - Placa: '
   },
   {
     id: '4',
@@ -654,16 +666,31 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const loadGuests = async () => {
     try {
       console.log('🔄 Carregando convidados...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS, {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS_LIST, {
         method: 'GET'
       });
       
       console.log('✅ Resposta dos convidados:', response);
       
-      if (response && response.data) {
-        setGuests(response.data);
-      } else if (response) {
-        setGuests(response);
+      if (response && Array.isArray(response)) {
+        // Converter dados da API para o formato esperado
+        const guestsData: Guest[] = response.map((guest: any) => ({
+          id: guest.id.toString(),
+          name: guest.name,
+          residence: guest.residence,
+          cpf: guest.cpf,
+          rg: '', // RG não vem na listagem, será preenchido na edição
+          plate: guest.plate,
+          observation: '', // Observação não vem na listagem, será preenchida na edição
+          type: 'visitor',
+          description: guest.description
+        }));
+        
+        setGuests(guestsData);
+        console.log('💾 Convidados carregados:', guestsData);
+      } else {
+        console.warn('⚠️ Resposta de convidados inválida');
+        setGuests([]);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar convidados:', error);
@@ -1035,38 +1062,79 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addGuest = async (guest: Omit<Guest, 'id'>) => {
     try {
       console.log('📤 Adicionando convidado...');
+      
+      // Preparar dados para envio conforme API
+      const guestData = {
+        name: guest.name,
+        rg: guest.rg,
+        cpf: guest.cpf.replace(/\D/g, ''), // Remover máscara
+        placa: guest.plate || '',
+        observation: guest.observation,
+        type: 'visitor'
+      };
+      
       const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS, {
         method: 'POST',
-        body: JSON.stringify(guest)
+        body: JSON.stringify(guestData)
       });
       
-      if (response && response.data) {
-        setGuests(prev => [...prev, response.data]);
+      console.log('✅ Resposta do cadastro:', response);
+      
+      if (response && response.message) {
+        // Recarregar lista após adicionar
+        await loadGuests();
         showSuccess('Convidado adicionado!', 'O convidado foi cadastrado com sucesso.');
       } else {
-        setGuests(prev => [...prev, { ...guest, id: generateId() }]);
+        // Fallback para mock
+        const newGuest = { 
+          ...guest, 
+          id: generateId(),
+          description: `${guest.name} - Cpf: ${guest.cpf} - Placa: ${guest.plate || ''}`
+        };
+        setGuests(prev => [...prev, newGuest]);
         showSuccess('Convidado adicionado!', 'O convidado foi cadastrado com sucesso.');
       }
     } catch (error) {
       console.error('Error adding guest:', error);
       showError('Erro ao adicionar convidado', 'Não foi possível cadastrar o convidado. Tente novamente.');
-      setGuests(prev => [...prev, { ...guest, id: generateId() }]);
+      // Fallback para mock
+      const newGuest = { 
+        ...guest, 
+        id: generateId(),
+        description: `${guest.name} - Cpf: ${guest.cpf} - Placa: ${guest.plate || ''}`
+      };
+      setGuests(prev => [...prev, newGuest]);
     }
   };
 
   const updateGuest = async (id: string, guest: Partial<Guest>) => {
     try {
       console.log('📝 Atualizando convidado...');
+      
+      // Preparar dados para envio conforme API
+      const guestData = {
+        name: guest.name,
+        rg: guest.rg,
+        cpf: guest.cpf?.replace(/\D/g, ''), // Remover máscara
+        placa: guest.plate || '',
+        observation: guest.observation,
+        type: 'visitor'
+      };
+      
       await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(guest)
+        body: JSON.stringify(guestData)
       });
       
-      setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
+      console.log('✅ Convidado atualizado');
+      
+      // Recarregar lista após atualizar
+      await loadGuests();
       showSuccess('Convidado atualizado!', 'Os dados do convidado foram atualizados com sucesso.');
     } catch (error) {
       console.error('Error updating guest:', error);
       showError('Erro ao atualizar convidado', 'Não foi possível atualizar o convidado. Tente novamente.');
+      // Fallback para mock
       setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
     }
   };

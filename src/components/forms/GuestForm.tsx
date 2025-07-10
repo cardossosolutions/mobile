@@ -9,7 +9,7 @@ interface GuestFormProps {
 }
 
 interface FormErrors {
-  nome?: string;
+  name?: string;
   rg?: string;
   cpf?: string;
 }
@@ -17,11 +17,11 @@ interface FormErrors {
 const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
   const { addGuest, updateGuest } = useData();
   const [formData, setFormData] = useState({
-    nome: guest?.nome || '',
+    name: guest?.name || '',
     rg: guest?.rg || '',
     cpf: guest?.cpf || '',
-    placaVeiculo: guest?.placaVeiculo || '',
-    observacoes: guest?.observacoes || ''
+    plate: guest?.plate || '',
+    observation: guest?.observation || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
@@ -29,8 +29,8 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.nome) {
-      newErrors.nome = 'Nome é obrigatório';
+    if (!formData.name) {
+      newErrors.name = 'Nome é obrigatório';
     }
 
     if (!formData.rg) {
@@ -56,9 +56,12 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
 
     // Remover máscaras antes de enviar
     const dataToSubmit = {
-      ...formData,
-      cpf: otherMasks.cpf(formData.cpf).replace(/\D/g, ''),
-      placaVeiculo: formData.placaVeiculo.toUpperCase()
+      name: formData.name,
+      rg: formData.rg,
+      cpf: formData.cpf,
+      plate: formData.plate.toUpperCase() || null,
+      observation: formData.observation,
+      type: 'visitor'
     };
 
     const operation = guest 
@@ -86,7 +89,7 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
       case 'cpf':
         maskedValue = otherMasks.cpf(value);
         break;
-      case 'placaVeiculo':
+      case 'plate':
         // Máscara para placa de veículo (ABC-1234 ou ABC1D23)
         maskedValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (maskedValue.length > 3 && maskedValue.length <= 7) {
@@ -132,16 +135,16 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
           </label>
           <input
             type="text"
-            name="nome"
-            value={formData.nome}
+            name="name"
+            value={formData.name}
             onChange={handleChange}
             placeholder="Nome completo do convidado"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.nome ? 'border-red-500' : 'border-gray-300'
+              errors.name ? 'border-red-500' : 'border-gray-300'
             }`}
           />
-          {errors.nome && (
-            <p className="text-red-500 text-sm mt-1">{errors.nome}</p>
+          {errors.name && (
+            <p className="text-red-500 text-sm mt-1">{errors.name}</p>
           )}
         </div>
 
@@ -191,8 +194,8 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
           </label>
           <input
             type="text"
-            name="placaVeiculo"
-            value={formData.placaVeiculo}
+            name="plate"
+            value={formData.plate}
             onChange={handleChange}
             placeholder="ABC-1234 ou ABC1D23"
             maxLength={8}
@@ -203,11 +206,11 @@ const GuestForm: React.FC<GuestFormProps> = ({ guest, onClose }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Demais Observações
+            Observações
           </label>
           <textarea
-            name="observacoes"
-            value={formData.observacoes}
+            name="observation"
+            value={formData.observation}
             onChange={handleChange}
             rows={3}
             placeholder="Informações adicionais sobre o convidado..."

@@ -37,18 +37,46 @@ const GuestManagement: React.FC = () => {
   }, []);
 
   const filteredGuests = guests.filter(guest =>
-    guest.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     guest.cpf.includes(searchTerm) ||
-    guest.rg.includes(searchTerm) ||
-    guest.placaVeiculo.toLowerCase().includes(searchTerm.toLowerCase())
+    (guest.rg && guest.rg.includes(searchTerm)) ||
+    (guest.plate && guest.plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    guest.residence.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEdit = async (guest: any) => {
     setLoadingGuestData(prev => ({ ...prev, [guest.id]: true }));
     try {
-      // Para convidados, podemos usar os dados já carregados ou fazer uma requisição específica
-      setEditingGuest(guest);
-      setIsModalOpen(true);
+      console.log(`📝 Carregando dados do convidado ${guest.id} para edição...`);
+      
+      // Fazer requisição para obter dados completos do convidado
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${guest.id}`, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Dados do convidado carregados:', response);
+      
+      if (response) {
+        // Converter dados da API para o formato esperado pelo formulário
+        const guestData = {
+          id: response.id,
+          name: response.name,
+          residence: response.residence,
+          cpf: response.cpf,
+          rg: '', // RG não vem na resposta, manter vazio
+          plate: response.plate,
+          observation: '', // Observação não vem na resposta, manter vazio
+          type: 'visitor'
+        };
+        
+        setEditingGuest(guestData);
+        setIsModalOpen(true);
+      } else {
+        console.error('❌ Dados do convidado não encontrados');
+        // Fallback para dados básicos se a API falhar
+        setEditingGuest(guest);
+        setIsModalOpen(true);
+      }
     } finally {
       setLoadingGuestData(prev => ({ ...prev, [guest.id]: false }));
     }
@@ -90,16 +118,16 @@ const GuestManagement: React.FC = () => {
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+                  Convidado
     setEditingGuest(null);
   };
-
+                  Residência
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+                  CPF
         <h1 className="text-3xl font-bold text-gray-900">Convidados</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
+                  Veículo
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
         >
           <Plus className="w-5 h-5" />
@@ -113,21 +141,18 @@ const GuestManagement: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar por nome, CPF, RG ou placa do veículo..."
-              value={searchTerm}
+              placeholder="Buscar por nome, CPF, residência ou placa do veículo..."
+                      <div className="text-sm font-medium text-gray-900">{guest.name}</div>
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-        </div>
+                    <div className="text-sm font-medium text-gray-900">{guest.residence}</div>
 
         <div className="overflow-x-auto">
-          {/* Loading inicial */}
+                    {guest.cpf}
           {initialLoading && (
             <div className="flex items-center justify-center py-12">
-              <div className="flex items-center space-x-3 text-orange-600">
-                <Loader2 className="w-6 h-6 animate-spin" />
-                <span className="text-lg font-medium">Carregando convidados...</span>
+                    {guest.plate || 'Não informado'}
               </div>
             </div>
           )}
@@ -230,6 +255,7 @@ const GuestManagement: React.FC = () => {
         onConfirm={handleDeleteConfirm}
         title="Confirmar Exclusão"
         message={`Tem certeza que deseja excluir o convidado "${deleteConfirmation.guest?.nome}"? Esta ação não pode ser desfeita e todos os agendamentos relacionados também serão removidos.`}
+        message={`Tem certeza que deseja excluir o convidado "${deleteConfirmation.guest?.name}"? Esta ação não pode ser desfeita e todos os agendamentos relacionados também serão removidos.`}
         confirmText="Excluir Convidado"
         cancelText="Cancelar"
         type="danger"

@@ -30,13 +30,13 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
 
   // Filtrar convidados baseado na pesquisa
   const filteredGuests = guests.filter(guest =>
-    guest.nome.toLowerCase().includes(guestSearchTerm.toLowerCase()) ||
+    guest.name.toLowerCase().includes(guestSearchTerm.toLowerCase()) ||
     guest.cpf.includes(guestSearchTerm) ||
-    guest.rg.includes(guestSearchTerm)
+    (guest.rg && guest.rg.includes(guestSearchTerm))
   );
 
   // Obter nome do convidado selecionado
-  const selectedGuestName = guests.find(guest => guest.id === formData.guestId)?.nome || '';
+  const selectedGuestName = guests.find(guest => guest.id === formData.guestId)?.name || '';
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -206,8 +206,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
                         className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
                       >
                         <div>
-                          <div className="font-medium">{guest.nome}</div>
-                          <div className="text-sm text-gray-500">CPF: {guest.cpf} | RG: {guest.rg}</div>
+                          <div className="font-medium">{guest.name}</div>
+                          <div className="text-sm text-gray-500">CPF: {guest.cpf} | Residência: {guest.residence}</div>
                         </div>
                       </button>
                     ))

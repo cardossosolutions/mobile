@@ -42,10 +42,10 @@ const AppointmentManagement: React.FC = () => {
 
   const filteredAppointments = appointments.filter(appointment => {
     const guest = guests.find(g => g.id === appointment.guestId);
-    const guestName = guest?.nome || '';
+    const guestName = guest?.name || '';
     
     const matchesSearch = guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.observacoes.toLowerCase().includes(searchTerm.toLowerCase());
+                         (appointment.observacoes && appointment.observacoes.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesDate = !dateFilter || appointment.dataEntrada.includes(dateFilter);
     
@@ -105,7 +105,7 @@ const AppointmentManagement: React.FC = () => {
 
   const getGuestName = (guestId: string) => {
     const guest = guests.find(g => g.id === guestId);
-    return guest ? guest.nome : 'Convidado não encontrado';
+    return guest ? guest.name : 'Convidado não encontrado';
   };
 
   const formatDateTime = (dateTime: string) => {
