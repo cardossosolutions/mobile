@@ -244,6 +244,40 @@ const VisitorDetailsModal: React.FC<{
 
             {/* Residence and Vehicle Information */}
             <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Residência de Destino</h3>
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-full shadow-lg">
+                      <Home className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold text-gray-900">
+                        Residência do Responsável
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                      <User className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <span className="font-medium text-gray-700">Proprietário:</span>
+                        <p className="text-gray-900">{visitor.responsible}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <span className="font-medium text-gray-700">Telefone:</span>
+                        <p className="text-gray-900">{visitor.mobile}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Vehicle Information */}
               {visitor.plate && (
                 <div>
