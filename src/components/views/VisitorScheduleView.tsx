@@ -323,12 +323,6 @@ const VisitorDetailsModal: React.FC<{
                   <button className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium shadow-md">
                     Confirmar Entrada
                   </button>
-                  <button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-medium shadow-md">
-                    Editar Agendamento
-                  </button>
-                  <button className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3 px-4 rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 font-medium shadow-md">
-                    Cancelar Agendamento
-                  </button>
                 </div>
               </div>
             </div>
