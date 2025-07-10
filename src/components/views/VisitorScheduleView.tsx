@@ -219,16 +219,9 @@ const VisitorDetailsModal: React.FC<{
                   <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
                     <Calendar className="w-5 h-5 text-blue-600" />
                     <div>
-                      <span className="font-medium text-gray-700">Período:</span>
-                      <p className="text-gray-900">{formatDateRange(visitor.dateBegin, visitor.dateEnding)}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <User className="w-5 h-5 text-green-600" />
-                    <div>
-                      <span className="font-medium text-gray-700">Responsável:</span>
-                      <p className="text-gray-900">{visitor.responsible}</p>
+                      <span className="font-medium text-gray-700">Período da Estadia:</span>
+                      <p className="text-gray-900">Início: {visitor.dateBegin}</p>
+                      <p className="text-gray-900">Fim: {visitor.dateEnding}</p>
                     </div>
                   </div>
 
