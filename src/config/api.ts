@@ -1,4 +1,5 @@
 // Configuração centralizada da API
+import { AuthContextType } from '../contexts/AuthContext';
 export const API_CONFIG = {
   // Host base da API - alterado para localhost
   BASE_URL: 'http://127.0.0.1:8080/api',
@@ -58,6 +59,16 @@ const isHtmlResponse = (text: string): boolean => {
   return text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html');
 };
 
+// Função para fazer logout quando token expira
+const handleTokenExpired = () => {
+  console.log('🔒 Token expirado - fazendo logout automático...');
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('token_type');
+  localStorage.removeItem('token_expires_in');
+  localStorage.removeItem('user_profile');
+  window.location.reload(); // Força reload para ir para tela de login
+};
+
 // Função para fazer requisições HTTP com autenticação automática
 export const apiRequest = async (
   endpoint: string, 
@@ -88,8 +99,8 @@ export const apiRequest = async (
     // Verificar se o token expirou (401 Unauthorized)
     if (response.status === 401) {
       console.log('🔒 Token expirado ou inválido (401)');
-      // Lançar erro específico para 401
-      throw new Error('HTTP error! status: 401');
+      handleTokenExpired();
+      return; // Não continua a execução
     }
     
     if (!response.ok) {
