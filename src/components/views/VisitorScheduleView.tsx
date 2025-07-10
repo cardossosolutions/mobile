@@ -262,7 +262,11 @@ const VisitorDetailsModal: React.FC<{
                             className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex-shrink-0"
                             title={`Enviar mensagem no WhatsApp para ${responsible.name}`}
                           >
-                            <MessageCircle className="w-4 h-4" />
+                            <img 
+                              src="/icone_whastaap.png" 
+                              alt="WhatsApp" 
+                              className="w-4 h-4"
+                            />
                           </button>
                         )}
                       </div>
