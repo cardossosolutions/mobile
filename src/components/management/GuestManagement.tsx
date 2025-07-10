@@ -293,10 +293,10 @@ const GuestManagement: React.FC = () => {
         {guestPagination && (
           <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
             <div>
-              Mostrando {guestPagination.from} a {guestPagination.to} de {guestPagination.total} convidados
+              Mostrando {guestPagination.from || 1} a {guestPagination.to || guestPagination.data?.length || guests.length} de {guestPagination.total || guests.length} convidados
             </div>
             <div>
-              Página {guestPagination.current_page} de {guestPagination.last_page}
+              Página {guestPagination.current_page || 1} de {guestPagination.last_page || 1}
             </div>
           </div>
         )}
@@ -388,14 +388,16 @@ const GuestManagement: React.FC = () => {
         )}
 
         {/* Controles de paginação */}
-        {guestPagination && guestPagination.last_page > 1 && !initialLoading && (
+        {guestPagination && (guestPagination.last_page > 1 || guestPagination.total > 10) && !initialLoading && (
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-gray-600">
-              {guestPagination.total} {guestPagination.total === 1 ? 'convidado' : 'convidados'} no total
+              {guestPagination.total || guests.length} {(guestPagination.total || guests.length) === 1 ? 'convidado' : 'convidados'} no total
             </div>
-            <div className="flex items-center space-x-1">
-              {renderPaginationButtons()}
-            </div>
+            {(guestPagination.last_page > 1) && (
+              <div className="flex items-center space-x-1">
+                {renderPaginationButtons()}
+              </div>
+            )}
           </div>
         )}
       </div>
