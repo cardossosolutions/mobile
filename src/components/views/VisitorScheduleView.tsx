@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
-import { useEffect } from 'react';
 
 // Interface para os dados do visitante baseada na API
 interface VisitorDetails {
@@ -319,111 +318,149 @@ const VisitorDetailsModal: React.FC<{
 };
 
 const VisitorScheduleView: React.FC = () => {
-  const { visitorSchedule, visitorSchedulePagination, loadVisitorSchedule } = useData();
+  const { loadVisitorSchedule } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorDetails | null>(null);
+  
+  // Estados para scroll infinito
+  const [visitors, setVisitors] = useState<VisitorDetails[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Ref para o elemento sentinela do scroll infinito
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Carregar cronograma quando o componente for montado
+  // Função para carregar dados da API
+  const loadVisitorData = useCallback(async (page: number, search?: string, reset: boolean = false) => {
+    try {
+      console.log(`🔄 Carregando visitantes - Página: ${page}, Busca: ${search || 'N/A'}, Reset: ${reset}`);
+      
+      if (page === 1 && !reset) {
+        setInitialLoading(true);
+      } else if (page > 1) {
+        setLoadingMore(true);
+      }
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `/visitors/schedule?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await fetch(`http://127.0.0.1:8080/api${url}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Resposta do cronograma de visitantes:', data);
+      
+      if (data && data.data && Array.isArray(data.data)) {
+        const newVisitors = data.data;
+        
+        if (reset || page === 1) {
+          // Primeira página ou reset - substituir todos os dados
+          setVisitors(newVisitors);
+        } else {
+          // Páginas subsequentes - adicionar aos dados existentes
+          setVisitors(prev => [...prev, ...newVisitors]);
+        }
+        
+        setCurrentPage(data.current_page);
+        setHasNextPage(data.current_page < data.last_page);
+        setTotalCount(data.total);
+        
+        console.log(`💾 Visitantes carregados - Página: ${data.current_page}/${data.last_page}, Total: ${data.total}`);
+      } else {
+        console.warn('⚠️ Resposta do cronograma de visitantes inválida:', data);
+        if (reset || page === 1) {
+          setVisitors([]);
+          setTotalCount(0);
+          setHasNextPage(false);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar cronograma de visitantes:', error);
+      if (reset || page === 1) {
+        setVisitors([]);
+        setTotalCount(0);
+        setHasNextPage(false);
+      }
+    } finally {
+      setInitialLoading(false);
+      setLoadingMore(false);
+      setLoading(false);
+    }
+  }, []);
+
+  // Função para carregar próxima página
+  const loadNextPage = useCallback(() => {
+    if (!loadingMore && hasNextPage) {
+      console.log(`📄 Carregando próxima página: ${currentPage + 1}`);
+      loadVisitorData(currentPage + 1, searchTerm);
+    }
+  }, [loadVisitorData, currentPage, searchTerm, loadingMore, hasNextPage]);
+
+  // Configurar Intersection Observer para scroll infinito
   useEffect(() => {
-    console.log('👁️ VisitorScheduleView montado - carregando cronograma...');
-    const loadInitialData = async () => {
-      setInitialLoading(true);
-      try {
-        await loadVisitorSchedule();
-      } finally {
-        setInitialLoading(false);
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasNextPage && !loadingMore && !initialLoading) {
+          console.log('👁️ Sentinela visível - carregando próxima página');
+          loadNextPage();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
       }
     };
-    loadInitialData();
-  }, []);
+  }, [hasNextPage, loadingMore, initialLoading, loadNextPage]);
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    console.log('👁️ VisitorScheduleView montado - carregando cronograma inicial...');
+    loadVisitorData(1, '', true);
+  }, [loadVisitorData]);
 
   // Debounce para busca
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchTerm !== '') {
-        handleSearch();
-      } else {
-        loadVisitorSchedule(1); // Recarregar primeira página sem busca
-      }
+      console.log(`🔍 Executando busca: "${searchTerm}"`);
+      setLoading(true);
+      loadVisitorData(1, searchTerm, true);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
-
-  const handleSearch = async () => {
-    setLoading(true);
-    try {
-      await loadVisitorSchedule(1, searchTerm);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePageChange = async (page: number) => {
-    setLoading(true);
-    try {
-      await loadVisitorSchedule(page, searchTerm);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Função para renderizar os botões de paginação
-  const renderPaginationButtons = () => {
-    if (!visitorSchedulePagination || visitorSchedulePagination.last_page <= 1) {
-      return null;
-    }
-
-    const buttons = [];
-    const currentPage = visitorSchedulePagination.current_page;
-    const lastPage = visitorSchedulePagination.last_page;
-
-    // Botão "Anterior"
-    buttons.push(
-      <button
-        key="prev"
-        onClick={() => handlePageChange(currentPage - 1)}
-        disabled={currentPage === 1 || loading}
-        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronLeft className="w-4 h-4" />
-      </button>
-    );
-
-    // Botões de páginas (simplificado para economizar espaço)
-    for (let page = Math.max(1, currentPage - 1); page <= Math.min(lastPage, currentPage + 1); page++) {
-      buttons.push(
-        <button
-          key={page}
-          onClick={() => handlePageChange(page)}
-          disabled={loading}
-          className={`px-3 py-2 text-sm font-medium border border-gray-300 disabled:opacity-50 ${
-            page === currentPage
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'text-gray-500 bg-white hover:bg-gray-50'
-          }`}
-        >
-          {page}
-        </button>
-      );
-    }
-
-    // Botão "Próximo"
-    buttons.push(
-      <button
-        key="next"
-        onClick={() => handlePageChange(currentPage + 1)}
-        disabled={currentPage === lastPage || loading}
-        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronRight className="w-4 h-4" />
-      </button>
-    );
-
-    return buttons;
-  };
+  }, [searchTerm, loadVisitorData]);
 
   return (
     <div className="space-y-6">
@@ -432,7 +469,7 @@ const VisitorScheduleView: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Agendamentos de Visitantes</h1>
           <p className="text-gray-600 mt-1">
-            Visualize e gerencie todos os agendamentos do dia de forma organizada
+            Visualize e gerencie todos os agendamentos de forma organizada
           </p>
         </div>
         
@@ -451,7 +488,7 @@ const VisitorScheduleView: React.FC = () => {
           {loading && (
             <div className="flex items-center space-x-2 text-blue-600">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span className="text-sm">Carregando...</span>
+              <span className="text-sm">Buscando...</span>
             </div>
           )}
         </div>
@@ -462,7 +499,7 @@ const VisitorScheduleView: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-medium opacity-90">Total de Agendamentos</h3>
-            <p className="text-3xl font-bold">{visitorSchedulePagination?.total || visitorSchedule.length}</p>
+            <p className="text-3xl font-bold">{totalCount}</p>
             <p className="text-sm opacity-75 mt-1">
               {new Date().toLocaleDateString('pt-BR', { 
                 weekday: 'long', 
@@ -478,18 +515,6 @@ const VisitorScheduleView: React.FC = () => {
         </div>
       </div>
 
-      {/* Informações de paginação */}
-      {visitorSchedulePagination && (
-        <div className="flex items-center justify-between mb-4 text-sm text-gray-600 bg-white p-4 rounded-lg shadow-sm">
-          <div>
-            Mostrando {visitorSchedulePagination.from} a {visitorSchedulePagination.to} de {visitorSchedulePagination.total} agendamentos
-          </div>
-          <div>
-            Página {visitorSchedulePagination.current_page} de {visitorSchedulePagination.last_page}
-          </div>
-        </div>
-      )}
-
       {/* Visitors Grid */}
       {initialLoading ? (
         <div className="flex items-center justify-center py-16">
@@ -498,29 +523,33 @@ const VisitorScheduleView: React.FC = () => {
             <span className="text-lg font-medium">Carregando agendamentos...</span>
           </div>
         </div>
-      ) : visitorSchedule.length > 0 ? (
+      ) : visitors.length > 0 ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {visitorSchedule.map((visitor) => (
+            {visitors.map((visitor) => (
               <VisitorCard
-                key={visitor.id}
+                key={`${visitor.id}-${visitor.visitor_id}`}
                 visitor={visitor}
                 onClick={() => setSelectedVisitor(visitor)}
               />
             ))}
           </div>
           
-          {/* Controles de paginação */}
-          {visitorSchedulePagination && visitorSchedulePagination.last_page > 1 && (
-            <div className="flex items-center justify-between mt-8">
-              <div className="text-sm text-gray-600">
-                {visitorSchedulePagination.total} {visitorSchedulePagination.total === 1 ? 'agendamento' : 'agendamentos'} no total
+          {/* Sentinela para scroll infinito */}
+          <div ref={sentinelRef} className="h-20 flex items-center justify-center">
+            {loadingMore && (
+              <div className="flex items-center space-x-3 text-blue-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-sm font-medium">Carregando mais agendamentos...</span>
               </div>
-              <div className="flex items-center space-x-1">
-                {renderPaginationButtons()}
+            )}
+            {!hasNextPage && visitors.length > 0 && (
+              <div className="text-center text-gray-500">
+                <p className="text-sm">✨ Todos os agendamentos foram carregados</p>
+                <p className="text-xs mt-1">{totalCount} {totalCount === 1 ? 'agendamento' : 'agendamentos'} no total</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </>
       ) : (
         <div className="text-center py-16">
