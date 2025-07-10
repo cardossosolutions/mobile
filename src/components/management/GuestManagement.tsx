@@ -172,9 +172,6 @@ const GuestManagement: React.FC = () => {
                     Veículo
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Observações
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
@@ -196,11 +193,6 @@ const GuestManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {guest.plate || 'Não informado'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="max-w-xs truncate">
-                        {guest.observation || 'Sem observações'}
-                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
