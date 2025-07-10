@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, UserCheck, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { apiRequest, API_CONFIG } from '../../config/api';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
 import GuestForm from '../forms/GuestForm';
