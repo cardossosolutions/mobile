@@ -14,7 +14,9 @@ export const API_CONFIG = {
     EMPLOYEES: '/employees',
     GUESTS: '/visitors',
     GUESTS_LIST: '/visitors/list-visitors',
-    APPOINTMENTS: '/appointments',
+    GUESTS_SELECT: '/visitors/list-visitors-select',
+    APPOINTMENTS: '/visitors/list-register',
+    APPOINTMENTS_REGISTER: '/visitors/register-visitor',
     STATES: '/infos/state',
     CITIES: '/infos/city'
   },

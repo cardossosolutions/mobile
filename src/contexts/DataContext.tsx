@@ -151,10 +151,41 @@ interface GuestResponse {
 
 interface Appointment {
   id: string;
-  guestId: string;
-  dataEntrada: string;
-  dataSaida: string;
-  observacoes: string;
+  name: string;
+  cpf: string;
+  responsible: string;
+  dateBegin: string;
+  dateEnding: string;
+}
+
+interface AppointmentResponse {
+  current_page: number;
+  data: Appointment[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
+}
+
+interface GuestSelect {
+  id: number;
+  residence: string;
+  name: string;
+  cpf: string;
+  plate: string | null;
+  observation: string;
+  description: string;
 }
 
 interface DataContextType {
@@ -169,12 +200,15 @@ interface DataContextType {
   guests: Guest[];
   guestPagination: GuestResponse | null;
   appointments: Appointment[];
+  appointmentPagination: AppointmentResponse | null;
+  guestsSelect: GuestSelect[];
   loadCompanies: (page?: number, search?: string) => Promise<void>;
   loadResidences: (page?: number, search?: string) => Promise<void>;
   loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
   loadEmployees: (page?: number, search?: string) => Promise<void>;
   loadGuests: (page?: number, search?: string) => Promise<void>;
-  loadAppointments: () => Promise<void>;
+  loadAppointments: (page?: number, search?: string) => Promise<void>;
+  loadGuestsSelect: () => Promise<void>;
   addCompany: (company: Omit<Company, 'id'>) => Promise<void>;
   updateCompany: (id: string, company: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
@@ -192,8 +226,8 @@ interface DataContextType {
   addGuest: (guest: Omit<Guest, 'id'>) => Promise<void>;
   updateGuest: (id: string, guest: Partial<Guest>) => Promise<void>;
   deleteGuest: (id: string) => Promise<void>;
-  addAppointment: (appointment: Omit<Appointment, 'id'>) => Promise<void>;
-  updateAppointment: (id: string, appointment: Partial<Appointment>) => Promise<void>;
+  addAppointment: (appointment: { visitor: number; dateBegin: string; dateEnding: string }) => Promise<void>;
+  updateAppointment: (id: string, appointment: { visitor: number; dateBegin: string; dateEnding: string }) => Promise<void>;
   deleteAppointment: (id: string) => Promise<void>;
   loadUserProfile: () => Promise<any>;
 }
@@ -430,24 +464,27 @@ const mockGuests: Guest[] = [
 const mockAppointments: Appointment[] = [
   {
     id: '1',
-    guestId: '1',
-    dataEntrada: '2024-01-15T14:00',
-    dataSaida: '2024-01-15T18:00',
-    observacoes: 'Visita social - aniversário'
+    name: 'Amanda Cristina Souza',
+    cpf: '123.456.789-00',
+    responsible: 'João Silva Santos',
+    dateBegin: '15/01/2024',
+    dateEnding: '15/01/2024'
   },
   {
     id: '2',
-    guestId: '2',
-    dataEntrada: '2024-01-16T09:00',
-    dataSaida: '2024-01-16T12:00',
-    observacoes: 'Entrega de móveis'
+    name: 'Bruno Henrique Costa',
+    cpf: '987.654.321-00',
+    responsible: 'Maria Oliveira Costa',
+    dateBegin: '16/01/2024',
+    dateEnding: '16/01/2024'
   },
   {
     id: '3',
-    guestId: '3',
-    dataEntrada: '2024-01-17T15:30',
-    dataSaida: '2024-01-17T17:30',
-    observacoes: 'Aula particular de matemática'
+    name: 'Carla Regina Oliveira',
+    cpf: '111.222.333-44',
+    responsible: 'Carlos Eduardo Ferreira',
+    dateBegin: '17/01/2024',
+    dateEnding: '17/01/2024'
   },
   {
     id: '4',
@@ -498,6 +535,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [guests, setGuests] = useState<Guest[]>([]);
   const [guestPagination, setGuestPagination] = useState<GuestResponse | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentPagination, setAppointmentPagination] = useState<AppointmentResponse | null>(null);
+  const [guestsSelect, setGuestsSelect] = useState<GuestSelect[]>([]);
   const { showSuccess, showError } = useToast();
 
   const generateId = () => Date.now().toString();
@@ -733,24 +772,69 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Função específica para carregar agendamentos
-  const loadAppointments = async () => {
+  const loadAppointments = async (page: number = 1, search?: string) => {
     try {
-      console.log('🔄 Carregando agendamentos...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS, {
+      console.log(`🔄 Carregando agendamentos - Página: ${page}, Busca: ${search || 'N/A'}`);
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.APPOINTMENTS}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await apiRequest(url, {
         method: 'GET'
       });
       
       console.log('✅ Resposta dos agendamentos:', response);
       
-      if (response && response.data) {
-        setAppointments(response.data);
-      } else if (response) {
-        setAppointments(response);
+      if (response && response.data && Array.isArray(response.data) && response.current_page !== undefined) {
+        // Converter dados da API para o formato esperado
+        const appointmentsData: Appointment[] = response.data.map((appointment: any) => ({
+          id: appointment.id.toString(),
+          name: appointment.name,
+          cpf: appointment.cpf,
+          responsible: appointment.responsible,
+          dateBegin: appointment.dateBegin,
+          dateEnding: appointment.dateEnding
+        }));
+        
+        setAppointments(appointmentsData);
+        setAppointmentPagination(response);
+        console.log('💾 Agendamentos carregados:', appointmentsData);
+      } else {
+        console.warn('⚠️ Resposta de agendamentos inválida:', response);
+        setAppointments([]);
+        setAppointmentPagination(null);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar agendamentos:', error);
       // Usar dados mock em caso de erro
       setAppointments(mockAppointments);
+      setAppointmentPagination(null);
+    }
+  };
+
+  // Função específica para carregar convidados para seleção
+  const loadGuestsSelect = async () => {
+    try {
+      console.log('🔄 Carregando convidados para seleção...');
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS_SELECT, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta dos convidados para seleção:', response);
+      
+      if (response && Array.isArray(response)) {
+        setGuestsSelect(response);
+        console.log('💾 Convidados para seleção carregados:', response);
+      } else {
+        console.warn('⚠️ Resposta de convidados para seleção inválida:', response);
+        setGuestsSelect([]);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar convidados para seleção:', error);
+      setGuestsSelect([]);
     }
   };
 
@@ -1191,58 +1275,62 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Funções para agendamentos
-  const addAppointment = async (appointment: Omit<Appointment, 'id'>) => {
+  const addAppointment = async (appointment: { visitor: number; dateBegin: string; dateEnding: string }) => {
     try {
       console.log('📤 Adicionando agendamento...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS, {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER, {
         method: 'POST',
         body: JSON.stringify(appointment)
       });
       
-      if (response && response.data) {
-        setAppointments(prev => [...prev, response.data]);
+      console.log('✅ Resposta do cadastro:', response);
+      
+      if (response && response.message) {
+        // Recarregar lista após adicionar
+        await loadAppointments();
         showSuccess('Agendamento criado!', 'O agendamento foi criado com sucesso.');
       } else {
-        setAppointments(prev => [...prev, { ...appointment, id: generateId() }]);
+        // Fallback para mock
         showSuccess('Agendamento criado!', 'O agendamento foi criado com sucesso.');
       }
     } catch (error) {
       console.error('Error adding appointment:', error);
       showError('Erro ao criar agendamento', 'Não foi possível criar o agendamento. Tente novamente.');
-      setAppointments(prev => [...prev, { ...appointment, id: generateId() }]);
     }
   };
 
-  const updateAppointment = async (id: string, appointment: Partial<Appointment>) => {
+  const updateAppointment = async (id: string, appointment: { visitor: number; dateBegin: string; dateEnding: string }) => {
     try {
       console.log('📝 Atualizando agendamento...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS}/${id}`, {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(appointment)
       });
       
-      setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...appointment } : a));
+      console.log('✅ Agendamento atualizado');
+      
+      // Recarregar lista após atualizar
+      await loadAppointments();
       showSuccess('Agendamento atualizado!', 'O agendamento foi atualizado com sucesso.');
     } catch (error) {
       console.error('Error updating appointment:', error);
       showError('Erro ao atualizar agendamento', 'Não foi possível atualizar o agendamento. Tente novamente.');
-      setAppointments(prev => prev.map(a => a.id === id ? { ...a, ...appointment } : a));
     }
   };
 
   const deleteAppointment = async (id: string) => {
     try {
       console.log('🗑️ Excluindo agendamento...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS}/${id}`, {
+      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}/${id}`, {
         method: 'DELETE'
       });
       
-      setAppointments(prev => prev.filter(a => a.id !== id));
+      // Recarregar lista após excluir
+      await loadAppointments();
       showSuccess('Agendamento excluído!', 'O agendamento foi removido com sucesso.');
     } catch (error) {
       console.error('Error deleting appointment:', error);
       showError('Erro ao excluir agendamento', 'Não foi possível excluir o agendamento. Tente novamente.');
-      setAppointments(prev => prev.filter(a => a.id !== id));
     }
   };
 
@@ -1259,12 +1347,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       guests,
       guestPagination,
       appointments,
+      appointmentPagination,
+      guestsSelect,
       loadCompanies,
       loadResidences,
       loadResidents,
       loadEmployees,
       loadGuests,
       loadAppointments,
+      loadGuestsSelect,
       addCompany,
       updateCompany,
       deleteCompany,

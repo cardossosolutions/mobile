@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Search, X, Save, Loader2 } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
@@ -8,18 +8,17 @@ interface AppointmentFormProps {
 }
 
 interface FormErrors {
-  guestId?: string;
-  dataEntrada?: string;
-  dataSaida?: string;
+  visitor?: string;
+  dateBegin?: string;
+  dateEnding?: string;
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose }) => {
-  const { addAppointment, updateAppointment, guests } = useData();
+  const { addAppointment, updateAppointment, guestsSelect, loadGuestsSelect } = useData();
   const [formData, setFormData] = useState({
-    guestId: appointment?.guestId || '',
-    dataEntrada: appointment?.dataEntrada || '',
-    dataSaida: appointment?.dataSaida || '',
-    observacoes: appointment?.observacoes || ''
+    visitor: appointment?.visitor || '',
+    dateBegin: appointment?.dateBegin || '',
+    dateEnding: appointment?.dateEnding || ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
@@ -28,37 +27,42 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
   const [guestSearchTerm, setGuestSearchTerm] = useState('');
   const [showGuestDropdown, setShowGuestDropdown] = useState(false);
 
+  // Carregar convidados para seleção quando o componente for montado
+  useEffect(() => {
+    loadGuestsSelect();
+  }, []);
+
   // Filtrar convidados baseado na pesquisa
-  const filteredGuests = guests.filter(guest =>
+  const filteredGuests = guestsSelect.filter(guest =>
     guest.name.toLowerCase().includes(guestSearchTerm.toLowerCase()) ||
     guest.cpf.includes(guestSearchTerm) ||
-    (guest.rg && guest.rg.includes(guestSearchTerm))
+    guest.description.toLowerCase().includes(guestSearchTerm.toLowerCase())
   );
 
   // Obter nome do convidado selecionado
-  const selectedGuestName = guests.find(guest => guest.id === formData.guestId)?.name || '';
+  const selectedGuestName = guestsSelect.find(guest => guest.id === Number(formData.visitor))?.name || '';
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.guestId) {
-      newErrors.guestId = 'Convidado é obrigatório';
+    if (!formData.visitor) {
+      newErrors.visitor = 'Convidado é obrigatório';
     }
 
-    if (!formData.dataEntrada) {
-      newErrors.dataEntrada = 'Data e hora de entrada é obrigatória';
+    if (!formData.dateBegin) {
+      newErrors.dateBegin = 'Data de início é obrigatória';
     }
 
-    if (!formData.dataSaida) {
-      newErrors.dataSaida = 'Data e hora de saída é obrigatória';
+    if (!formData.dateEnding) {
+      newErrors.dateEnding = 'Data de término é obrigatória';
     }
 
-    if (formData.dataEntrada && formData.dataSaida) {
-      const entryDate = new Date(formData.dataEntrada);
-      const exitDate = new Date(formData.dataSaida);
+    if (formData.dateBegin && formData.dateEnding) {
+      const beginDate = new Date(formData.dateBegin);
+      const endingDate = new Date(formData.dateEnding);
       
-      if (exitDate <= entryDate) {
-        newErrors.dataSaida = 'Data de saída deve ser posterior à entrada';
+      if (endingDate < beginDate) {
+        newErrors.dateEnding = 'Data de término deve ser posterior à data de início';
       }
     }
 
@@ -75,9 +79,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
 
     setLoading(true);
 
+    // Preparar dados para envio
+    const dataToSubmit = {
+      visitor: Number(formData.visitor),
+      dateBegin: formData.dateBegin,
+      dateEnding: formData.dateEnding
+    };
+
     const operation = appointment 
-      ? updateAppointment(appointment.id, formData)
-      : addAppointment(formData);
+      ? updateAppointment(appointment.id, dataToSubmit)
+      : addAppointment(dataToSubmit);
 
     operation
       .then(() => {
@@ -91,7 +102,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
       });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -110,16 +121,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
   const handleGuestSelect = (guest: any) => {
     setFormData({
       ...formData,
-      guestId: guest.id
+      visitor: guest.id.toString()
     });
     setGuestSearchTerm('');
     setShowGuestDropdown(false);
     
     // Clear error
-    if (errors.guestId) {
+    if (errors.visitor) {
       setErrors({
         ...errors,
-        guestId: undefined
+        visitor: undefined
       });
     }
   };
@@ -127,7 +138,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
   const clearGuestSelection = () => {
     setFormData({
       ...formData,
-      guestId: ''
+      visitor: ''
     });
     setGuestSearchTerm('');
     setShowGuestDropdown(false);
@@ -154,7 +165,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
           <div className="relative">
             <div
               className={`w-full px-3 py-2 border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 cursor-pointer ${
-                errors.guestId ? 'border-red-500' : 'border-gray-300'
+                errors.visitor ? 'border-red-500' : 'border-gray-300'
               } bg-white`}
               onClick={() => setShowGuestDropdown(!showGuestDropdown)}
             >
@@ -188,7 +199,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <input
                       type="text"
-                      placeholder="Pesquisar por nome, CPF ou RG..."
+                      placeholder="Pesquisar por nome, CPF ou descrição..."
                       value={guestSearchTerm}
                       onChange={(e) => setGuestSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -208,6 +219,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
                         <div>
                           <div className="font-medium">{guest.name}</div>
                           <div className="text-sm text-gray-500">CPF: {guest.cpf} | Residência: {guest.residence}</div>
+                          {guest.plate && (
+                            <div className="text-xs text-gray-400">Placa: {guest.plate}</div>
+                          )}
                         </div>
                       </button>
                     ))
@@ -221,60 +235,55 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onClose 
             )}
           </div>
           
-          {errors.guestId && (
-            <p className="text-red-500 text-sm mt-1">{errors.guestId}</p>
+          {errors.visitor && (
+            <p className="text-red-500 text-sm mt-1">{errors.visitor}</p>
           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Data e Hora de Entrada <span className="text-red-500">*</span>
+              Data de Início <span className="text-red-500">*</span>
             </label>
             <input
-              type="datetime-local"
-              name="dataEntrada"
-              value={formData.dataEntrada}
+              type="date"
+              name="dateBegin"
+              value={formData.dateBegin}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.dataEntrada ? 'border-red-500' : 'border-gray-300'
+                errors.dateBegin ? 'border-red-500' : 'border-gray-300'
               }`}
             />
-            {errors.dataEntrada && (
-              <p className="text-red-500 text-sm mt-1">{errors.dataEntrada}</p>
+            {errors.dateBegin && (
+              <p className="text-red-500 text-sm mt-1">{errors.dateBegin}</p>
             )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Data e Hora de Saída <span className="text-red-500">*</span>
+              Data de Término <span className="text-red-500">*</span>
             </label>
             <input
-              type="datetime-local"
-              name="dataSaida"
-              value={formData.dataSaida}
+              type="date"
+              name="dateEnding"
+              value={formData.dateEnding}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.dataSaida ? 'border-red-500' : 'border-gray-300'
+                errors.dateEnding ? 'border-red-500' : 'border-gray-300'
               }`}
             />
-            {errors.dataSaida && (
-              <p className="text-red-500 text-sm mt-1">{errors.dataSaida}</p>
+            {errors.dateEnding && (
+              <p className="text-red-500 text-sm mt-1">{errors.dateEnding}</p>
             )}
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Observações
-          </label>
-          <textarea
-            name="observacoes"
-            value={formData.observacoes}
-            onChange={handleChange}
-            rows={3}
-            placeholder="Informações adicionais sobre o agendamento..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-blue-800 mb-2">Informações do Agendamento:</h4>
+          <ul className="text-sm text-blue-700 space-y-1">
+            <li>• O agendamento será válido durante todo o período selecionado</li>
+            <li>• O convidado poderá acessar a residência nas datas especificadas</li>
+            <li>• Certifique-se de que as datas estão corretas antes de confirmar</li>
+          </ul>
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">

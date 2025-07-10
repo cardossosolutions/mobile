@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Calendar, Clock, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Calendar, Clock, Loader2, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
 import AppointmentForm from '../forms/AppointmentForm';
 
 const AppointmentManagement: React.FC = () => {
-  const { appointments, guests, loadAppointments, loadGuests, deleteAppointment } = useData();
+  const { appointments, appointmentPagination, loadAppointments, deleteAppointment } = useData();
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [loadingAppointmentData, setLoadingAppointmentData] = useState<Record<string, boolean>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
@@ -23,16 +23,13 @@ const AppointmentManagement: React.FC = () => {
     loading: false
   });
 
-  // Carregar agendamentos e convidados quando o componente for montado
+  // Carregar agendamentos quando o componente for montado
   useEffect(() => {
-    console.log('📅 AppointmentManagement montado - carregando agendamentos e convidados...');
+    console.log('📅 AppointmentManagement montado - carregando agendamentos...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
-        await Promise.all([
-          loadAppointments(),
-          loadGuests() // Necessário para mostrar nomes dos convidados
-        ]);
+        await loadAppointments();
       } finally {
         setInitialLoading(false);
       }
@@ -40,23 +37,56 @@ const AppointmentManagement: React.FC = () => {
     loadInitialData();
   }, []);
 
-  const filteredAppointments = appointments.filter(appointment => {
-    const guest = guests.find(g => g.id === appointment.guestId);
-    const guestName = guest?.name || '';
-    
-    const matchesSearch = guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (appointment.observacoes && appointment.observacoes.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesDate = !dateFilter || appointment.dataEntrada.includes(dateFilter);
-    
-    return matchesSearch && matchesDate;
-  });
+  // Debounce para busca
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        handleSearch();
+      } else {
+        loadAppointments(1); // Recarregar primeira página sem busca
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      await loadAppointments(1, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    setLoading(true);
+    try {
+      await loadAppointments(page, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = async (appointment: any) => {
     setLoadingAppointmentData(prev => ({ ...prev, [appointment.id]: true }));
     try {
-      // Para agendamentos, podemos usar os dados já carregados ou fazer uma requisição específica
-      setEditingAppointment(appointment);
+      // Para agendamentos, podemos usar os dados já carregados
+      // Converter formato de data de DD/MM/YYYY para YYYY-MM-DD
+      const convertDateFormat = (dateStr: string) => {
+        if (!dateStr) return '';
+        const [day, month, year] = dateStr.split('/');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      };
+
+      const appointmentData = {
+        id: appointment.id,
+        visitor: '', // Será preenchido pelo usuário
+        dateBegin: convertDateFormat(appointment.dateBegin),
+        dateEnding: convertDateFormat(appointment.dateEnding)
+      };
+
+      setEditingAppointment(appointmentData);
       setIsModalOpen(true);
     } finally {
       setLoadingAppointmentData(prev => ({ ...prev, [appointment.id]: false }));
@@ -84,6 +114,10 @@ const AppointmentManagement: React.FC = () => {
         appointment: null,
         loading: false
       });
+
+      // Recarregar a página atual após exclusão
+      const currentPage = appointmentPagination?.current_page || 1;
+      await loadAppointments(currentPage, searchTerm);
     } catch (error) {
       console.error('Erro ao excluir agendamento:', error);
       setDeleteConfirmation(prev => ({ ...prev, loading: false }));
@@ -103,41 +137,116 @@ const AppointmentManagement: React.FC = () => {
     setEditingAppointment(null);
   };
 
-  const getGuestName = (guestId: string) => {
-    const guest = guests.find(g => g.id === guestId);
-    return guest ? guest.name : 'Convidado não encontrado';
+  const handleFormSuccess = () => {
+    handleCloseModal();
+    // Recarregar a página atual após sucesso
+    const currentPage = appointmentPagination?.current_page || 1;
+    loadAppointments(currentPage, searchTerm);
   };
 
-  const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleString('pt-BR');
-  };
-
-  const getStatusColor = (appointment: any) => {
-    const now = new Date();
-    const entryDate = new Date(appointment.dataEntrada);
-    const exitDate = new Date(appointment.dataSaida);
-    
-    if (now < entryDate) {
-      return 'bg-yellow-100 text-yellow-800'; // Agendado
-    } else if (now >= entryDate && now <= exitDate) {
-      return 'bg-green-100 text-green-800'; // Em andamento
-    } else {
-      return 'bg-gray-100 text-gray-800'; // Finalizado
+  const formatDateRange = (dateBegin: string, dateEnding: string) => {
+    if (dateBegin === dateEnding) {
+      return dateBegin;
     }
+    return `${dateBegin} até ${dateEnding}`;
   };
 
-  const getStatusText = (appointment: any) => {
-    const now = new Date();
-    const entryDate = new Date(appointment.dataEntrada);
-    const exitDate = new Date(appointment.dataSaida);
-    
-    if (now < entryDate) {
-      return 'Agendado';
-    } else if (now >= entryDate && now <= exitDate) {
-      return 'Em andamento';
-    } else {
-      return 'Finalizado';
+  // Função para renderizar os botões de paginação
+  const renderPaginationButtons = () => {
+    if (!appointmentPagination || appointmentPagination.last_page <= 1) {
+      return null;
     }
+
+    const buttons = [];
+    const currentPage = appointmentPagination.current_page;
+    const lastPage = appointmentPagination.last_page;
+
+    // Botão "Anterior"
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1 || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+    );
+
+    // Botões de páginas
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(lastPage, currentPage + 2);
+
+    if (startPage > 1) {
+      buttons.push(
+        <button
+          key={1}
+          onClick={() => handlePageChange(1)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(
+          <span key="ellipsis1" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+    }
+
+    for (let page = startPage; page <= endPage; page++) {
+      buttons.push(
+        <button
+          key={page}
+          onClick={() => handlePageChange(page)}
+          disabled={loading}
+          className={`px-3 py-2 text-sm font-medium border border-gray-300 disabled:opacity-50 ${
+            page === currentPage
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-500 bg-white hover:bg-gray-50'
+          }`}
+        >
+          {page}
+        </button>
+      );
+    }
+
+    if (endPage < lastPage) {
+      if (endPage < lastPage - 1) {
+        buttons.push(
+          <span key="ellipsis2" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+      buttons.push(
+        <button
+          key={lastPage}
+          onClick={() => handlePageChange(lastPage)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {lastPage}
+        </button>
+      );
+    }
+
+    // Botão "Próximo"
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === lastPage || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    );
+
+    return buttons;
   };
 
   return (
@@ -159,19 +268,31 @@ const AppointmentManagement: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar por convidado ou observações..."
+              placeholder="Buscar por nome do convidado, CPF ou responsável..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          {loading && (
+            <div className="flex items-center space-x-2 text-red-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+              <span className="text-sm">Carregando...</span>
+            </div>
+          )}
         </div>
+
+        {/* Informações de paginação */}
+        {appointmentPagination && (
+          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+            <div>
+              Mostrando {appointmentPagination.from} a {appointmentPagination.to} de {appointmentPagination.total} agendamentos
+            </div>
+            <div>
+              Página {appointmentPagination.current_page} de {appointmentPagination.last_page}
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           {/* Loading inicial */}
@@ -193,13 +314,13 @@ const AppointmentManagement: React.FC = () => {
                   Convidado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data/Hora Entrada
+                  CPF
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data/Hora Saída
+                  Responsável
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Período
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ações
@@ -207,34 +328,29 @@ const AppointmentManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAppointments.map((appointment) => (
+              {appointments.map((appointment) => (
                 <tr key={appointment.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="bg-red-100 p-2 rounded-full mr-3">
-                        <Calendar className="w-5 h-5 text-red-600" />
+                        <User className="w-5 h-5 text-red-600" />
                       </div>
                       <div className="text-sm font-medium text-gray-900">
-                        {getGuestName(appointment.guestId)}
+                        {appointment.name}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 text-gray-400 mr-1" />
-                      {formatDateTime(appointment.dataEntrada)}
-                    </div>
+                    {appointment.cpf}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {appointment.responsible}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center">
-                      <Clock className="w-4 h-4 text-gray-400 mr-1" />
-                      {formatDateTime(appointment.dataSaida)}
+                      <Calendar className="w-4 h-4 text-gray-400 mr-1" />
+                      {formatDateRange(appointment.dateBegin, appointment.dateEnding)}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment)}`}>
-                      {getStatusText(appointment)}
-                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -266,19 +382,33 @@ const AppointmentManagement: React.FC = () => {
           )}
         </div>
 
-        {filteredAppointments.length === 0 && !initialLoading && (
+        {appointments.length === 0 && !loading && !initialLoading && (
           <div className="text-center py-8">
             <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhum agendamento encontrado</p>
+            <p className="text-gray-500">
+              {searchTerm ? 'Nenhum agendamento encontrado para a busca realizada' : 'Nenhum agendamento encontrado'}
+            </p>
+          </div>
+        )}
+
+        {/* Controles de paginação */}
+        {appointmentPagination && appointmentPagination.last_page > 1 && !initialLoading && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-600">
+              {appointmentPagination.total} {appointmentPagination.total === 1 ? 'agendamento' : 'agendamentos'} no total
+            </div>
+            <div className="flex items-center space-x-1">
+              {renderPaginationButtons()}
+            </div>
           </div>
         )}
       </div>
 
       {/* Modal de Formulário */}
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+      <Modal isOpen={isModalOpen} onClose={handleFormSuccess}>
         <AppointmentForm
           appointment={editingAppointment}
-          onClose={handleCloseModal}
+          onClose={handleFormSuccess}
         />
       </Modal>
 
@@ -288,7 +418,7 @@ const AppointmentManagement: React.FC = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Confirmar Exclusão"
-        message={`Tem certeza que deseja excluir este agendamento para "${getGuestName(deleteConfirmation.appointment?.guestId || '')}"? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir o agendamento para "${deleteConfirmation.appointment?.name}"? Esta ação não pode ser desfeita.`}
         confirmText="Excluir Agendamento"
         cancelText="Cancelar"
         type="danger"
