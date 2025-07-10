@@ -129,6 +129,26 @@ interface Guest {
   description: string;
 }
 
+interface GuestResponse {
+  current_page: number;
+  data: Guest[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
+}
+
 interface Appointment {
   id: string;
   guestId: string;
@@ -147,12 +167,13 @@ interface DataContextType {
   employees: Employee[];
   employeePagination: EmployeeResponse | null;
   guests: Guest[];
+  guestPagination: GuestResponse | null;
   appointments: Appointment[];
   loadCompanies: (page?: number, search?: string) => Promise<void>;
   loadResidences: (page?: number, search?: string) => Promise<void>;
   loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
   loadEmployees: (page?: number, search?: string) => Promise<void>;
-  loadGuests: () => Promise<void>;
+  loadGuests: (page?: number, search?: string) => Promise<void>;
   loadAppointments: () => Promise<void>;
   addCompany: (company: Omit<Company, 'id'>) => Promise<void>;
   updateCompany: (id: string, company: Partial<Company>) => Promise<void>;
@@ -475,6 +496,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeePagination, setEmployeePagination] = useState<EmployeeResponse | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [guestPagination, setGuestPagination] = useState<GuestResponse | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const { showSuccess, showError } = useToast();
 
@@ -663,18 +685,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Função específica para carregar convidados
-  const loadGuests = async () => {
+  const loadGuests = async (page: number = 1, search?: string) => {
     try {
-      console.log('🔄 Carregando convidados...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS_LIST, {
+      console.log(`🔄 Carregando convidados - Página: ${page}, Busca: ${search || 'N/A'}`);
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.GUESTS_LIST}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await apiRequest(url, {
         method: 'GET'
       });
       
       console.log('✅ Resposta dos convidados:', response);
       
-      if (response && Array.isArray(response)) {
+      if (response && response.data && Array.isArray(response.data)) {
         // Converter dados da API para o formato esperado
-        const guestsData: Guest[] = response.map((guest: any) => ({
+        const guestsData: Guest[] = response.data.map((guest: any) => ({
           id: guest.id.toString(),
           name: guest.name,
           residence: guest.residence,
@@ -687,15 +716,34 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }));
         
         setGuests(guestsData);
+        setGuestPagination(response);
         console.log('💾 Convidados carregados:', guestsData);
+      } else if (response && Array.isArray(response)) {
+        // Fallback para resposta sem paginação
+        const guestsData: Guest[] = response.map((guest: any) => ({
+          id: guest.id.toString(),
+          name: guest.name,
+          residence: guest.residence,
+          cpf: guest.cpf,
+          rg: '',
+          plate: guest.plate,
+          observation: '',
+          type: 'visitor',
+          description: guest.description
+        }));
+        
+        setGuests(guestsData);
+        setGuestPagination(null);
       } else {
         console.warn('⚠️ Resposta de convidados inválida');
         setGuests([]);
+        setGuestPagination(null);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar convidados:', error);
       // Usar dados mock em caso de erro
       setGuests(mockGuests);
+      setGuestPagination(null);
     }
   };
 
@@ -1224,6 +1272,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       employees,
       employeePagination,
       guests,
+      guestPagination,
       appointments,
       loadCompanies,
       loadResidences,

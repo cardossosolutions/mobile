@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, UserCheck, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, UserCheck, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { apiRequest, API_CONFIG } from '../../config/api';
 import Modal from '../common/Modal';
@@ -7,11 +7,12 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import GuestForm from '../forms/GuestForm';
 
 const GuestManagement: React.FC = () => {
-  const { guests, loadGuests, deleteGuest } = useData();
+  const { guests, guestPagination, loadGuests, deleteGuest } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuest, setEditingGuest] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingGuestData, setLoadingGuestData] = useState<Record<string, boolean>>({});
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
@@ -37,13 +38,36 @@ const GuestManagement: React.FC = () => {
     loadInitialData();
   }, []);
 
-  const filteredGuests = guests.filter(guest =>
-    guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    guest.cpf.includes(searchTerm) ||
-    (guest.rg && guest.rg.includes(searchTerm)) ||
-    (guest.plate && guest.plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    guest.residence.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Debounce para busca
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        handleSearch();
+      } else {
+        loadGuests(1); // Recarregar primeira página sem busca
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      await loadGuests(1, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    setLoading(true);
+    try {
+      await loadGuests(page, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = async (guest: any) => {
     setLoadingGuestData(prev => ({ ...prev, [guest.id]: true }));
@@ -104,6 +128,10 @@ const GuestManagement: React.FC = () => {
         guest: null,
         loading: false
       });
+
+      // Recarregar a página atual após exclusão
+      const currentPage = guestPagination?.current_page || 1;
+      await loadGuests(currentPage, searchTerm);
     } catch (error) {
       console.error('Erro ao excluir convidado:', error);
       setDeleteConfirmation(prev => ({ ...prev, loading: false }));
@@ -121,6 +149,111 @@ const GuestManagement: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingGuest(null);
+  };
+
+  const handleFormSuccess = () => {
+    handleCloseModal();
+    // Recarregar a página atual após sucesso
+    const currentPage = guestPagination?.current_page || 1;
+    loadGuests(currentPage, searchTerm);
+  };
+
+  // Função para renderizar os botões de paginação
+  const renderPaginationButtons = () => {
+    if (!guestPagination || guestPagination.last_page <= 1) {
+      return null;
+    }
+
+    const buttons = [];
+    const currentPage = guestPagination.current_page;
+    const lastPage = guestPagination.last_page;
+
+    // Botão "Anterior"
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1 || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+    );
+
+    // Botões de páginas
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(lastPage, currentPage + 2);
+
+    if (startPage > 1) {
+      buttons.push(
+        <button
+          key={1}
+          onClick={() => handlePageChange(1)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        buttons.push(
+          <span key="ellipsis1" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+    }
+
+    for (let page = startPage; page <= endPage; page++) {
+      buttons.push(
+        <button
+          key={page}
+          onClick={() => handlePageChange(page)}
+          disabled={loading}
+          className={`px-3 py-2 text-sm font-medium border border-gray-300 disabled:opacity-50 ${
+            page === currentPage
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-500 bg-white hover:bg-gray-50'
+          }`}
+        >
+          {page}
+        </button>
+      );
+    }
+
+    if (endPage < lastPage) {
+      if (endPage < lastPage - 1) {
+        buttons.push(
+          <span key="ellipsis2" className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300">
+            ...
+          </span>
+        );
+      }
+      buttons.push(
+        <button
+          key={lastPage}
+          onClick={() => handlePageChange(lastPage)}
+          disabled={loading}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {lastPage}
+        </button>
+      );
+    }
+
+    // Botão "Próximo"
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === lastPage || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    );
+
+    return buttons;
   };
 
   return (
@@ -148,12 +281,33 @@ const GuestManagement: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          {loading && (
+            <div className="flex items-center space-x-2 text-orange-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+              <span className="text-sm">Carregando...</span>
+            </div>
+          )}
         </div>
+
+        {/* Informações de paginação */}
+        {guestPagination && (
+          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+            <div>
+              Mostrando {guestPagination.from} a {guestPagination.to} de {guestPagination.total} convidados
+            </div>
+            <div>
+              Página {guestPagination.current_page} de {guestPagination.last_page}
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           {initialLoading && (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <div className="flex items-center space-x-3 text-orange-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-lg font-medium">Carregando convidados...</span>
+              </div>
             </div>
           )}
 
@@ -177,7 +331,7 @@ const GuestManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredGuests.map((guest) => (
+                {guests.map((guest) => (
                   <tr key={guest.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -224,19 +378,33 @@ const GuestManagement: React.FC = () => {
           )}
         </div>
 
-        {filteredGuests.length === 0 && !initialLoading && (
+        {guests.length === 0 && !loading && !initialLoading && (
           <div className="text-center py-8">
             <UserCheck className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhum convidado encontrado</p>
+            <p className="text-gray-500">
+              {searchTerm ? 'Nenhum convidado encontrado para a busca realizada' : 'Nenhum convidado encontrado'}
+            </p>
+          </div>
+        )}
+
+        {/* Controles de paginação */}
+        {guestPagination && guestPagination.last_page > 1 && !initialLoading && (
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-600">
+              {guestPagination.total} {guestPagination.total === 1 ? 'convidado' : 'convidados'} no total
+            </div>
+            <div className="flex items-center space-x-1">
+              {renderPaginationButtons()}
+            </div>
           </div>
         )}
       </div>
 
       {/* Modal de Formulário */}
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+      <Modal isOpen={isModalOpen} onClose={handleFormSuccess}>
         <GuestForm
           guest={editingGuest}
-          onClose={handleCloseModal}
+          onClose={handleFormSuccess}
         />
       </Modal>
 
