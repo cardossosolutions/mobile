@@ -64,9 +64,9 @@ const GuestManagement: React.FC = () => {
           name: response.name,
           residence: response.residence,
           cpf: response.cpf,
-          rg: '', // RG não vem na resposta, manter vazio
+          rg: response.rg || '', // Usar RG da resposta da API
           plate: response.plate,
-          observation: '', // Observação não vem na resposta, manter vazio
+          observation: response.observation || '', // Usar observação da resposta da API
           type: 'visitor'
         };
         
@@ -166,13 +166,13 @@ const GuestManagement: React.FC = () => {
                     Nome
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Residência
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Documentos
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Veículo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Observações
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
@@ -190,15 +190,17 @@ const GuestManagement: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900">{guest.name}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{guest.residence}</div>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div>CPF: {guest.cpf}</div>
                       {guest.rg && <div className="text-gray-500">RG: {guest.rg}</div>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {guest.plate || 'Não informado'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="max-w-xs truncate">
+                        {guest.observation || 'Sem observações'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
