@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2 } from 'lucide-react';
+import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2, MessageCircle } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 // Interface para os dados do visitante baseada na API
@@ -148,6 +148,21 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
   );
 };
 
+// Função para abrir WhatsApp Web
+const openWhatsApp = (phoneNumber: string, visitorName: string, residenceName: string) => {
+  // Limpar o número de telefone (remover caracteres especiais)
+  const cleanPhone = phoneNumber.replace(/\D/g, '');
+  
+  // Adicionar código do país se não tiver (assumindo Brasil +55)
+  const formattedPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+  
+  // Mensagem padrão
+  const message = `Olá! Sou da portaria. O visitante *${visitorName}* está aqui para a residência *${residenceName}*. Posso autorizar a entrada?`;
+  
+  // Abrir WhatsApp Web
+  window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+};
+
 const VisitorDetailsModal: React.FC<{ 
   visitor: VisitorDetails | null; 
   onClose: () => void 
@@ -239,6 +254,15 @@ const VisitorDetailsModal: React.FC<{
                           <p className="font-medium text-gray-900">{responsible.name}</p>
                           <p className="text-sm text-gray-600">{responsible.mobile}</p>
                         </div>
+                        {responsible.mobile && (
+                          <button
+                            onClick={() => openWhatsApp(responsible.mobile, visitor.visitor_name, visitor.residence)}
+                            className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-colors shadow-md hover:shadow-lg transform hover:scale-105"
+                            title={`Enviar mensagem no WhatsApp para ${responsible.name}`}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
