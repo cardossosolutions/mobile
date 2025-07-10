@@ -318,7 +318,6 @@ const VisitorDetailsModal: React.FC<{
 };
 
 const VisitorScheduleView: React.FC = () => {
-  const { loadVisitorSchedule } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -334,10 +333,21 @@ const VisitorScheduleView: React.FC = () => {
   // Ref para o elemento sentinela do scroll infinito
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  
+  // Ref para controlar requisições em andamento
+  const loadingRef = useRef(false);
+  const lastSearchRef = useRef('');
 
   // Função para carregar dados da API
   const loadVisitorData = useCallback(async (page: number, search?: string, reset: boolean = false) => {
+    // Evitar múltiplas requisições simultâneas
+    if (loadingRef.current) {
+      console.log('⏳ Requisição já em andamento, ignorando...');
+      return;
+    }
+
     try {
+      loadingRef.current = true;
       console.log(`🔄 Carregando visitantes - Página: ${page}, Busca: ${search || 'N/A'}, Reset: ${reset}`);
       
       if (page === 1 && !reset) {
@@ -375,8 +385,12 @@ const VisitorScheduleView: React.FC = () => {
           // Primeira página ou reset - substituir todos os dados
           setVisitors(newVisitors);
         } else {
-          // Páginas subsequentes - adicionar aos dados existentes
-          setVisitors(prev => [...prev, ...newVisitors]);
+          // Páginas subsequentes - adicionar aos dados existentes, evitando duplicatas
+          setVisitors(prev => {
+            const existingIds = new Set(prev.map(v => `${v.id}-${v.visitor_id}`));
+            const uniqueNewVisitors = newVisitors.filter(v => !existingIds.has(`${v.id}-${v.visitor_id}`));
+            return [...prev, ...uniqueNewVisitors];
+          });
         }
         
         setCurrentPage(data.current_page);
@@ -400,6 +414,7 @@ const VisitorScheduleView: React.FC = () => {
         setHasNextPage(false);
       }
     } finally {
+      loadingRef.current = false;
       setInitialLoading(false);
       setLoadingMore(false);
       setLoading(false);
@@ -408,7 +423,7 @@ const VisitorScheduleView: React.FC = () => {
 
   // Função para carregar próxima página
   const loadNextPage = useCallback(() => {
-    if (!loadingMore && hasNextPage) {
+    if (!loadingMore && hasNextPage && !loadingRef.current) {
       console.log(`📄 Carregando próxima página: ${currentPage + 1}`);
       loadVisitorData(currentPage + 1, searchTerm);
     }
@@ -423,7 +438,7 @@ const VisitorScheduleView: React.FC = () => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry.isIntersecting && hasNextPage && !loadingMore && !initialLoading) {
+        if (entry.isIntersecting && hasNextPage && !loadingMore && !initialLoading && !loadingRef.current) {
           console.log('👁️ Sentinela visível - carregando próxima página');
           loadNextPage();
         }
@@ -445,16 +460,22 @@ const VisitorScheduleView: React.FC = () => {
     };
   }, [hasNextPage, loadingMore, initialLoading, loadNextPage]);
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais apenas uma vez
   useEffect(() => {
     console.log('👁️ VisitorScheduleView montado - carregando cronograma inicial...');
     loadVisitorData(1, '', true);
-  }, [loadVisitorData]);
+  }, []); // Dependências vazias para executar apenas uma vez
 
   // Debounce para busca
   useEffect(() => {
+    // Evitar busca na primeira renderização
+    if (lastSearchRef.current === searchTerm) {
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
       console.log(`🔍 Executando busca: "${searchTerm}"`);
+      lastSearchRef.current = searchTerm;
       setLoading(true);
       loadVisitorData(1, searchTerm, true);
     }, 500);
