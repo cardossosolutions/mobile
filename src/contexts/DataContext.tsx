@@ -710,8 +710,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           residence: guest.residence,
           cpf: guest.cpf,
           rg: '', // RG não vem na listagem, será preenchido na edição
-          plate: guest.plate,
-          observation: '', // Observação não vem na listagem, será preenchida na edição
+          plate: guest.plate || null,
+          observation: guest.observation || '',
           type: 'visitor',
           description: guest.description
         }));
@@ -719,78 +719,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGuests(guestsData);
         setGuestPagination(response);
         console.log('💾 Convidados carregados:', guestsData);
-      } else if (response && Array.isArray(response.data)) {
-        // Resposta com dados mas sem paginação
-        const guestsData: Guest[] = response.data.map((guest: any) => ({
-          id: guest.id.toString(),
-          name: guest.name,
-          residence: guest.residence,
-          cpf: guest.cpf,
-          rg: '',
-          plate: guest.plate,
-          observation: '',
-          type: 'visitor',
-          description: guest.description
-        }));
-        
-        setGuests(guestsData);
-        
-        // Criar estrutura de paginação mock se não vier da API
-        const mockPagination: GuestResponse = {
-          current_page: 1,
-          data: guestsData,
-          first_page_url: '',
-          from: 1,
-          last_page: 1,
-          last_page_url: '',
-          links: [],
-          next_page_url: null,
-          path: '',
-          per_page: guestsData.length,
-          prev_page_url: null,
-          to: guestsData.length,
-          total: guestsData.length
-        };
-        
-        setGuestPagination(mockPagination);
-        console.log('💾 Convidados carregados sem paginação (criando mock):', guestsData);
-      } else if (response && Array.isArray(response)) {
-        // Fallback para resposta sem paginação
-        const guestsData: Guest[] = response.map((guest: any) => ({
-          id: guest.id.toString(),
-          name: guest.name,
-          residence: guest.residence,
-          cpf: guest.cpf,
-          rg: '',
-          plate: guest.plate,
-          observation: '',
-          type: 'visitor',
-          description: guest.description
-        }));
-        
-        setGuests(guestsData);
-        
-        // Criar estrutura de paginação mock
-        const mockPagination: GuestResponse = {
-          current_page: 1,
-          data: guestsData,
-          first_page_url: '',
-          from: 1,
-          last_page: 1,
-          last_page_url: '',
-          links: [],
-          next_page_url: null,
-          path: '',
-          per_page: guestsData.length,
-          prev_page_url: null,
-          to: guestsData.length,
-          total: guestsData.length
-        };
-        
-        setGuestPagination(mockPagination);
-        console.log('💾 Convidados carregados (array direto, criando mock):', guestsData);
       } else {
-        console.warn('⚠️ Resposta de convidados inválida');
+        console.warn('⚠️ Resposta de convidados inválida:', response);
         setGuests([]);
         setGuestPagination(null);
       }
@@ -798,25 +728,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('❌ Erro ao carregar convidados:', error);
       // Usar dados mock em caso de erro
       setGuests(mockGuests);
-      
-      // Criar estrutura de paginação mock para dados de fallback
-      const mockPagination: GuestResponse = {
-        current_page: 1,
-        data: mockGuests,
-        first_page_url: '',
-        from: 1,
-        last_page: 1,
-        last_page_url: '',
-        links: [],
-        next_page_url: null,
-        path: '',
-        per_page: mockGuests.length,
-        prev_page_url: null,
-        to: mockGuests.length,
-        total: mockGuests.length
-      };
-      
-      setGuestPagination(mockPagination);
+      setGuestPagination(null);
     }
   };
 
