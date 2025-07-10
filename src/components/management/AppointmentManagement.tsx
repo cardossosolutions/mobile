@@ -81,7 +81,7 @@ const AppointmentManagement: React.FC = () => {
 
       const appointmentData = {
         id: appointment.id,
-        visitor: '', // Será preenchido pelo usuário
+        visitor: appointment.visitor_id ? appointment.visitor_id.toString() : '', // Usar visitor_id da listagem
         dateBegin: convertDateFormat(appointment.dateBegin),
         dateEnding: convertDateFormat(appointment.dateEnding)
       };

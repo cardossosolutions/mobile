@@ -151,6 +151,7 @@ interface GuestResponse {
 
 interface Appointment {
   id: string;
+  visitor_id?: number;
   name: string;
   cpf: string;
   responsible: string;
@@ -464,6 +465,7 @@ const mockGuests: Guest[] = [
 const mockAppointments: Appointment[] = [
   {
     id: '1',
+    visitor_id: 1,
     name: 'Amanda Cristina Souza',
     cpf: '123.456.789-00',
     responsible: 'João Silva Santos',
@@ -472,6 +474,7 @@ const mockAppointments: Appointment[] = [
   },
   {
     id: '2',
+    visitor_id: 2,
     name: 'Bruno Henrique Costa',
     cpf: '987.654.321-00',
     responsible: 'Maria Oliveira Costa',
@@ -480,6 +483,7 @@ const mockAppointments: Appointment[] = [
   },
   {
     id: '3',
+    visitor_id: 3,
     name: 'Carla Regina Oliveira',
     cpf: '111.222.333-44',
     responsible: 'Carlos Eduardo Ferreira',
@@ -792,6 +796,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Converter dados da API para o formato esperado
         const appointmentsData: Appointment[] = response.data.map((appointment: any) => ({
           id: appointment.id.toString(),
+          visitor_id: appointment.visitor_id,
           name: appointment.name,
           cpf: appointment.cpf,
           responsible: appointment.responsible,
