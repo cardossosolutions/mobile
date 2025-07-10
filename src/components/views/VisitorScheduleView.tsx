@@ -225,6 +225,14 @@ const VisitorDetailsModal: React.FC<{
                     </div>
                   </div>
 
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                    <User className="w-5 h-5 text-green-600" />
+                    <div>
+                      <span className="font-medium text-gray-700">Responsável:</span>
+                      <p className="text-gray-900">{visitor.responsible}</p>
+                    </div>
+                  </div>
+
                   {visitor.observation && (
                     <div className="p-4 bg-white rounded-lg border border-gray-200">
                       <span className="font-medium text-gray-700">Observações:</span>
