@@ -189,6 +189,40 @@ interface GuestSelect {
   description: string;
 }
 
+interface VisitorSchedule {
+  id: number;
+  visitor_name: string;
+  visitor_id: number;
+  cpf: string;
+  mobile: string;
+  rg: string | null;
+  plate: string | null;
+  observation: string;
+  responsible: string;
+  dateBegin: string;
+  dateEnding: string;
+}
+
+interface VisitorScheduleResponse {
+  current_page: number;
+  data: VisitorSchedule[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
+}
+
 interface DataContextType {
   companies: Company[];
   companyPagination: CompanyResponse | null;
@@ -203,6 +237,8 @@ interface DataContextType {
   appointments: Appointment[];
   appointmentPagination: AppointmentResponse | null;
   guestsSelect: GuestSelect[];
+  visitorSchedule: VisitorSchedule[];
+  visitorSchedulePagination: VisitorScheduleResponse | null;
   loadCompanies: (page?: number, search?: string) => Promise<void>;
   loadResidences: (page?: number, search?: string) => Promise<void>;
   loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
@@ -210,6 +246,7 @@ interface DataContextType {
   loadGuests: (page?: number, search?: string) => Promise<void>;
   loadAppointments: (page?: number, search?: string) => Promise<void>;
   loadGuestsSelect: () => Promise<void>;
+  loadVisitorSchedule: (page?: number, search?: string) => Promise<void>;
   addCompany: (company: Omit<Company, 'id'>) => Promise<void>;
   updateCompany: (id: string, company: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
@@ -541,6 +578,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentPagination, setAppointmentPagination] = useState<AppointmentResponse | null>(null);
   const [guestsSelect, setGuestsSelect] = useState<GuestSelect[]>([]);
+  const [visitorSchedule, setVisitorSchedule] = useState<VisitorSchedule[]>([]);
+  const [visitorSchedulePagination, setVisitorSchedulePagination] = useState<VisitorScheduleResponse | null>(null);
   const { showSuccess, showError } = useToast();
 
   const generateId = () => Date.now().toString();
@@ -840,6 +879,39 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('❌ Erro ao carregar convidados para seleção:', error);
       setGuestsSelect([]);
+    }
+  };
+
+  // Função específica para carregar cronograma de visitantes
+  const loadVisitorSchedule = async (page: number = 1, search?: string) => {
+    try {
+      console.log(`🔄 Carregando cronograma de visitantes - Página: ${page}, Busca: ${search || 'N/A'}`);
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.VISITOR_SCHEDULE}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await apiRequest(url, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta do cronograma de visitantes:', response);
+      
+      if (response && response.data && Array.isArray(response.data) && response.current_page !== undefined) {
+        setVisitorSchedule(response.data);
+        setVisitorSchedulePagination(response);
+        console.log('💾 Cronograma de visitantes carregado:', response.data);
+      } else {
+        console.warn('⚠️ Resposta do cronograma de visitantes inválida:', response);
+        setVisitorSchedule([]);
+        setVisitorSchedulePagination(null);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar cronograma de visitantes:', error);
+      setVisitorSchedule([]);
+      setVisitorSchedulePagination(null);
     }
   };
 
@@ -1354,6 +1426,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       appointments,
       appointmentPagination,
       guestsSelect,
+      visitorSchedule,
+      visitorSchedulePagination,
       loadCompanies,
       loadResidences,
       loadResidents,
@@ -1361,6 +1435,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loadGuests,
       loadAppointments,
       loadGuestsSelect,
+      loadVisitorSchedule,
       addCompany,
       updateCompany,
       deleteCompany,

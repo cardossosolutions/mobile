@@ -1,25 +1,21 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye } from 'lucide-react';
+import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
+import { useEffect } from 'react';
 
+// Interface para os dados do visitante baseada na API
 interface VisitorDetails {
-  id: string;
-  name: string;
-  document: string;
-  phone: string;
-  licensePlate?: string;
-  residence: {
-    block: string;
-    apartment: string;
-    owner: string;
-    phone: string;
-  };
-  appointment: {
-    entryTime: string;
-    exitTime: string;
-    status: 'scheduled';
-    notes?: string;
-  };
+  id: number;
+  visitor_name: string;
+  visitor_id: number;
+  cpf: string;
+  mobile: string;
+  rg: string | null;
+  plate: string | null;
+  observation: string;
+  responsible: string;
+  dateBegin: string;
+  dateEnding: string;
 }
 
 const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
@@ -65,11 +61,11 @@ const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
 };
 
 const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = ({ visitor, onClick }) => {
-  const formatTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+  const formatDateRange = (dateBegin: string, dateEnding: string) => {
+    if (dateBegin === dateEnding) {
+      return dateBegin;
+    }
+    return `${dateBegin} até ${dateEnding}`;
   };
 
   return (
@@ -92,8 +88,8 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
             <User className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 leading-tight break-words">{visitor.name}</h3>
-            <p className="text-sm text-gray-500 mt-1">CPF: {visitor.document}</p>
+            <h3 className="text-lg font-semibold text-gray-900 leading-tight break-words">{visitor.visitor_name}</h3>
+            <p className="text-sm text-gray-500 mt-1">CPF: {visitor.cpf}</p>
           </div>
         </div>
 
@@ -101,9 +97,9 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
         <div className="space-y-3 flex-grow">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0">
-              <Home className="w-4 h-4 text-green-600" />
+              <User className="w-4 h-4 text-green-600" />
             </div>
-            <span className="font-medium">Bloco {visitor.residence.block} - Apt {visitor.residence.apartment}</span>
+            <span className="font-medium">Responsável: {visitor.responsible}</span>
           </div>
           
           <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -111,29 +107,22 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
               <Clock className="w-4 h-4 text-orange-600" />
             </div>
             <span>
-              {formatTime(visitor.appointment.entryTime)} às {formatTime(visitor.appointment.exitTime)}
+              {formatDateRange(visitor.dateBegin, visitor.dateEnding)}
             </span>
           </div>
 
-          {visitor.licensePlate && (
+          {visitor.plate && (
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <div className="bg-purple-100 p-1.5 rounded-full flex-shrink-0">
                 <Car className="w-4 h-4 text-purple-600" />
               </div>
-              <span className="font-mono font-medium">{visitor.licensePlate}</span>
+              <span className="font-mono font-medium">{visitor.plate}</span>
             </div>
           )}
 
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <div className="bg-gray-100 p-1.5 rounded-full flex-shrink-0">
-              <User className="w-4 h-4 text-gray-600" />
-            </div>
-            <span className="break-words">{visitor.residence.owner}</span>
-          </div>
-
-          {visitor.appointment.notes && (
+          {visitor.observation && (
             <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-              <p className="text-sm text-gray-700 line-clamp-2">{visitor.appointment.notes}</p>
+              <p className="text-sm text-gray-700 line-clamp-2">{visitor.observation}</p>
             </div>
           )}
         </div>
@@ -143,7 +132,7 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onClick: () => void }> = 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-xs text-gray-500">
               <Phone className="w-3 h-3 flex-shrink-0" />
-              <span className="break-all">{visitor.phone}</span>
+              <span className="break-all">{visitor.mobile}</span>
             </div>
             <div className="flex items-center space-x-1 text-blue-600 flex-shrink-0">
               <Eye className="w-4 h-4" />
@@ -162,8 +151,11 @@ const VisitorDetailsModal: React.FC<{
 }> = ({ visitor, onClose }) => {
   if (!visitor) return null;
 
-  const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleString('pt-BR');
+  const formatDateRange = (dateBegin: string, dateEnding: string) => {
+    if (dateBegin === dateEnding) {
+      return dateBegin;
+    }
+    return `${dateBegin} até ${dateEnding}`;
   };
 
   return (
@@ -191,7 +183,7 @@ const VisitorDetailsModal: React.FC<{
                       <User className="w-8 h-8 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{visitor.name}</h3>
+                      <h3 className="text-xl font-semibold text-gray-900">{visitor.visitor_name}</h3>
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mt-2">
                         <Calendar className="w-4 h-4 mr-1" />
                         Agendamento Confirmado
@@ -202,12 +194,19 @@ const VisitorDetailsModal: React.FC<{
                   <div className="grid grid-cols-1 gap-4">
                     <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
                       <span className="font-medium text-gray-700">CPF:</span>
-                      <span className="text-gray-900 font-mono">{visitor.document}</span>
+                      <span className="text-gray-900 font-mono">{visitor.cpf}</span>
                     </div>
+                    
+                    {visitor.rg && (
+                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                        <span className="font-medium text-gray-700">RG:</span>
+                        <span className="text-gray-900 font-mono">{visitor.rg}</span>
+                      </div>
+                    )}
                     
                     <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
                       <Phone className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-900">{visitor.phone}</span>
+                      <span className="text-gray-900">{visitor.mobile}</span>
                     </div>
                   </div>
                 </div>
@@ -218,25 +217,25 @@ const VisitorDetailsModal: React.FC<{
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Agendamento</h3>
                 <div className="bg-gray-50 p-6 rounded-xl space-y-4">
                   <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <Calendar className="w-5 h-5 text-green-600" />
+                    <Calendar className="w-5 h-5 text-blue-600" />
                     <div>
-                      <span className="font-medium text-gray-700">Entrada:</span>
-                      <p className="text-gray-900">{formatDateTime(visitor.appointment.entryTime)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <Clock className="w-5 h-5 text-red-600" />
-                    <div>
-                      <span className="font-medium text-gray-700">Saída:</span>
-                      <p className="text-gray-900">{formatDateTime(visitor.appointment.exitTime)}</p>
+                      <span className="font-medium text-gray-700">Período:</span>
+                      <p className="text-gray-900">{formatDateRange(visitor.dateBegin, visitor.dateEnding)}</p>
                     </div>
                   </div>
 
-                  {visitor.appointment.notes && (
+                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                    <User className="w-5 h-5 text-green-600" />
+                    <div>
+                      <span className="font-medium text-gray-700">Responsável:</span>
+                      <p className="text-gray-900">{visitor.responsible}</p>
+                    </div>
+                  </div>
+
+                  {visitor.observation && (
                     <div className="p-4 bg-white rounded-lg border border-gray-200">
                       <span className="font-medium text-gray-700">Observações:</span>
-                      <p className="text-gray-900 mt-2">{visitor.appointment.notes}</p>
+                      <p className="text-gray-900 mt-2">{visitor.observation}</p>
                     </div>
                   )}
                 </div>
@@ -245,47 +244,13 @@ const VisitorDetailsModal: React.FC<{
 
             {/* Residence and Vehicle Information */}
             <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Residência de Destino</h3>
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-full shadow-lg">
-                      <Home className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-semibold text-gray-900">
-                        Bloco {visitor.residence.block} - Apartamento {visitor.residence.apartment}
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <User className="w-4 h-4 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">Proprietário:</span>
-                        <p className="text-gray-900">{visitor.residence.owner}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">Telefone:</span>
-                        <p className="text-gray-900">{visitor.residence.phone}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Vehicle Information */}
-              {visitor.licensePlate && (
+              {visitor.plate && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Veículo</h3>
                   <div className="bg-gray-50 p-6 rounded-xl">
                     <div className="flex items-center justify-center mb-4">
-                      <LicensePlate plate={visitor.licensePlate} />
+                      <LicensePlate plate={visitor.plate} />
                     </div>
                     <div className="text-center">
                       <p className="text-sm text-gray-600">Placa do veículo registrada</p>
@@ -319,216 +284,111 @@ const VisitorDetailsModal: React.FC<{
 };
 
 const VisitorScheduleView: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const { visitorSchedule, visitorSchedulePagination, loadVisitorSchedule } = useData();
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorDetails | null>(null);
 
-  // Dados mockados com foco apenas em agendamentos
-  const mockVisitorData: VisitorDetails[] = [
-    {
-      id: '1',
-      name: 'Amanda Cristina Souza',
-      document: '123.456.789-00',
-      phone: '(11) 99999-1234',
-      licensePlate: 'ABC1D23',
-      residence: {
-        block: 'A',
-        apartment: '101',
-        owner: 'João Silva Santos',
-        phone: '(11) 99999-1111'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T14:00`,
-        exitTime: `${selectedDate}T18:00`,
-        status: 'scheduled',
-        notes: 'Visita social - aniversário da família'
+  // Carregar cronograma quando o componente for montado
+  useEffect(() => {
+    console.log('👁️ VisitorScheduleView montado - carregando cronograma...');
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      try {
+        await loadVisitorSchedule();
+      } finally {
+        setInitialLoading(false);
       }
-    },
-    {
-      id: '2',
-      name: 'Bruno Henrique Costa',
-      document: '987.654.321-00',
-      phone: '(11) 88888-5678',
-      licensePlate: 'XYZ9A87',
-      residence: {
-        block: 'B',
-        apartment: '202',
-        owner: 'Ana Paula Rodrigues',
-        phone: '(11) 66666-4444'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T09:00`,
-        exitTime: `${selectedDate}T12:00`,
-        status: 'scheduled',
-        notes: 'Entrega de móveis novos para o apartamento'
+    };
+    loadInitialData();
+  }, []);
+
+  // Debounce para busca
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        handleSearch();
+      } else {
+        loadVisitorSchedule(1); // Recarregar primeira página sem busca
       }
-    },
-    {
-      id: '3',
-      name: 'Carla Regina Oliveira',
-      document: '111.222.333-44',
-      phone: '(11) 77777-9012',
-      residence: {
-        block: 'C',
-        apartment: '301',
-        owner: 'Roberto Lima Souza',
-        phone: '(11) 55555-5555'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T15:30`,
-        exitTime: `${selectedDate}T17:30`,
-        status: 'scheduled',
-        notes: 'Aula particular de matemática para os filhos'
-      }
-    },
-    {
-      id: '4',
-      name: 'Daniel Santos Ferreira',
-      document: '555.666.777-88',
-      phone: '(11) 44444-3456',
-      licensePlate: 'DEF5G78',
-      residence: {
-        block: 'A',
-        apartment: '102',
-        owner: 'Maria Oliveira Costa',
-        phone: '(11) 88888-2222'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T08:00`,
-        exitTime: `${selectedDate}T17:00`,
-        status: 'scheduled',
-        notes: 'Manutenção preventiva do ar condicionado'
-      }
-    },
-    {
-      id: '5',
-      name: 'Eliana Pereira Lima',
-      document: '999.888.777-66',
-      phone: '(11) 33333-7890',
-      licensePlate: 'GHI9J01',
-      residence: {
-        block: 'B',
-        apartment: '201',
-        owner: 'Carlos Eduardo Ferreira',
-        phone: '(11) 77777-3333'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T07:00`,
-        exitTime: `${selectedDate}T19:00`,
-        status: 'scheduled',
-        notes: 'Cuidadora - acompanhamento do Sr. Roberto'
-      }
-    },
-    {
-      id: '6',
-      name: 'Fabio Rodrigues Silva',
-      document: '333.444.555-66',
-      phone: '(11) 22222-4567',
-      licensePlate: 'JKL3M45',
-      residence: {
-        block: 'C',
-        apartment: '302',
-        owner: 'Patricia Santos',
-        phone: '(11) 11111-8888'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T19:00`,
-        exitTime: `${selectedDate}T23:00`,
-        status: 'scheduled',
-        notes: 'Jantar em família - primo da proprietária'
-      }
-    },
-    {
-      id: '7',
-      name: 'Marcos Antonio Silva',
-      document: '444.555.666-77',
-      phone: '(11) 99999-8888',
-      licensePlate: 'MNO6P78',
-      residence: {
-        block: 'A',
-        apartment: '103',
-        owner: 'Sandra Oliveira',
-        phone: '(11) 77777-9999'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T16:00`,
-        exitTime: `${selectedDate}T20:00`,
-        status: 'scheduled',
-        notes: 'Reunião de trabalho - consultor financeiro'
-      }
-    },
-    {
-      id: '8',
-      name: 'Juliana Costa Lima',
-      document: '777.888.999-00',
-      phone: '(11) 66666-5555',
-      residence: {
-        block: 'B',
-        apartment: '203',
-        owner: 'Fernando Alves',
-        phone: '(11) 44444-3333'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T13:00`,
-        exitTime: `${selectedDate}T15:00`,
-        status: 'scheduled',
-        notes: 'Fisioterapeuta - sessão de reabilitação'
-      }
-    },
-    {
-      id: '9',
-      name: 'Ricardo Pereira Santos',
-      document: '888.999.000-11',
-      phone: '(11) 55555-4444',
-      licensePlate: 'PQR7S89',
-      residence: {
-        block: 'A',
-        apartment: '104',
-        owner: 'Lucia Fernandes',
-        phone: '(11) 33333-2222'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T10:30`,
-        exitTime: `${selectedDate}T12:30`,
-        status: 'scheduled',
-        notes: 'Técnico em informática - instalação de internet'
-      }
-    },
-    {
-      id: '10',
-      name: 'Camila Rodrigues Lima',
-      document: '222.333.444-55',
-      phone: '(11) 44444-1111',
-      residence: {
-        block: 'C',
-        apartment: '303',
-        owner: 'José Carlos Mendes',
-        phone: '(11) 22222-9999'
-      },
-      appointment: {
-        entryTime: `${selectedDate}T11:00`,
-        exitTime: `${selectedDate}T14:00`,
-        status: 'scheduled',
-        notes: 'Personal trainer - treino em casa'
-      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      await loadVisitorSchedule(1, searchTerm);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filteredVisitors = mockVisitorData.filter(visitor => {
-    const matchesDate = visitor.appointment.entryTime.includes(selectedDate);
-    const matchesSearch = !searchTerm || 
-      visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.residence.block.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.residence.apartment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.residence.owner.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesDate && matchesSearch;
-  });
+  const handlePageChange = async (page: number) => {
+    setLoading(true);
+    try {
+      await loadVisitorSchedule(page, searchTerm);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Ordenar por horário de entrada
-  const sortedVisitors = filteredVisitors.sort((a, b) => 
-    new Date(a.appointment.entryTime).getTime() - new Date(b.appointment.entryTime).getTime()
-  );
+  // Função para renderizar os botões de paginação
+  const renderPaginationButtons = () => {
+    if (!visitorSchedulePagination || visitorSchedulePagination.last_page <= 1) {
+      return null;
+    }
+
+    const buttons = [];
+    const currentPage = visitorSchedulePagination.current_page;
+    const lastPage = visitorSchedulePagination.last_page;
+
+    // Botão "Anterior"
+    buttons.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1 || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+    );
+
+    // Botões de páginas (simplificado para economizar espaço)
+    for (let page = Math.max(1, currentPage - 1); page <= Math.min(lastPage, currentPage + 1); page++) {
+      buttons.push(
+        <button
+          key={page}
+          onClick={() => handlePageChange(page)}
+          disabled={loading}
+          className={`px-3 py-2 text-sm font-medium border border-gray-300 disabled:opacity-50 ${
+            page === currentPage
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'text-gray-500 bg-white hover:bg-gray-50'
+          }`}
+        >
+          {page}
+        </button>
+      );
+    }
+
+    // Botão "Próximo"
+    buttons.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === lastPage || loading}
+        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    );
+
+    return buttons;
+  };
 
   return (
     <div className="space-y-6">
@@ -542,23 +402,23 @@ const VisitorScheduleView: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar visitante, apartamento ou proprietário..."
+              placeholder="Buscar visitante, CPF ou responsável..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[300px]"
             />
           </div>
+          
+          {loading && (
+            <div className="flex items-center space-x-2 text-blue-600">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-sm">Carregando...</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -567,9 +427,9 @@ const VisitorScheduleView: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-medium opacity-90">Total de Agendamentos</h3>
-            <p className="text-3xl font-bold">{sortedVisitors.length}</p>
+            <p className="text-3xl font-bold">{visitorSchedulePagination?.total || visitorSchedule.length}</p>
             <p className="text-sm opacity-75 mt-1">
-              {new Date(selectedDate).toLocaleDateString('pt-BR', { 
+              {new Date().toLocaleDateString('pt-BR', { 
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
@@ -583,17 +443,50 @@ const VisitorScheduleView: React.FC = () => {
         </div>
       </div>
 
-      {/* Visitors Grid */}
-      {sortedVisitors.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {sortedVisitors.map((visitor) => (
-            <VisitorCard
-              key={visitor.id}
-              visitor={visitor}
-              onClick={() => setSelectedVisitor(visitor)}
-            />
-          ))}
+      {/* Informações de paginação */}
+      {visitorSchedulePagination && (
+        <div className="flex items-center justify-between mb-4 text-sm text-gray-600 bg-white p-4 rounded-lg shadow-sm">
+          <div>
+            Mostrando {visitorSchedulePagination.from} a {visitorSchedulePagination.to} de {visitorSchedulePagination.total} agendamentos
+          </div>
+          <div>
+            Página {visitorSchedulePagination.current_page} de {visitorSchedulePagination.last_page}
+          </div>
         </div>
+      )}
+
+      {/* Visitors Grid */}
+      {initialLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="flex items-center space-x-3 text-blue-600">
+            <Loader2 className="w-8 h-8 animate-spin" />
+            <span className="text-lg font-medium">Carregando agendamentos...</span>
+          </div>
+        </div>
+      ) : visitorSchedule.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {visitorSchedule.map((visitor) => (
+              <VisitorCard
+                key={visitor.id}
+                visitor={visitor}
+                onClick={() => setSelectedVisitor(visitor)}
+              />
+            ))}
+          </div>
+          
+          {/* Controles de paginação */}
+          {visitorSchedulePagination && visitorSchedulePagination.last_page > 1 && (
+            <div className="flex items-center justify-between mt-8">
+              <div className="text-sm text-gray-600">
+                {visitorSchedulePagination.total} {visitorSchedulePagination.total === 1 ? 'agendamento' : 'agendamentos'} no total
+              </div>
+              <div className="flex items-center space-x-1">
+                {renderPaginationButtons()}
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-16">
           <div className="bg-gray-100 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
@@ -601,9 +494,9 @@ const VisitorScheduleView: React.FC = () => {
           </div>
           <h3 className="text-xl font-medium text-gray-900 mb-2">Nenhum agendamento encontrado</h3>
           <p className="text-gray-500 max-w-md mx-auto">
-            {selectedDate !== new Date().toISOString().split('T')[0] 
-              ? 'Não há agendamentos para a data selecionada. Tente escolher outra data.'
-              : 'Não há agendamentos para hoje. Que tal verificar outros dias?'}
+            {searchTerm 
+              ? 'Não há agendamentos para a busca realizada. Tente outros termos.'
+              : 'Não há agendamentos cadastrados no momento.'}
           </p>
         </div>
       )}
