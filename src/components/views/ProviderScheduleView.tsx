@@ -6,6 +6,7 @@ import { apiRequest, API_CONFIG } from '../../config/api';
 interface ProviderDetails {
   id: number;
   name: string;
+  residence: string;
   mobile: string;
   rg: string;
   cpf: string;
@@ -14,6 +15,48 @@ interface ProviderDetails {
   date_ending: string;
   observation: string;
 }
+
+const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
+  const formatPlate = (plate: string) => {
+    // Remove any non-alphanumeric characters and convert to uppercase
+    const cleanPlate = plate.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    
+    // Format for Mercosul pattern: ABC1D23
+    if (cleanPlate.length === 7) {
+      return `${cleanPlate.slice(0, 3)}${cleanPlate.slice(3, 4)}${cleanPlate.slice(4, 5)}${cleanPlate.slice(5, 7)}`;
+    }
+    return cleanPlate;
+  };
+
+  const formattedPlate = formatPlate(plate);
+
+  return (
+    <div className="relative bg-white rounded-lg shadow-lg overflow-hidden" style={{ width: '280px', height: '140px' }}>
+      {/* Header azul com BRASIL */}
+      <div className="bg-blue-600 text-white text-center py-2">
+        <div className="text-lg font-bold tracking-wider">BRASIL</div>
+      </div>
+
+      {/* Área principal da placa */}
+      <div className="bg-white flex-1 flex flex-col justify-center items-center py-4">
+        {/* Placa */}
+        <div className="text-4xl font-bold text-gray-900 tracking-wider font-mono mb-2">
+          {formattedPlate}
+        </div>
+        
+        {/* Footer com BR e MERCOSUL */}
+        <div className="flex items-center justify-between w-full px-6">
+          <div className="text-lg font-bold text-gray-700">BR</div>
+          <div className="text-sm text-gray-600 font-medium">MERCOSUL</div>
+          <div className="w-6 h-4 bg-blue-600 rounded"></div>
+        </div>
+      </div>
+
+      {/* Borda preta */}
+      <div className="absolute inset-0 border-4 border-black rounded-lg pointer-events-none"></div>
+    </div>
+  );
+};
 
 const ProviderCard: React.FC<{ provider: ProviderDetails; onClick: () => void }> = ({ provider, onClick }) => {
   const formatDateRange = (dateStart: string, dateEnding: string) => {
@@ -26,38 +69,18 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onClick: () => void }>
     return `${start} até ${end}`;
   };
 
-  const getStatusBadge = () => {
-    const now = new Date();
-    const startDate = new Date(provider.date_start);
-    const endDate = new Date(provider.date_ending);
-    
-    if (now < startDate) {
-      return { color: 'bg-yellow-100 text-yellow-800', label: 'Agendado', icon: Clock };
-    } else if (now >= startDate && now <= endDate) {
-      return { color: 'bg-green-100 text-green-800', label: 'Ativo', icon: CheckCircle };
-    } else {
-      return { color: 'bg-gray-100 text-gray-800', label: 'Finalizado', icon: AlertCircle };
-    }
-  };
-
-  const status = getStatusBadge();
-  const StatusIcon = status.icon;
-
   return (
     <div 
       className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-indigo-300 transform hover:scale-[1.02] h-full"
       onClick={onClick}
     >
       <div className="p-6 h-full flex flex-col">
-        {/* Status Badge - Topo */}
-        <div className="flex justify-between items-start mb-4">
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${status.color}`}>
-            <StatusIcon className="w-4 h-4 mr-1" />
-            {status.label}
+        {/* Badge - Topo */}
+        <div className="flex justify-end mb-4">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+            <Briefcase className="w-4 h-4 mr-1" />
+            Prestador
           </span>
-          <div className="text-xs text-gray-500">
-            ID: {provider.id}
-          </div>
         </div>
 
         {/* Header - Ícone, Nome e Empresa */}
@@ -67,26 +90,33 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onClick: () => void }>
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-gray-900 leading-tight break-words">{provider.name}</h3>
-            <p className="text-sm text-gray-500 mt-1">Prestador de Serviços</p>
+            <p className="text-sm text-gray-500 mt-1">{provider.residence}</p>
           </div>
         </div>
 
         {/* Content - Flex grow para ocupar espaço disponível */}
         <div className="space-y-3 flex-grow">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0">
+              <MapPin className="w-4 h-4 text-green-600" />
+            </div>
+            <span className="font-medium">Residência: {provider.residence}</span>
+          </div>
+
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="bg-blue-100 p-1.5 rounded-full flex-shrink-0">
               <User className="w-4 h-4 text-blue-600" />
             </div>
             <span>CPF: {provider.cpf}</span>
           </div>
-
+          
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="bg-green-100 p-1.5 rounded-full flex-shrink-0">
               <Phone className="w-4 h-4 text-green-600" />
             </div>
             <span>{provider.mobile}</span>
           </div>
-          
+
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <div className="bg-orange-100 p-1.5 rounded-full flex-shrink-0">
               <Calendar className="w-4 h-4 text-orange-600" />
@@ -116,7 +146,6 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onClick: () => void }>
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <MapPin className="w-3 h-3 flex-shrink-0" />
               <span>RG: {provider.rg}</span>
             </div>
             <div className="flex items-center space-x-1 text-indigo-600 flex-shrink-0">
@@ -146,38 +175,6 @@ const ProviderDetailsModal: React.FC<{
     return `${start} até ${end}`;
   };
 
-  const getStatusInfo = () => {
-    const now = new Date();
-    const startDate = new Date(provider.date_start);
-    const endDate = new Date(provider.date_ending);
-    
-    if (now < startDate) {
-      return { 
-        color: 'bg-yellow-100 text-yellow-800 border-yellow-200', 
-        label: 'Agendado', 
-        icon: Clock,
-        description: 'O período de trabalho ainda não iniciou'
-      };
-    } else if (now >= startDate && now <= endDate) {
-      return { 
-        color: 'bg-green-100 text-green-800 border-green-200', 
-        label: 'Ativo', 
-        icon: CheckCircle,
-        description: 'Prestador autorizado a trabalhar no local'
-      };
-    } else {
-      return { 
-        color: 'bg-gray-100 text-gray-800 border-gray-200', 
-        label: 'Finalizado', 
-        icon: AlertCircle,
-        description: 'O período de trabalho foi concluído'
-      };
-    }
-  };
-
-  const status = getStatusInfo();
-  const StatusIcon = status.icon;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -205,10 +202,7 @@ const ProviderDetailsModal: React.FC<{
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900">{provider.name}</h3>
-                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border mt-2 ${status.color}`}>
-                        <StatusIcon className="w-4 h-4 mr-1" />
-                        {status.label}
-                      </div>
+                      <p className="text-gray-600 mt-1">{provider.residence}</p>
                     </div>
                   </div>
 
@@ -240,15 +234,17 @@ const ProviderDetailsModal: React.FC<{
                 </div>
               </div>
 
-              {/* Status Information */}
+              {/* Residence Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Status do Serviço</h3>
-                <div className={`p-4 rounded-xl border ${status.color}`}>
-                  <div className="flex items-center space-x-3 mb-2">
-                    <StatusIcon className="w-6 h-6" />
-                    <span className="font-semibold text-lg">{status.label}</span>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Local de Trabalho</h3>
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+                  <div className="flex items-center space-x-3">
+                    <MapPin className="w-6 h-6 text-green-600" />
+                    <div>
+                      <span className="font-semibold text-lg text-gray-900">{provider.residence}</span>
+                      <p className="text-sm text-green-700">Local autorizado para prestação de serviços</p>
+                    </div>
                   </div>
-                  <p className="text-sm opacity-90">{status.description}</p>
                 </div>
               </div>
             </div>
@@ -283,19 +279,7 @@ const ProviderDetailsModal: React.FC<{
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Veículo</h3>
                   <div className="bg-gray-50 p-6 rounded-xl">
                     <div className="flex items-center justify-center mb-4">
-                      <div className="bg-white rounded-lg shadow-lg p-6 border-4 border-gray-800" style={{ width: '200px', height: '100px' }}>
-                        <div className="bg-blue-600 text-white text-center py-1 mb-2">
-                          <div className="text-sm font-bold">BRASIL</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-gray-900 font-mono">{provider.plate}</div>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <div className="text-sm font-bold text-gray-700">BR</div>
-                          <div className="text-xs text-gray-600">MERCOSUL</div>
-                          <div className="w-3 h-2 bg-blue-600 rounded"></div>
-                        </div>
-                      </div>
+                      <LicensePlate plate={provider.plate} />
                     </div>
                     <div className="text-center">
                       <p className="text-sm text-gray-600">Placa do veículo autorizada</p>
