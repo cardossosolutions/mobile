@@ -26,11 +26,13 @@ const CompanyManagement: React.FC = () => {
 
   // Carregar empresas quando o componente for montado
   useEffect(() => {
-    console.log('📋 CompanyManagement montado - carregando empresas...');
+    console.log('📋 CompanyManagement.useEffect[mount] - Iniciando...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
+        console.log('📋 CompanyManagement.loadInitialData - Chamando loadCompanies...');
         await loadCompanies();
+        console.log('✅ CompanyManagement.loadInitialData - Concluído');
       } finally {
         setInitialLoading(false);
       }
@@ -49,7 +51,7 @@ const CompanyManagement: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, loadCompanies]);
 
   const handleSearch = async () => {
     setLoading(true);

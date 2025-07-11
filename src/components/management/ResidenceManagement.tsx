@@ -29,11 +29,13 @@ const ResidenceManagement: React.FC = () => {
 
   // Carregar residências quando o componente for montado
   useEffect(() => {
-    console.log('🏠 ResidenceManagement montado - carregando residências...');
+    console.log('🏠 ResidenceManagement.useEffect[mount] - Iniciando...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
+        console.log('🏠 ResidenceManagement.loadInitialData - Chamando loadResidences...');
         await loadResidences();
+        console.log('✅ ResidenceManagement.loadInitialData - Concluído');
       } finally {
         setInitialLoading(false);
       }
@@ -52,7 +54,7 @@ const ResidenceManagement: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, loadResidences]);
 
   const handleSearch = async () => {
     setLoading(true);

@@ -34,11 +34,13 @@ const EmployeeManagement: React.FC = () => {
 
   // Carregar funcionários quando o componente for montado
   useEffect(() => {
-    console.log('👥 EmployeeManagement montado - carregando funcionários...');
+    console.log('👥 EmployeeManagement.useEffect[mount] - Iniciando...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
+        console.log('👥 EmployeeManagement.loadInitialData - Chamando loadEmployees...');
         await loadEmployees();
+        console.log('✅ EmployeeManagement.loadInitialData - Concluído');
       } finally {
         setInitialLoading(false);
       }
@@ -57,7 +59,7 @@ const EmployeeManagement: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, statusFilter, permissionFilter]);
+  }, [searchTerm, statusFilter, permissionFilter, loadEmployees]);
 
   const handleSearch = async () => {
     setLoading(true);

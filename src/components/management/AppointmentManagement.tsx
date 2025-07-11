@@ -25,11 +25,13 @@ const AppointmentManagement: React.FC = () => {
 
   // Carregar agendamentos quando o componente for montado
   useEffect(() => {
-    console.log('📅 AppointmentManagement montado - carregando agendamentos...');
+    console.log('📅 AppointmentManagement.useEffect[mount] - Iniciando...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
+        console.log('📅 AppointmentManagement.loadInitialData - Chamando loadAppointments...');
         await loadAppointments();
+        console.log('✅ AppointmentManagement.loadInitialData - Concluído');
       } finally {
         setInitialLoading(false);
       }
@@ -48,7 +50,7 @@ const AppointmentManagement: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, loadAppointments]);
 
   const handleSearch = async () => {
     setLoading(true);

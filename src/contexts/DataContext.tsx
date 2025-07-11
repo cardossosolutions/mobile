@@ -118,7 +118,6 @@ interface EmployeeResponse {
 }
 
 interface ServiceProvider {
-  id: number;
   id: string;
   name: string;
   mobile: string;

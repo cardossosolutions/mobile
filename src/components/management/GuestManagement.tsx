@@ -26,11 +26,13 @@ const GuestManagement: React.FC = () => {
 
   // Carregar convidados quando o componente for montado
   useEffect(() => {
-    console.log('👤 GuestManagement montado - carregando convidados...');
+    console.log('👤 GuestManagement.useEffect[mount] - Iniciando...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
+        console.log('👤 GuestManagement.loadInitialData - Chamando loadGuests...');
         await loadGuests();
+        console.log('✅ GuestManagement.loadInitialData - Concluído');
       } finally {
         setInitialLoading(false);
       }
@@ -49,7 +51,7 @@ const GuestManagement: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, loadGuests]);
 
   const handleSearch = async () => {
     setLoading(true);

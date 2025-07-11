@@ -24,11 +24,13 @@ const ServiceProviderManagement: React.FC = () => {
 
   // Carregar prestadores de serviços quando o componente for montado
   useEffect(() => {
-    console.log('🔧 ServiceProviderManagement montado - carregando prestadores de serviços...');
+    console.log('🔧 ServiceProviderManagement.useEffect[mount] - Iniciando...');
     const loadInitialData = async () => {
       setInitialLoading(true);
       try {
+        console.log('🔧 ServiceProviderManagement.loadInitialData - Chamando loadServiceProviders...');
         await loadServiceProviders();
+        console.log('✅ ServiceProviderManagement.loadInitialData - Concluído');
       } finally {
         setInitialLoading(false);
       }
@@ -47,7 +49,7 @@ const ServiceProviderManagement: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, loadServiceProviders]);
 
   const handleSearch = async () => {
     setLoading(true);
