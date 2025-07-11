@@ -44,7 +44,7 @@ const EmployeeManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, []);
+  }, [loadEmployees]);
 
   // Debounce para busca
   useEffect(() => {

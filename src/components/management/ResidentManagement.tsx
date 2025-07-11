@@ -44,7 +44,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
       }
     };
     loadInitialData();
-  }, [residenceId]);
+  }, [residenceId, loadResidents]);
 
   // Debounce para busca
   useEffect(() => {

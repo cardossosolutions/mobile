@@ -39,7 +39,7 @@ const ResidenceManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, []);
+  }, [loadResidences]);
 
   // Debounce para busca
   useEffect(() => {

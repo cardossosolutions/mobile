@@ -36,7 +36,7 @@ const CompanyManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, []);
+  }, [loadCompanies]);
 
   // Debounce para busca
   useEffect(() => {

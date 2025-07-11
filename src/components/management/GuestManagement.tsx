@@ -36,7 +36,7 @@ const GuestManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, []);
+  }, [loadGuests]);
 
   // Debounce para busca
   useEffect(() => {

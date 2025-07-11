@@ -35,7 +35,7 @@ const AppointmentManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, []);
+  }, [loadAppointments]);
 
   // Debounce para busca
   useEffect(() => {

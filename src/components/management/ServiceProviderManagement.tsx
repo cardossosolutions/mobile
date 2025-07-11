@@ -34,7 +34,7 @@ const ServiceProviderManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, []);
+  }, [loadServiceProviders]);
 
   // Debounce para busca
   useEffect(() => {
