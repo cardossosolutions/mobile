@@ -1,92 +1,49 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { apiRequest, API_CONFIG } from '../config/api';
 import { useToast } from './ToastContext';
 
+// Interfaces para tipagem
 interface Company {
   id: string;
   cnpj: string;
   corporate_name: string;
   fantasy_name: string;
+  cep: string;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city_id: number;
+  city_name?: string;
+  state_id: number;
+  state?: string;
+  state_name?: string;
   email: string;
-  phone_number: string | null;
-  mobile_number: string;
-  city_name: string | null;
-  state: string;
-}
-
-interface CompanyResponse {
-  current_page: number;
-  data: Company[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
+  phone_number?: string;
+  mobile_number?: string;
 }
 
 interface Residence {
   id: string;
   name: string;
+  active: boolean;
+  cep: string;
   street: string;
   number: string;
-  active: boolean;
-}
-
-interface ResidenceResponse {
-  current_page: number;
-  data: Residence[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
+  complement?: string;
+  neighborhood: string;
+  city: number;
+  city_name?: string;
+  state: number;
+  name_state?: string;
 }
 
 interface Resident {
   id: string;
+  residence_id: string;
   name: string;
   email: string;
   mobile: string;
-}
-
-interface ResidentResponse {
-  current_page: number;
-  data: Resident[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
 }
 
 interface Employee {
@@ -97,28 +54,8 @@ interface Employee {
   status: string;
 }
 
-interface EmployeeResponse {
-  current_page: number;
-  data: Employee[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
-}
-
 interface ServiceProvider {
-  id: string;
+  id: number;
   name: string;
   mobile: string;
   rg: string;
@@ -129,182 +66,106 @@ interface ServiceProvider {
   observation: string;
 }
 
-interface ServiceProviderResponse {
-  current_page: number;
-  data: ServiceProvider[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
-}
-
 interface Guest {
   id: string;
   name: string;
-  residence: string;
   cpf: string;
-  rg: string;
-  plate: string | null;
-  observation: string;
-  type: string;
-  description: string;
-}
-
-interface GuestResponse {
-  current_page: number;
-  data: Guest[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
-}
-
-interface Appointment {
-  id: string;
-  visitor_id?: number;
-  name: string;
-  cpf: string;
-  responsible: string;
-  dateBegin: string;
-  dateEnding: string;
-}
-
-interface AppointmentResponse {
-  current_page: number;
-  data: Appointment[];
-  first_page_url: string;
-  from: number;
-  last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number;
-  total: number;
+  rg?: string;
+  plate?: string;
+  observation?: string;
+  residence?: string;
 }
 
 interface GuestSelect {
   id: number;
-  residence: string;
   name: string;
   cpf: string;
-  plate: string | null;
-  observation: string;
+  residence: string;
+  plate?: string;
   description: string;
 }
 
-interface VisitorSchedule {
-  id: number;
-  visitor_name: string;
-  visitor_id: number;
+interface Appointment {
+  id: string;
+  name: string;
   cpf: string;
-  mobile: string;
-  rg: string | null;
-  plate: string | null;
-  observation: string;
   responsible: string;
   dateBegin: string;
   dateEnding: string;
+  visitor_id?: number;
 }
 
-interface VisitorScheduleResponse {
+interface PaginationData {
   current_page: number;
-  data: VisitorSchedule[];
-  first_page_url: string;
-  from: number;
   last_page: number;
-  last_page_url: string;
-  links: Array<{
-    url: string | null;
-    label: string;
-    active: boolean;
-  }>;
-  next_page_url: string | null;
-  path: string;
   per_page: number;
-  prev_page_url: string | null;
-  to: number;
   total: number;
+  from: number;
+  to: number;
 }
 
 interface DataContextType {
+  // Companies
   companies: Company[];
-  companyPagination: CompanyResponse | null;
-  residences: Residence[];
-  residencePagination: ResidenceResponse | null;
-  residents: Resident[];
-  residentPagination: ResidentResponse | null;
-  employees: Employee[];
-  employeePagination: EmployeeResponse | null;
-  serviceProviders: ServiceProvider[];
-  serviceProviderPagination: ServiceProviderResponse | null;
-  guests: Guest[];
-  guestPagination: GuestResponse | null;
-  appointments: Appointment[];
-  appointmentPagination: AppointmentResponse | null;
-  guestsSelect: GuestSelect[];
-  visitorSchedule: VisitorSchedule[];
-  visitorSchedulePagination: VisitorScheduleResponse | null;
+  companyPagination: PaginationData | null;
   loadCompanies: (page?: number, search?: string) => Promise<void>;
-  loadResidences: (page?: number, search?: string) => Promise<void>;
-  loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
-  loadEmployees: (page?: number, search?: string) => Promise<void>;
-  loadServiceProviders: (page?: number, search?: string) => Promise<void>;
-  loadGuests: (page?: number, search?: string) => Promise<void>;
-  loadAppointments: (page?: number, search?: string) => Promise<void>;
-  loadGuestsSelect: () => Promise<void>;
-  loadVisitorSchedule: (page?: number, search?: string) => Promise<void>;
-  addCompany: (company: Omit<Company, 'id'>) => Promise<void>;
-  updateCompany: (id: string, company: Partial<Company>) => Promise<void>;
+  addCompany: (companyData: any) => Promise<void>;
+  updateCompany: (id: string, companyData: any) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
-  addResidence: (residence: Omit<Residence, 'id'>) => Promise<void>;
-  updateResidence: (id: string, residence: Partial<Residence>) => Promise<void>;
+
+  // Residences
+  residences: Residence[];
+  residencePagination: PaginationData | null;
+  loadResidences: (page?: number, search?: string) => Promise<void>;
+  addResidence: (residenceData: any) => Promise<void>;
+  updateResidence: (id: string, residenceData: any) => Promise<void>;
   deleteResidence: (id: string) => Promise<void>;
-  addResident: (resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
-  updateResident: (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
+
+  // Residents
+  residents: Resident[];
+  residentPagination: PaginationData | null;
+  loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
+  addResident: (residentData: any) => Promise<void>;
+  updateResident: (id: string, residentData: any) => Promise<void>;
   deleteResident: (id: string, residenceId: string) => Promise<void>;
-  addEmployee: (employee: { name: string; email: string; role: number; status: number }) => Promise<{ message: string; password: string }>;
-  updateEmployee: (id: string, employee: { name: string; email: string; role: number; status: number }) => Promise<void>;
+
+  // Employees
+  employees: Employee[];
+  employeePagination: PaginationData | null;
+  loadEmployees: (page?: number, search?: string) => Promise<void>;
+  addEmployee: (employeeData: any) => Promise<any>;
+  updateEmployee: (id: string, employeeData: any) => Promise<void>;
+  resetEmployeePassword: (id: string) => Promise<any>;
   deleteEmployee: (id: string) => Promise<void>;
-  resetEmployeePassword: (id: string) => Promise<{ message: string; password: string }>;
-  addServiceProvider: (provider: Omit<ServiceProvider, 'id'>) => Promise<void>;
-  updateServiceProvider: (id: string, provider: Partial<ServiceProvider>) => Promise<void>;
-  deleteServiceProvider: (id: string) => Promise<void>;
-  addGuest: (guest: Omit<Guest, 'id'>) => Promise<void>;
-  updateGuest: (id: string, guest: Partial<Guest>) => Promise<void>;
+
+  // Service Providers
+  serviceProviders: ServiceProvider[];
+  serviceProviderPagination: PaginationData | null;
+  loadServiceProviders: (page?: number, search?: string) => Promise<void>;
+  addServiceProvider: (providerData: any) => Promise<void>;
+  updateServiceProvider: (id: number, providerData: any) => Promise<void>;
+  deleteServiceProvider: (id: number) => Promise<void>;
+
+  // Guests
+  guests: Guest[];
+  guestPagination: PaginationData | null;
+  guestsSelect: GuestSelect[];
+  loadGuests: (page?: number, search?: string) => Promise<void>;
+  loadGuestsSelect: () => Promise<void>;
+  addGuest: (guestData: any) => Promise<void>;
+  updateGuest: (id: string, guestData: any) => Promise<void>;
   deleteGuest: (id: string) => Promise<void>;
-  addAppointment: (appointment: { visitor: number; dateBegin: string; dateEnding: string }) => Promise<void>;
-  updateAppointment: (id: string, appointment: { visitor: number; dateBegin: string; dateEnding: string }) => Promise<void>;
+
+  // Appointments
+  appointments: Appointment[];
+  appointmentPagination: PaginationData | null;
+  loadAppointments: (page?: number, search?: string) => Promise<void>;
+  addAppointment: (appointmentData: any) => Promise<void>;
+  updateAppointment: (id: string, appointmentData: any) => Promise<void>;
   deleteAppointment: (id: string) => Promise<void>;
-  loadUserProfile: () => Promise<any>;
+
+  // User Profile
+  loadUserProfile: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -317,1356 +178,737 @@ export const useData = () => {
   return context;
 };
 
-// Mock data (mantido como fallback)
-const mockCompanies: Company[] = [
-  {
-    id: '1',
-    cnpj: '12.345.678/0001-90',
-    corporate_name: 'Segurança Total Ltda',
-    fantasy_name: 'SecTotal',
-    email: 'contato@sectotal.com.br',
-    phone_number: '(11) 3333-4444',
-    mobile_number: '(11) 99999-8888',
-    city_name: 'São Paulo',
-    state: 'SP'
-  },
-  {
-    id: '2',
-    cnpj: '98.765.432/0001-10',
-    corporate_name: 'Limpeza Express S.A.',
-    fantasy_name: 'CleanExpress',
-    email: 'admin@cleanexpress.com.br',
-    phone_number: '(11) 2222-3333',
-    mobile_number: '(11) 88888-7777',
-    city_name: 'São Paulo',
-    state: 'SP'
-  },
-  {
-    id: '3',
-    cnpj: '11.222.333/0001-44',
-    corporate_name: 'Manutenção & Cia Ltda',
-    fantasy_name: 'ManutençãoPro',
-    email: 'servicos@manutencaopro.com.br',
-    phone_number: '(11) 4444-5555',
-    mobile_number: '(11) 77777-6666',
-    city_name: 'São Paulo',
-    state: 'SP'
-  }
-];
+interface DataProviderProps {
+  children: ReactNode;
+}
 
-const mockResidences: Residence[] = [
-  {
-    id: '1',
-    name: 'Apartamento 101 - Bloco A',
-    street: 'Rua das Flores',
-    number: '123',
-    active: true
-  },
-  {
-    id: '2',
-    name: 'Casa Verde',
-    street: 'Avenida Central',
-    number: '456',
-    active: true
-  },
-  {
-    id: '3',
-    name: 'Cobertura Premium',
-    street: 'Rua do Sol',
-    number: '789',
-    active: false
-  }
-];
-
-const mockResidents: Resident[] = [
-  {
-    id: '1',
-    name: 'João Silva Santos',
-    email: 'joao.silva@email.com',
-    mobile: '11999991111'
-  },
-  {
-    id: '2',
-    name: 'Fernanda Silva Santos',
-    email: 'fernanda.silva@email.com',
-    mobile: '11999991112'
-  },
-  {
-    id: '3',
-    name: 'Maria Oliveira Costa',
-    email: 'maria.oliveira@email.com',
-    mobile: '11888882222'
-  },
-  {
-    id: '4',
-    name: 'Carlos Eduardo Ferreira',
-    email: 'carlos.ferreira@email.com',
-    mobile: '11777773333'
-  },
-  {
-    id: '5',
-    name: 'Lucia Ferreira',
-    email: 'lucia.ferreira@email.com',
-    mobile: '11777773334'
-  },
-  {
-    id: '6',
-    name: 'Ana Paula Rodrigues',
-    email: 'ana.rodrigues@email.com',
-    mobile: '11666664444'
-  },
-  {
-    id: '7',
-    name: 'Roberto Lima Souza',
-    email: 'roberto.lima@email.com',
-    mobile: '11555555555'
-  },
-  {
-    id: '8',
-    name: 'Claudia Lima Souza',
-    email: 'claudia.lima@email.com',
-    mobile: '11555555556'
-  }
-];
-
-const mockEmployees: Employee[] = [
-  {
-    id: '1',
-    name: 'Pedro Henrique Silva',
-    email: 'pedro.silva@sectotal.com.br',
-    permission: 'Administrador',
-    status: 'active'
-  },
-  {
-    id: '2',
-    name: 'Marcos Antonio Santos',
-    email: 'marcos.santos@sectotal.com.br',
-    permission: 'Funcionário',
-    status: 'active'
-  },
-  {
-    id: '3',
-    name: 'Juliana Costa Lima',
-    email: 'juliana.lima@cleanexpress.com.br',
-    permission: 'Funcionário',
-    status: 'active'
-  },
-  {
-    id: '4',
-    name: 'Ricardo Pereira',
-    email: 'ricardo.pereira@cleanexpress.com.br',
-    permission: 'Funcionário',
-    status: 'inactive'
-  },
-  {
-    id: '5',
-    companyId: '3',
-    nome: 'Fernando Alves',
-    email: 'fernando.alves@manutencaopro.com.br',
-    permissao: 'Administrador',
-    status: 'Ativo'
-  },
-  {
-    id: '6',
-    companyId: '3',
-    nome: 'Luciana Martins',
-    email: 'luciana.martins@manutencaopro.com.br',
-    permissao: 'Operador',
-    status: 'Suspenso'
-  }
-];
-
-const mockServiceProviders: ServiceProvider[] = [
-  {
-    id: '1',
-    name: 'Lucas Cardoso',
-    mobile: '11-98650-1084',
-    rg: '25.306.455-7',
-    cpf: '728.935.670-53',
-    plate: 'ELS7538',
-    date_start: '2025-07-11',
-    date_ending: '2025-07-12',
-    observation: 'EFT1253'
-  },
-  {
-    id: '2',
-    name: 'Maria Santos',
-    mobile: '11-99999-8888',
-    rg: '12.345.678-9',
-    cpf: '123.456.789-00',
-    plate: null,
-    date_start: '2025-07-15',
-    date_ending: '2025-07-15',
-    observation: 'Limpeza de vidros'
-  }
-];
-
-const mockGuests: Guest[] = [
-  {
-    id: '1',
-    name: 'Amanda Cristina Souza',
-    residence: 'Apartamento 101 - Bloco A',
-    cpf: '123.456.789-00',
-    rg: '12.345.678-9',
-    plate: 'ABC-1234',
-    observation: 'Visitante frequente, amiga da família Silva',
-    type: 'visitor',
-    description: 'Amanda Cristina Souza - Cpf: 123.456.789-00 - Placa: ABC-1234'
-  },
-  {
-    id: '2',
-    name: 'Bruno Henrique Costa',
-    residence: 'Casa Verde',
-    cpf: '987.654.321-00',
-    rg: '98.765.432-1',
-    plate: 'XYZ-9876',
-    observation: 'Entregador autorizado',
-    type: 'visitor',
-    description: 'Bruno Henrique Costa - Cpf: 987.654.321-00 - Placa: XYZ-9876'
-  },
-  {
-    id: '3',
-    name: 'Carla Regina Oliveira',
-    residence: 'Cobertura Premium',
-    cpf: '111.222.333-44',
-    rg: '11.222.333-4',
-    plate: null,
-    observation: 'Professora particular dos filhos',
-    type: 'visitor',
-    description: 'Carla Regina Oliveira - Cpf: 111.222.333-44 - Placa: '
-  },
-  {
-    id: '4',
-    nome: 'Daniel Santos Ferreira',
-    rg: '55.666.777-8',
-    cpf: '555.666.777-88',
-    placaVeiculo: 'DEF-5678',
-    observacoes: 'Técnico de manutenção autorizado'
-  },
-  {
-    id: '5',
-    nome: 'Eliana Pereira Lima',
-    rg: '99.888.777-6',
-    cpf: '999.888.777-66',
-    placaVeiculo: 'GHI-9012',
-    observacoes: 'Cuidadora de idosos'
-  },
-  {
-    id: '6',
-    nome: 'Fabio Rodrigues Silva',
-    rg: '33.444.555-6',
-    cpf: '333.444.555-66',
-    placaVeiculo: 'JKL-3456',
-    observacoes: 'Primo do proprietário do apt 201'
-  }
-];
-
-const mockAppointments: Appointment[] = [
-  {
-    id: '1',
-    visitor_id: 1,
-    name: 'Amanda Cristina Souza',
-    cpf: '123.456.789-00',
-    responsible: 'João Silva Santos',
-    dateBegin: '15/01/2024',
-    dateEnding: '15/01/2024'
-  },
-  {
-    id: '2',
-    visitor_id: 2,
-    name: 'Bruno Henrique Costa',
-    cpf: '987.654.321-00',
-    responsible: 'Maria Oliveira Costa',
-    dateBegin: '16/01/2024',
-    dateEnding: '16/01/2024'
-  },
-  {
-    id: '3',
-    visitor_id: 3,
-    name: 'Carla Regina Oliveira',
-    cpf: '111.222.333-44',
-    responsible: 'Carlos Eduardo Ferreira',
-    dateBegin: '17/01/2024',
-    dateEnding: '17/01/2024'
-  },
-  {
-    id: '4',
-    guestId: '4',
-    dataEntrada: '2024-01-18T08:00',
-    dataSaida: '2024-01-18T17:00',
-    observacoes: 'Manutenção do ar condicionado'
-  },
-  {
-    id: '5',
-    guestId: '5',
-    dataEntrada: '2024-01-19T07:00',
-    dataSaida: '2024-01-19T19:00',
-    observacoes: 'Cuidados com Sr. Roberto'
-  },
-  {
-    id: '6',
-    guestId: '6',
-    dataEntrada: '2024-01-20T19:00',
-    dataSaida: '2024-01-20T23:00',
-    observacoes: 'Jantar em família'
-  },
-  {
-    id: '7',
-    guestId: '1',
-    dataEntrada: '2024-01-22T16:00',
-    dataSaida: '2024-01-22T20:00',
-    observacoes: 'Reunião de trabalho'
-  },
-  {
-    id: '8',
-    guestId: '3',
-    dataEntrada: '2024-01-24T14:00',
-    dataSaida: '2024-01-24T16:00',
-    observacoes: 'Aula de reforço escolar'
-  }
-];
-
-export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [companyPagination, setCompanyPagination] = useState<CompanyResponse | null>(null);
-  const [residences, setResidences] = useState<Residence[]>([]);
-  const [residencePagination, setResidencePagination] = useState<ResidenceResponse | null>(null);
-  const [residents, setResidents] = useState<Resident[]>([]);
-  const [residentPagination, setResidentPagination] = useState<ResidentResponse | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [employeePagination, setEmployeePagination] = useState<EmployeeResponse | null>(null);
-  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
-  const [serviceProviderPagination, setServiceProviderPagination] = useState<ServiceProviderResponse | null>(null);
-  const [guests, setGuests] = useState<Guest[]>([]);
-  const [guestPagination, setGuestPagination] = useState<GuestResponse | null>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [appointmentPagination, setAppointmentPagination] = useState<AppointmentResponse | null>(null);
-  const [guestsSelect, setGuestsSelect] = useState<GuestSelect[]>([]);
-  const [visitorSchedule, setVisitorSchedule] = useState<VisitorSchedule[]>([]);
-  const [visitorSchedulePagination, setVisitorSchedulePagination] = useState<VisitorScheduleResponse | null>(null);
+export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const { showSuccess, showError } = useToast();
 
-  const generateId = () => Date.now().toString();
+  // Companies State
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companyPagination, setCompanyPagination] = useState<PaginationData | null>(null);
 
-  // Função específica para carregar dados do usuário
-  const loadUserProfile = async () => {
-    try {
-      console.log('🔄 Fazendo requisição para /user/me...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta do /user/me:', response);
-      
-      // Salvar dados do usuário no localStorage
-      if (response) {
-        localStorage.setItem('user_profile', JSON.stringify(response));
-        console.log('💾 Dados do usuário salvos no localStorage:', response);
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('❌ Erro ao carregar perfil do usuário:', error);
-      throw error;
-    }
-  };
+  // Residences State
+  const [residences, setResidences] = useState<Residence[]>([]);
+  const [residencePagination, setResidencePagination] = useState<PaginationData | null>(null);
 
-  // Função específica para carregar empresas com paginação
-  const loadCompanies = async (page: number = 1, search?: string) => {
+  // Residents State
+  const [residents, setResidents] = useState<Resident[]>([]);
+  const [residentPagination, setResidentPagination] = useState<PaginationData | null>(null);
+
+  // Employees State
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeePagination, setEmployeePagination] = useState<PaginationData | null>(null);
+
+  // Service Providers State
+  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
+  const [serviceProviderPagination, setServiceProviderPagination] = useState<PaginationData | null>(null);
+
+  // Guests State
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [guestPagination, setGuestPagination] = useState<PaginationData | null>(null);
+  const [guestsSelect, setGuestsSelect] = useState<GuestSelect[]>([]);
+
+  // Appointments State
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentPagination, setAppointmentPagination] = useState<PaginationData | null>(null);
+
+  // Companies Functions
+  const loadCompanies = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      console.log(`🔄 Carregando empresas - Página: ${page}, Busca: ${search || 'N/A'}`);
+      console.log(`🏢 DataContext.loadCompanies - Página: ${page}, Busca: "${search}"`);
       
-      // Construir URL com parâmetros de paginação e busca
       let url = `${API_CONFIG.ENDPOINTS.COMPANIES}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
       }
       
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
+      const response = await apiRequest(url, { method: 'GET' });
       
-      console.log('✅ Resposta das empresas:', response);
-      
-      if (response) {
-        // Converter os dados da API para o formato esperado
-        const companiesData: Company[] = response.data.map((company: any) => ({
-          id: company.id.toString(),
-          cnpj: company.cnpj,
-          corporate_name: company.corporate_name,
-          fantasy_name: company.fantasy_name,
-          email: company.email,
-          phone_number: company.phone_number,
-          mobile_number: company.mobile_number,
-          city_name: company.city_name,
-          state: company.state
-        }));
-        
-        setCompanies(companiesData);
-        setCompanyPagination(response);
-        console.log('💾 Empresas carregadas:', companiesData);
+      if (response && response.data) {
+        setCompanies(response.data);
+        setCompanyPagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadCompanies - ${response.data.length} empresas carregadas`);
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar empresas:', error);
-      // Usar dados mock em caso de erro
-      setCompanies(mockCompanies);
-      setCompanyPagination(null);
+      console.error('❌ DataContext.loadCompanies - Erro:', error);
+      showError('Erro ao carregar empresas', 'Não foi possível carregar a lista de empresas.');
     }
-  };
+  }, [showError]);
 
-  // Função específica para carregar residências
-  const loadResidences = async (page: number = 1, search?: string) => {
+  const addCompany = useCallback(async (companyData: any) => {
     try {
-      console.log(`🔄 Carregando residências - Página: ${page}, Parâmetros: ${search || 'N/A'}`);
+      console.log('🏢 DataContext.addCompany - Dados:', companyData);
       
-      // Construir URL com parâmetros de paginação e filtros
-      let url = `${API_CONFIG.ENDPOINTS.RESIDENCES}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&${search.trim()}`;
-      }
-      
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta das residências:', response);
-      
-      if (response) {
-        // Converter os dados da API para o formato esperado
-        const residencesData: Residence[] = response.data.map((residence: any) => ({
-          id: residence.id.toString(),
-          name: residence.name,
-          street: residence.street,
-          number: residence.number,
-          active: residence.active
-        }));
-        
-        setResidences(residencesData);
-        setResidencePagination(response);
-        console.log('💾 Residências carregadas:', residencesData);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar residências:', error);
-      // Usar dados mock em caso de erro
-      setResidences(mockResidences);
-      setResidencePagination(null);
-    }
-  };
-
-  // Função específica para carregar moradores
-  const loadResidents = async (residenceId: string, page: number = 1, search?: string) => {
-    try {
-      console.log(`🔄 Carregando moradores da residência ${residenceId} - Página: ${page}, Busca: ${search || 'N/A'}`);
-      
-      // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.RESIDENTS}/${residenceId}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
-      }
-      
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta dos moradores:', response);
-      
-      if (response) {
-        // Converter os dados da API para o formato esperado
-        const residentsData: Resident[] = response.data.map((resident: any) => ({
-          id: resident.id.toString(),
-          name: resident.name,
-          email: resident.email,
-          mobile: resident.mobile
-        }));
-        
-        setResidents(residentsData);
-        setResidentPagination(response);
-        console.log('💾 Moradores carregados:', residentsData);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar moradores:', error);
-      // Usar dados mock em caso de erro
-      setResidents(mockResidents);
-      setResidentPagination(null);
-    }
-  };
-
-  // Função específica para carregar funcionários
-  const loadEmployees = async (page: number = 1, search?: string) => {
-    try {
-      console.log(`🔄 Carregando funcionários - Página: ${page}, Busca: ${search || 'N/A'}`);
-      
-      // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.EMPLOYEES}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
-      }
-      
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta dos funcionários:', response);
-      
-      if (response) {
-        // Converter os dados da API para o formato esperado
-        const employeesData: Employee[] = response.data.map((employee: any) => ({
-          id: employee.id.toString(),
-          name: employee.name,
-          email: employee.email,
-          permission: employee.permission,
-          status: employee.status
-        }));
-        
-        setEmployees(employeesData);
-        setEmployeePagination(response);
-        console.log('💾 Funcionários carregados:', employeesData);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar funcionários:', error);
-      // Usar dados mock em caso de erro
-      setEmployees(mockEmployees);
-      setEmployeePagination(null);
-    }
-  };
-
-  // Função específica para carregar prestadores de serviços
-  const loadServiceProviders = async (page: number = 1, search?: string) => {
-    try {
-      console.log(`🔄 Carregando prestadores de serviços - Página: ${page}, Busca: ${search || 'N/A'}`);
-      
-      // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.PROVIDERS}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
-      }
-      
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta dos prestadores de serviços:', response);
-      
-      if (response) {
-        // Converter os dados da API para o formato esperado
-        const providersData: ServiceProvider[] = response.data.map((provider: any) => ({
-          id: provider.id ? provider.id.toString() : generateId(),
-          name: provider.name,
-          mobile: provider.mobile,
-          rg: provider.rg,
-          cpf: provider.cpf,
-          plate: provider.plate,
-          date_start: provider.date_start ? provider.date_start.split('T')[0] : provider.date_start,
-          date_ending: provider.date_ending ? provider.date_ending.split('T')[0] : provider.date_ending,
-          observation: provider.observation
-        }));
-        
-        setServiceProviders(providersData);
-        setServiceProviderPagination(response);
-        console.log('💾 Prestadores de serviços carregados:', providersData);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar prestadores de serviços:', error);
-      // Usar dados mock em caso de erro
-      setServiceProviders(mockServiceProviders);
-      setServiceProviderPagination(null);
-    }
-  };
-
-  // Função específica para carregar convidados
-  const loadGuests = async (page: number = 1, search?: string) => {
-    try {
-      console.log(`🔄 Carregando convidados - Página: ${page}, Busca: ${search || 'N/A'}`);
-      
-      // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.GUESTS_LIST}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
-      }
-      
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta dos convidados:', response);
-      
-      // Verificar se a resposta tem estrutura de paginação
-      if (response && response.data && Array.isArray(response.data) && response.current_page !== undefined) {
-        // Converter dados da API para o formato esperado
-        const guestsData: Guest[] = response.data.map((guest: any) => ({
-          id: guest.id.toString(),
-          name: guest.name,
-          residence: guest.residence,
-          cpf: guest.cpf,
-          rg: '', // RG não vem na listagem, será preenchido na edição
-          plate: guest.plate || null,
-          observation: guest.observation || '',
-          type: 'visitor',
-          description: guest.description
-        }));
-        
-        setGuests(guestsData);
-        setGuestPagination(response);
-        console.log('💾 Convidados carregados:', guestsData);
-      } else {
-        console.warn('⚠️ Resposta de convidados inválida:', response);
-        setGuests([]);
-        setGuestPagination(null);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar convidados:', error);
-      // Usar dados mock em caso de erro
-      setGuests(mockGuests);
-      setGuestPagination(null);
-    }
-  };
-
-  // Função específica para carregar agendamentos
-  const loadAppointments = async (page: number = 1, search?: string) => {
-    try {
-      console.log(`🔄 Carregando agendamentos - Página: ${page}, Busca: ${search || 'N/A'}`);
-      
-      // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.APPOINTMENTS}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
-      }
-      
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta dos agendamentos:', response);
-      
-      if (response && response.data && Array.isArray(response.data) && response.current_page !== undefined) {
-        // Converter dados da API para o formato esperado
-        const appointmentsData: Appointment[] = response.data.map((appointment: any) => ({
-          id: appointment.id.toString(),
-          visitor_id: appointment.visitor_id,
-          name: appointment.name,
-          cpf: appointment.cpf,
-          responsible: appointment.responsible,
-          dateBegin: appointment.dateBegin,
-          dateEnding: appointment.dateEnding
-        }));
-        
-        setAppointments(appointmentsData);
-        setAppointmentPagination(response);
-        console.log('💾 Agendamentos carregados:', appointmentsData);
-      } else {
-        console.warn('⚠️ Resposta de agendamentos inválida:', response);
-        setAppointments([]);
-        setAppointmentPagination(null);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar agendamentos:', error);
-      // Usar dados mock em caso de erro
-      setAppointments(mockAppointments);
-      setAppointmentPagination(null);
-    }
-  };
-
-  // Função específica para carregar convidados para seleção
-  const loadGuestsSelect = async () => {
-    try {
-      console.log('🔄 Carregando convidados para seleção...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS_SELECT, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta dos convidados para seleção:', response);
-      
-      if (response && Array.isArray(response)) {
-        setGuestsSelect(response);
-        console.log('💾 Convidados para seleção carregados:', response);
-      } else {
-        console.warn('⚠️ Resposta de convidados para seleção inválida:', response);
-        setGuestsSelect([]);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar convidados para seleção:', error);
-      setGuestsSelect([]);
-    }
-  };
-
-  // Função específica para carregar cronograma de visitantes
-  const loadVisitorSchedule = async (page: number = 1, search?: string) => {
-    try {
-      console.log(`🔄 Carregando cronograma de visitantes - Página: ${page}, Busca: ${search || 'N/A'}`);
-      
-      // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.VISITOR_SCHEDULE}?page=${page}`;
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
-      }
-      
-      const response = await apiRequest(url, {
-        method: 'GET'
-      });
-      
-      console.log('✅ Resposta do cronograma de visitantes:', response);
-      
-      if (response && response.data && Array.isArray(response.data) && response.current_page !== undefined) {
-        setVisitorSchedule(response.data);
-        setVisitorSchedulePagination(response);
-        console.log('💾 Cronograma de visitantes carregado:', response.data);
-      } else {
-        console.warn('⚠️ Resposta do cronograma de visitantes inválida:', response);
-        setVisitorSchedule([]);
-        setVisitorSchedulePagination(null);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar cronograma de visitantes:', error);
-      setVisitorSchedule([]);
-      setVisitorSchedulePagination(null);
-    }
-  };
-
-  // Funções para empresas
-  const addCompany = async (company: Omit<Company, 'id'>) => {
-    try {
-      console.log('📤 Adicionando empresa...');
       const response = await apiRequest(API_CONFIG.ENDPOINTS.COMPANIES, {
         method: 'POST',
-        body: JSON.stringify(company)
+        body: JSON.stringify(companyData)
       });
       
-      if (response && response.data) {
-        // Recarregar a lista de empresas após adicionar
-        await loadCompanies();
-        showSuccess('Empresa adicionada!', 'A empresa foi cadastrada com sucesso.');
-      } else {
-        // Fallback para mock
-        setCompanies(prev => [...prev, { ...company, id: generateId() }]);
-        showSuccess('Empresa adicionada!', 'A empresa foi cadastrada com sucesso.');
-      }
+      console.log('✅ DataContext.addCompany - Resposta:', response);
+      showSuccess('Empresa cadastrada!', 'A empresa foi cadastrada com sucesso.');
     } catch (error) {
-      console.error('Error adding company:', error);
-      showError('Erro ao adicionar empresa', 'Não foi possível cadastrar a empresa. Tente novamente.');
-      // Fallback para mock
-      setCompanies(prev => [...prev, { ...company, id: generateId() }]);
-    }
-  };
-
-  const updateCompany = async (id: string, company: Partial<Company>) => {
-    try {
-      console.log('📝 Atualizando empresa...');
-      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(company)
-      });
-      
-      if (response) {
-        // Recarregar a lista de empresas após atualizar
-        await loadCompanies();
-        showSuccess('Empresa atualizada!', 'Os dados da empresa foram atualizados com sucesso.');
-      } else {
-        // Fallback para mock
-        setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
-        showSuccess('Empresa atualizada!', 'Os dados da empresa foram atualizados com sucesso.');
-      }
-    } catch (error) {
-      console.error('Error updating company:', error);
-      showError('Erro ao atualizar empresa', 'Não foi possível atualizar a empresa. Tente novamente.');
-      // Fallback para mock
-      setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...company } : c));
-    }
-  };
-
-  const deleteCompany = async (id: string) => {
-    try {
-      console.log('🗑️ Excluindo empresa...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
-        method: 'DELETE'
-      });
-      
-      // Recarregar a lista de empresas após deletar
-      await loadCompanies();
-      showSuccess('Empresa excluída!', 'A empresa foi removida com sucesso.');
-    } catch (error) {
-      console.error('Error deleting company:', error);
-      showError('Erro ao excluir empresa', 'Não foi possível excluir a empresa. Tente novamente.');
-      // Fallback para mock
-      setCompanies(prev => prev.filter(c => c.id !== id));
-    }
-  };
-
-  // Funções para residências
-  const addResidence = async (residence: Omit<Residence, 'id'>) => {
-    try {
-      console.log('📤 Adicionando residência...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES, {
-        method: 'POST',
-        body: JSON.stringify(residence)
-      });
-      
-      if (response && response.data) {
-        // Recarregar a lista de residências após adicionar
-        await loadResidences();
-        showSuccess('Residência adicionada!', 'A residência foi cadastrada com sucesso.');
-      } else {
-        setResidences(prev => [...prev, { ...residence, id: generateId() }]);
-        showSuccess('Residência adicionada!', 'A residência foi cadastrada com sucesso.');
-      }
-    } catch (error) {
-      console.error('Error adding residence:', error);
-      showError('Erro ao adicionar residência', 'Não foi possível cadastrar a residência. Tente novamente.');
-      setResidences(prev => [...prev, { ...residence, id: generateId() }]);
-    }
-  };
-
-  const updateResidence = async (id: string, residence: Partial<Residence>) => {
-    try {
-      console.log('📝 Atualizando residência...');
-      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(residence)
-      });
-      
-      console.log('✅ Residência atualizada:', response);
-      
-      // Recarregar a lista de residências após atualizar
-      await loadResidences();
-      showSuccess('Residência atualizada!', 'Os dados da residência foram atualizados com sucesso.');
-    } catch (error) {
-      console.error('Error updating residence:', error);
-      showError('Erro ao atualizar residência', 'Não foi possível atualizar a residência. Tente novamente.');
-      // Fallback para mock
-      setResidences(prev => prev.map(r => r.id === id ? { ...r, ...residence } : r));
-    }
-  };
-
-  const deleteResidence = async (id: string) => {
-    try {
-      console.log('🗑️ Excluindo residência...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
-        method: 'DELETE'
-      });
-      
-      setResidences(prev => prev.filter(r => r.id !== id));
-      setResidents(prev => prev.filter(r => r.residenceId !== id));
-      showSuccess('Residência excluída!', 'A residência foi removida com sucesso.');
-    } catch (error) {
-      console.error('Error deleting residence:', error);
-      showError('Erro ao excluir residência', 'Não foi possível excluir a residência. Tente novamente.');
-      setResidences(prev => prev.filter(r => r.id !== id));
-      setResidents(prev => prev.filter(r => r.residenceId !== id));
-    }
-  };
-
-  // Funções para moradores
-  const addResident = async (resident: { residence_id: string; name: string; email: string; mobile: string }) => {
-    try {
-      console.log('📤 Adicionando morador...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
-        method: 'POST',
-        body: JSON.stringify(resident)
-      });
-      
-      if (response && response.data) {
-        // Recarregar a lista de moradores após adicionar
-        await loadResidents(resident.residence_id);
-        showSuccess('Morador adicionado!', 'O morador foi cadastrado com sucesso.');
-      } else {
-        // Fallback para mock
-        const newResident = {
-          id: generateId(),
-          name: resident.name,
-          email: resident.email,
-          mobile: resident.mobile
-        };
-        setResidents(prev => [...prev, newResident]);
-        showSuccess('Morador adicionado!', 'O morador foi cadastrado com sucesso.');
-      }
-    } catch (error) {
-      console.error('Error adding resident:', error);
-      showError('Erro ao adicionar morador', 'Não foi possível cadastrar o morador. Tente novamente.');
-      // Fallback para mock
-      const newResident = {
-        id: generateId(),
-        name: resident.name,
-        email: resident.email,
-        mobile: resident.mobile
-      };
-      setResidents(prev => [...prev, newResident]);
-    }
-  };
-
-  const updateResident = async (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => {
-    try {
-      console.log('📝 Atualizando morador...');
-      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          residence_id: Number(resident.residence_id),
-          name: resident.name,
-          email: resident.email,
-          mobile: resident.mobile
-        })
-      });
-      
-      if (response) {
-        // Recarregar a lista de moradores após atualizar
-        await loadResidents(resident.residence_id);
-        showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
-      } else {
-        // Fallback para mock
-        setResidents(prev => prev.map(r => r.id === id ? { 
-          ...r, 
-          name: resident.name,
-          email: resident.email,
-          mobile: resident.mobile
-        } : r));
-        showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
-      }
-    } catch (error) {
-      console.error('Error updating resident:', error);
-      showError('Erro ao atualizar morador', 'Não foi possível atualizar o morador. Tente novamente.');
-      // Fallback para mock
-      setResidents(prev => prev.map(r => r.id === id ? { 
-        ...r, 
-        name: resident.name,
-        email: resident.email,
-        mobile: resident.mobile
-      } : r));
-    }
-  };
-
-  const deleteResident = async (id: string, residenceId: string) => {
-    try {
-      console.log('🗑️ Excluindo morador...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}/${residenceId}`, {
-        method: 'DELETE'
-      });
-      
-      setResidents(prev => prev.filter(r => r.id !== id));
-      showSuccess('Morador excluído!', 'O morador foi removido com sucesso.');
-    } catch (error) {
-      console.error('Error deleting resident:', error);
-      showError('Erro ao excluir morador', 'Não foi possível excluir o morador. Tente novamente.');
-      setResidents(prev => prev.filter(r => r.id !== id));
-    }
-  };
-
-  // Funções para funcionários
-  const addEmployee = async (employee: { name: string; email: string; role: number; status: number }): Promise<{ message: string; password: string }> => {
-    try {
-      console.log('📤 Adicionando funcionário...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
-        method: 'POST',
-        body: JSON.stringify(employee)
-      });
-      
-      if (response && response.message) {
-        // Recarregar a lista de funcionários após adicionar
-        await loadEmployees();
-        showSuccess('Funcionário adicionado!', 'O funcionário foi cadastrado com sucesso.');
-        return { message: response.message, password: response.password };
-      } else {
-        // Fallback para mock
-        const newEmployee = { 
-          ...employee, 
-          id: generateId(), 
-          permission: employee.role === 2 ? 'Administrador' : 'Funcionário', 
-          status: employee.status === 1 ? 'active' : 'inactive' 
-        };
-        setEmployees(prev => [...prev, newEmployee]);
-        showSuccess('Funcionário adicionado!', 'O funcionário foi cadastrado com sucesso.');
-        return { message: 'Funcionário cadastrado', password: 'mock123' };
-      }
-    } catch (error) {
-      console.error('Error adding employee:', error);
-      showError('Erro ao adicionar funcionário', 'Não foi possível cadastrar o funcionário. Tente novamente.');
+      console.error('❌ DataContext.addCompany - Erro:', error);
+      showError('Erro ao cadastrar empresa', 'Não foi possível cadastrar a empresa. Tente novamente.');
       throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const updateEmployee = async (id: string, employee: { name: string; email: string; role: number; status: number }) => {
+  const updateCompany = useCallback(async (id: string, companyData: any) => {
     try {
-      console.log('📝 Atualizando funcionário...');
+      console.log(`🏢 DataContext.updateCompany - ID: ${id}, Dados:`, companyData);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(companyData)
+      });
+      
+      console.log('✅ DataContext.updateCompany - Resposta:', response);
+      showSuccess('Empresa atualizada!', 'Os dados da empresa foram atualizados com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.updateCompany - Erro:', error);
+      showError('Erro ao atualizar empresa', 'Não foi possível atualizar a empresa. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const deleteCompany = useCallback(async (id: string) => {
+    try {
+      console.log(`🏢 DataContext.deleteCompany - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      console.log('✅ DataContext.deleteCompany - Resposta:', response);
+      showSuccess('Empresa excluída!', 'A empresa foi excluída com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.deleteCompany - Erro:', error);
+      showError('Erro ao excluir empresa', 'Não foi possível excluir a empresa. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  // Residences Functions
+  const loadResidences = useCallback(async (page: number = 1, search: string = '') => {
+    try {
+      console.log(`🏠 DataContext.loadResidences - Página: ${page}, Busca: "${search}"`);
+      
+      let url = `${API_CONFIG.ENDPOINTS.RESIDENCES}?page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
+      
+      const response = await apiRequest(url, { method: 'GET' });
+      
+      if (response && response.data) {
+        setResidences(response.data);
+        setResidencePagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadResidences - ${response.data.length} residências carregadas`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadResidences - Erro:', error);
+      showError('Erro ao carregar residências', 'Não foi possível carregar a lista de residências.');
+    }
+  }, [showError]);
+
+  const addResidence = useCallback(async (residenceData: any) => {
+    try {
+      console.log('🏠 DataContext.addResidence - Dados:', residenceData);
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENCES, {
+        method: 'POST',
+        body: JSON.stringify(residenceData)
+      });
+      
+      console.log('✅ DataContext.addResidence - Resposta:', response);
+      showSuccess('Residência cadastrada!', 'A residência foi cadastrada com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.addResidence - Erro:', error);
+      showError('Erro ao cadastrar residência', 'Não foi possível cadastrar a residência. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const updateResidence = useCallback(async (id: string, residenceData: any) => {
+    try {
+      console.log(`🏠 DataContext.updateResidence - ID: ${id}, Dados:`, residenceData);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(residenceData)
+      });
+      
+      console.log('✅ DataContext.updateResidence - Resposta:', response);
+      showSuccess('Residência atualizada!', 'Os dados da residência foram atualizados com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.updateResidence - Erro:', error);
+      showError('Erro ao atualizar residência', 'Não foi possível atualizar a residência. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const deleteResidence = useCallback(async (id: string) => {
+    try {
+      console.log(`🏠 DataContext.deleteResidence - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENCES}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      console.log('✅ DataContext.deleteResidence - Resposta:', response);
+      showSuccess('Residência excluída!', 'A residência foi excluída com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.deleteResidence - Erro:', error);
+      showError('Erro ao excluir residência', 'Não foi possível excluir a residência. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  // Residents Functions
+  const loadResidents = useCallback(async (residenceId: string, page: number = 1, search: string = '') => {
+    try {
+      console.log(`👥 DataContext.loadResidents - Residência: ${residenceId}, Página: ${page}, Busca: "${search}"`);
+      
+      let url = `${API_CONFIG.ENDPOINTS.RESIDENTS}/${residenceId}?page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
+      
+      const response = await apiRequest(url, { method: 'GET' });
+      
+      if (response && response.data) {
+        setResidents(response.data);
+        setResidentPagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadResidents - ${response.data.length} moradores carregados`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadResidents - Erro:', error);
+      showError('Erro ao carregar moradores', 'Não foi possível carregar a lista de moradores.');
+    }
+  }, [showError]);
+
+  const addResident = useCallback(async (residentData: any) => {
+    try {
+      console.log('👥 DataContext.addResident - Dados:', residentData);
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.RESIDENTS, {
+        method: 'POST',
+        body: JSON.stringify(residentData)
+      });
+      
+      console.log('✅ DataContext.addResident - Resposta:', response);
+      showSuccess('Morador cadastrado!', 'O morador foi cadastrado com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.addResident - Erro:', error);
+      showError('Erro ao cadastrar morador', 'Não foi possível cadastrar o morador. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const updateResident = useCallback(async (id: string, residentData: any) => {
+    try {
+      console.log(`👥 DataContext.updateResident - ID: ${id}, Dados:`, residentData);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(residentData)
+      });
+      
+      console.log('✅ DataContext.updateResident - Resposta:', response);
+      showSuccess('Morador atualizado!', 'Os dados do morador foram atualizados com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.updateResident - Erro:', error);
+      showError('Erro ao atualizar morador', 'Não foi possível atualizar o morador. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const deleteResident = useCallback(async (id: string, residenceId: string) => {
+    try {
+      console.log(`👥 DataContext.deleteResident - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.RESIDENTS}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      console.log('✅ DataContext.deleteResident - Resposta:', response);
+      showSuccess('Morador excluído!', 'O morador foi excluído com sucesso.');
+      
+      // Recarregar lista de moradores
+      await loadResidents(residenceId);
+    } catch (error) {
+      console.error('❌ DataContext.deleteResident - Erro:', error);
+      showError('Erro ao excluir morador', 'Não foi possível excluir o morador. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError, loadResidents]);
+
+  // Employees Functions
+  const loadEmployees = useCallback(async (page: number = 1, search: string = '') => {
+    try {
+      console.log(`👤 DataContext.loadEmployees - Página: ${page}, Busca: "${search}"`);
+      
+      let url = `${API_CONFIG.ENDPOINTS.EMPLOYEES}?page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
+      
+      const response = await apiRequest(url, { method: 'GET' });
+      
+      if (response && response.data) {
+        setEmployees(response.data);
+        setEmployeePagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadEmployees - ${response.data.length} funcionários carregados`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadEmployees - Erro:', error);
+      showError('Erro ao carregar funcionários', 'Não foi possível carregar a lista de funcionários.');
+    }
+  }, [showError]);
+
+  const addEmployee = useCallback(async (employeeData: any) => {
+    try {
+      console.log('👤 DataContext.addEmployee - Dados:', employeeData);
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.EMPLOYEES, {
+        method: 'POST',
+        body: JSON.stringify(employeeData)
+      });
+      
+      console.log('✅ DataContext.addEmployee - Resposta:', response);
+      showSuccess('Funcionário cadastrado!', 'O funcionário foi cadastrado com sucesso.');
+      return response;
+    } catch (error) {
+      console.error('❌ DataContext.addEmployee - Erro:', error);
+      showError('Erro ao cadastrar funcionário', 'Não foi possível cadastrar o funcionário. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const updateEmployee = useCallback(async (id: string, employeeData: any) => {
+    try {
+      console.log(`👤 DataContext.updateEmployee - ID: ${id}, Dados:`, employeeData);
+      
       const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(employee)
+        body: JSON.stringify(employeeData)
       });
       
-      if (response) {
-        // Recarregar a lista de funcionários após atualizar
-        await loadEmployees();
-        showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
-      } else {
-        // Fallback para mock
-        const updatedEmployee = {
-          name: employee.name,
-          email: employee.email,
-          permission: employee.role === 2 ? 'Administrador' : 'Funcionário',
-          status: employee.status === 1 ? 'active' : 'inactive'
-        };
-        setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updatedEmployee } : e));
-        showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
-      }
+      console.log('✅ DataContext.updateEmployee - Resposta:', response);
+      showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
     } catch (error) {
-      console.error('Error updating employee:', error);
+      console.error('❌ DataContext.updateEmployee - Erro:', error);
       showError('Erro ao atualizar funcionário', 'Não foi possível atualizar o funcionário. Tente novamente.');
-      // Fallback para mock
-      const updatedEmployee = {
-        name: employee.name,
-        email: employee.email,
-        permission: employee.role === 2 ? 'Administrador' : 'Funcionário',
-        status: employee.status === 1 ? 'active' : 'inactive'
-      };
-      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updatedEmployee } : e));
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const resetEmployeePassword = async (id: string): Promise<{ message: string; password: string }> => {
+  const resetEmployeePassword = useCallback(async (id: string) => {
     try {
-      console.log('🔄 Resetando senha do funcionário...');
-      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/reset/${id}`, {
-        method: 'GET'
+      console.log(`👤 DataContext.resetEmployeePassword - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}/reset-password`, {
+        method: 'POST'
       });
       
-      console.log('✅ Senha resetada:', response);
-      
-      if (response && response.message) {
-        showSuccess('Senha resetada!', 'A nova senha foi gerada com sucesso.');
-        return { message: response.message, password: response.password };
-      } else {
-        // Fallback para mock
-        const mockPassword = 'mock' + Math.random().toString(36).substr(2, 6);
-        showSuccess('Senha resetada!', 'A nova senha foi gerada com sucesso.');
-        return { message: 'Senha resetada com sucesso', password: mockPassword };
-      }
+      console.log('✅ DataContext.resetEmployeePassword - Resposta:', response);
+      showSuccess('Senha resetada!', 'A senha do funcionário foi resetada com sucesso.');
+      return response;
     } catch (error) {
-      console.error('Error resetting employee password:', error);
+      console.error('❌ DataContext.resetEmployeePassword - Erro:', error);
       showError('Erro ao resetar senha', 'Não foi possível resetar a senha. Tente novamente.');
       throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const deleteEmployee = async (id: string) => {
+  const deleteEmployee = useCallback(async (id: string) => {
     try {
-      console.log('🗑️ Excluindo funcionário...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
+      console.log(`👤 DataContext.deleteEmployee - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.EMPLOYEES}/${id}`, {
         method: 'DELETE'
       });
       
-      setEmployees(prev => prev.filter(e => e.id !== id));
-      showSuccess('Funcionário atualizado!', 'Os dados do funcionário foram atualizados com sucesso.');
+      console.log('✅ DataContext.deleteEmployee - Resposta:', response);
+      showSuccess('Funcionário excluído!', 'O funcionário foi excluído com sucesso.');
     } catch (error) {
-      console.error('Error updating employee:', error);
-      showError('Erro ao atualizar funcionário', 'Não foi possível atualizar o funcionário. Tente novamente.');
-      setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...employee } : e));
+      console.error('❌ DataContext.deleteEmployee - Erro:', error);
+      showError('Erro ao excluir funcionário', 'Não foi possível excluir o funcionário. Tente novamente.');
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  // Funções para prestadores de serviços
-  const addServiceProvider = async (provider: Omit<ServiceProvider, 'id'>) => {
+  // Service Providers Functions
+  const loadServiceProviders = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      console.log('📤 Adicionando prestador de serviços...');
+      console.log(`🔧 DataContext.loadServiceProviders - Página: ${page}, Busca: "${search}"`);
       
-      // Preparar dados para envio conforme API
-      const providerData = {
-        name: provider.name,
-        rg: provider.rg,
-        cpf: provider.cpf.replace(/\D/g, ''), // Remover máscara
-        mobile: provider.mobile,
-        plate: provider.plate || null,
-        observation: provider.observation,
-        date_start: provider.date_start,
-        date_ending: provider.date_ending
-      };
+      let url = `${API_CONFIG.ENDPOINTS.PROVIDERS}?page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
+      
+      const response = await apiRequest(url, { method: 'GET' });
+      
+      if (response && response.data) {
+        setServiceProviders(response.data);
+        setServiceProviderPagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadServiceProviders - ${response.data.length} prestadores carregados`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadServiceProviders - Erro:', error);
+      showError('Erro ao carregar prestadores', 'Não foi possível carregar a lista de prestadores de serviços.');
+    }
+  }, [showError]);
+
+  const addServiceProvider = useCallback(async (providerData: any) => {
+    try {
+      console.log('🔧 DataContext.addServiceProvider - Dados:', providerData);
       
       const response = await apiRequest(API_CONFIG.ENDPOINTS.PROVIDERS, {
         method: 'POST',
         body: JSON.stringify(providerData)
       });
       
-      console.log('✅ Resposta do cadastro:', response);
-      
-      if (response && response.message) {
-        // Recarregar lista após adicionar
-        await loadServiceProviders();
-        showSuccess('Prestador de serviços adicionado!', 'O prestador de serviços foi cadastrado com sucesso.');
-      } else {
-        // Fallback para mock
-        const newProvider = { 
-          ...provider, 
-          id: generateId()
-        };
-        setServiceProviders(prev => [...prev, newProvider]);
-        showSuccess('Prestador de serviços adicionado!', 'O prestador de serviços foi cadastrado com sucesso.');
-      }
+      console.log('✅ DataContext.addServiceProvider - Resposta:', response);
+      showSuccess('Prestador cadastrado!', 'O prestador de serviços foi cadastrado com sucesso.');
     } catch (error) {
-      console.error('Error adding service provider:', error);
-      showError('Erro ao adicionar prestador de serviços', 'Não foi possível cadastrar o prestador de serviços. Tente novamente.');
-      // Fallback para mock
-      const newProvider = { 
-        ...provider, 
-        id: generateId()
-      };
-      setServiceProviders(prev => [...prev, newProvider]);
+      console.error('❌ DataContext.addServiceProvider - Erro:', error);
+      showError('Erro ao cadastrar prestador', 'Não foi possível cadastrar o prestador de serviços. Tente novamente.');
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const updateServiceProvider = async (id: string, provider: Partial<ServiceProvider>) => {
+  const updateServiceProvider = useCallback(async (id: number, providerData: any) => {
     try {
-      console.log('📝 Atualizando prestador de serviços...');
+      console.log(`🔧 DataContext.updateServiceProvider - ID: ${id}, Dados:`, providerData);
       
-      // Preparar dados para envio conforme API
-      const providerData = {
-        name: provider.name,
-        rg: provider.rg,
-        cpf: provider.cpf?.replace(/\D/g, ''), // Remover máscara
-        mobile: provider.mobile,
-        plate: provider.plate || null,
-        observation: provider.observation,
-        date_start: provider.date_start,
-        date_ending: provider.date_ending
-      };
-      
-      await apiRequest(`${API_CONFIG.ENDPOINTS.PROVIDERS}/${id}`, {
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.PROVIDERS}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(providerData)
       });
       
-      console.log('✅ Prestador de serviços atualizado');
-      
-      // Recarregar lista após atualizar
-      await loadServiceProviders();
-      showSuccess('Prestador de serviços atualizado!', 'Os dados do prestador de serviços foram atualizados com sucesso.');
+      console.log('✅ DataContext.updateServiceProvider - Resposta:', response);
+      showSuccess('Prestador atualizado!', 'Os dados do prestador foram atualizados com sucesso.');
     } catch (error) {
-      console.error('Error updating service provider:', error);
-      showError('Erro ao atualizar prestador de serviços', 'Não foi possível atualizar o prestador de serviços. Tente novamente.');
-      // Fallback para mock
-      setServiceProviders(prev => prev.map(p => p.id === id ? { ...p, ...provider } : p));
+      console.error('❌ DataContext.updateServiceProvider - Erro:', error);
+      showError('Erro ao atualizar prestador', 'Não foi possível atualizar o prestador de serviços. Tente novamente.');
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const deleteServiceProvider = async (id: string) => {
+  const deleteServiceProvider = useCallback(async (id: number) => {
     try {
-      console.log('🗑️ Excluindo prestador de serviços...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.PROVIDERS}/${id}`, {
+      console.log(`🔧 DataContext.deleteServiceProvider - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.PROVIDERS}/${id}`, {
         method: 'DELETE'
       });
       
-      setServiceProviders(prev => prev.filter(p => p.id !== id));
-      showSuccess('Prestador de serviços excluído!', 'O prestador de serviços foi removido com sucesso.');
+      console.log('✅ DataContext.deleteServiceProvider - Resposta:', response);
+      showSuccess('Prestador excluído!', 'O prestador de serviços foi excluído com sucesso.');
     } catch (error) {
-      console.error('Error deleting service provider:', error);
-      showError('Erro ao excluir prestador de serviços', 'Não foi possível excluir o prestador de serviços. Tente novamente.');
-      setServiceProviders(prev => prev.filter(p => p.id !== id));
+      console.error('❌ DataContext.deleteServiceProvider - Erro:', error);
+      showError('Erro ao excluir prestador', 'Não foi possível excluir o prestador de serviços. Tente novamente.');
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  // Funções para convidados
-  const addGuest = async (guest: Omit<Guest, 'id'>) => {
+  // Guests Functions
+  const loadGuests = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      console.log('📤 Adicionando convidado...');
+      console.log(`👤 DataContext.loadGuests - Página: ${page}, Busca: "${search}"`);
       
-      // Preparar dados para envio conforme API
-      const guestData = {
-        name: guest.name,
-        rg: guest.rg,
-        cpf: guest.cpf.replace(/\D/g, ''), // Remover máscara
-        placa: guest.plate || '',
-        observation: guest.observation,
-        type: 'visitor'
-      };
+      let url = `${API_CONFIG.ENDPOINTS.GUESTS_LIST}?page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
+      
+      const response = await apiRequest(url, { method: 'GET' });
+      
+      if (response && response.data) {
+        setGuests(response.data);
+        setGuestPagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadGuests - ${response.data.length} convidados carregados`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadGuests - Erro:', error);
+      showError('Erro ao carregar convidados', 'Não foi possível carregar a lista de convidados.');
+    }
+  }, [showError]);
+
+  const loadGuestsSelect = useCallback(async () => {
+    try {
+      console.log('👤 DataContext.loadGuestsSelect - Carregando lista para seleção...');
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS_SELECT, { method: 'GET' });
+      
+      if (response && Array.isArray(response)) {
+        setGuestsSelect(response);
+        console.log(`✅ DataContext.loadGuestsSelect - ${response.length} convidados carregados para seleção`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadGuestsSelect - Erro:', error);
+      showError('Erro ao carregar convidados', 'Não foi possível carregar a lista de convidados para seleção.');
+    }
+  }, [showError]);
+
+  const addGuest = useCallback(async (guestData: any) => {
+    try {
+      console.log('👤 DataContext.addGuest - Dados:', guestData);
       
       const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS, {
         method: 'POST',
         body: JSON.stringify(guestData)
       });
       
-      console.log('✅ Resposta do cadastro:', response);
-      
-      if (response && response.message) {
-        // Recarregar lista após adicionar
-        await loadGuests();
-        showSuccess('Convidado adicionado!', 'O convidado foi cadastrado com sucesso.');
-      } else {
-        // Fallback para mock
-        const newGuest = { 
-          ...guest, 
-          id: generateId(),
-          description: `${guest.name} - Cpf: ${guest.cpf} - Placa: ${guest.plate || ''}`
-        };
-        setGuests(prev => [...prev, newGuest]);
-        showSuccess('Convidado adicionado!', 'O convidado foi cadastrado com sucesso.');
-      }
+      console.log('✅ DataContext.addGuest - Resposta:', response);
+      showSuccess('Convidado cadastrado!', 'O convidado foi cadastrado com sucesso.');
     } catch (error) {
-      console.error('Error adding guest:', error);
-      showError('Erro ao adicionar convidado', 'Não foi possível cadastrar o convidado. Tente novamente.');
-      // Fallback para mock
-      const newGuest = { 
-        ...guest, 
-        id: generateId(),
-        description: `${guest.name} - Cpf: ${guest.cpf} - Placa: ${guest.plate || ''}`
-      };
-      setGuests(prev => [...prev, newGuest]);
+      console.error('❌ DataContext.addGuest - Erro:', error);
+      showError('Erro ao cadastrar convidado', 'Não foi possível cadastrar o convidado. Tente novamente.');
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const updateGuest = async (id: string, guest: Partial<Guest>) => {
+  const updateGuest = useCallback(async (id: string, guestData: any) => {
     try {
-      console.log('📝 Atualizando convidado...');
+      console.log(`👤 DataContext.updateGuest - ID: ${id}, Dados:`, guestData);
       
-      // Preparar dados para envio conforme API
-      const guestData = {
-        name: guest.name,
-        rg: guest.rg,
-        cpf: guest.cpf?.replace(/\D/g, ''), // Remover máscara
-        placa: guest.plate || '',
-        observation: guest.observation,
-        type: 'visitor'
-      };
-      
-      await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(guestData)
       });
       
-      console.log('✅ Convidado atualizado');
-      
-      // Recarregar lista após atualizar
-      await loadGuests();
+      console.log('✅ DataContext.updateGuest - Resposta:', response);
       showSuccess('Convidado atualizado!', 'Os dados do convidado foram atualizados com sucesso.');
     } catch (error) {
-      console.error('Error updating guest:', error);
+      console.error('❌ DataContext.updateGuest - Erro:', error);
       showError('Erro ao atualizar convidado', 'Não foi possível atualizar o convidado. Tente novamente.');
-      // Fallback para mock
-      setGuests(prev => prev.map(g => g.id === id ? { ...g, ...guest } : g));
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const deleteGuest = async (id: string) => {
+  const deleteGuest = useCallback(async (id: string) => {
     try {
-      console.log('🗑️ Excluindo convidado...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
+      console.log(`👤 DataContext.deleteGuest - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.GUESTS}/${id}`, {
         method: 'DELETE'
       });
       
-      setGuests(prev => prev.filter(g => g.id !== id));
-      setAppointments(prev => prev.filter(a => a.guestId !== id));
-      showSuccess('Convidado excluído!', 'O convidado foi removido com sucesso.');
+      console.log('✅ DataContext.deleteGuest - Resposta:', response);
+      showSuccess('Convidado excluído!', 'O convidado foi excluído com sucesso.');
     } catch (error) {
-      console.error('Error deleting guest:', error);
+      console.error('❌ DataContext.deleteGuest - Erro:', error);
       showError('Erro ao excluir convidado', 'Não foi possível excluir o convidado. Tente novamente.');
-      setGuests(prev => prev.filter(g => g.id !== id));
-      setAppointments(prev => prev.filter(a => a.guestId !== id));
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  // Funções para agendamentos
-  const addAppointment = async (appointment: { visitor: number; dateBegin: string; dateEnding: string }) => {
+  // Appointments Functions
+  const loadAppointments = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      console.log('📤 Adicionando agendamento...');
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER, {
-        method: 'POST',
-        body: JSON.stringify(appointment)
-      });
+      console.log(`📅 DataContext.loadAppointments - Página: ${page}, Busca: "${search}"`);
       
-      console.log('✅ Resposta do cadastro:', response);
+      let url = `${API_CONFIG.ENDPOINTS.APPOINTMENTS}?page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
       
-      if (response && response.message) {
-        // Recarregar lista após adicionar
-        await loadAppointments();
-        showSuccess('Agendamento criado!', 'O agendamento foi criado com sucesso.');
-      } else {
-        // Fallback para mock
-        showSuccess('Agendamento criado!', 'O agendamento foi criado com sucesso.');
+      const response = await apiRequest(url, { method: 'GET' });
+      
+      if (response && response.data) {
+        setAppointments(response.data);
+        setAppointmentPagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadAppointments - ${response.data.length} agendamentos carregados`);
       }
     } catch (error) {
-      console.error('Error adding appointment:', error);
-      showError('Erro ao criar agendamento', 'Não foi possível criar o agendamento. Tente novamente.');
+      console.error('❌ DataContext.loadAppointments - Erro:', error);
+      showError('Erro ao carregar agendamentos', 'Não foi possível carregar a lista de agendamentos.');
     }
-  };
+  }, [showError]);
 
-  const updateAppointment = async (id: string, appointment: { visitor: number; dateBegin: string; dateEnding: string }) => {
+  const addAppointment = useCallback(async (appointmentData: any) => {
     try {
-      console.log('📝 Atualizando agendamento...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(appointment)
+      console.log('📅 DataContext.addAppointment - Dados:', appointmentData);
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER, {
+        method: 'POST',
+        body: JSON.stringify(appointmentData)
       });
       
-      console.log('✅ Agendamento atualizado');
+      console.log('✅ DataContext.addAppointment - Resposta:', response);
+      showSuccess('Agendamento criado!', 'O agendamento foi criado com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.addAppointment - Erro:', error);
+      showError('Erro ao criar agendamento', 'Não foi possível criar o agendamento. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const updateAppointment = useCallback(async (id: string, appointmentData: any) => {
+    try {
+      console.log(`📅 DataContext.updateAppointment - ID: ${id}, Dados:`, appointmentData);
       
-      // Recarregar lista após atualizar
-      await loadAppointments();
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(appointmentData)
+      });
+      
+      console.log('✅ DataContext.updateAppointment - Resposta:', response);
       showSuccess('Agendamento atualizado!', 'O agendamento foi atualizado com sucesso.');
     } catch (error) {
-      console.error('Error updating appointment:', error);
+      console.error('❌ DataContext.updateAppointment - Erro:', error);
       showError('Erro ao atualizar agendamento', 'Não foi possível atualizar o agendamento. Tente novamente.');
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
 
-  const deleteAppointment = async (id: string) => {
+  const deleteAppointment = useCallback(async (id: string) => {
     try {
-      console.log('🗑️ Excluindo agendamento...');
-      await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}/${id}`, {
+      console.log(`📅 DataContext.deleteAppointment - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}/${id}`, {
         method: 'DELETE'
       });
       
-      // Recarregar lista após excluir
-      await loadAppointments();
-      showSuccess('Agendamento excluído!', 'O agendamento foi removido com sucesso.');
+      console.log('✅ DataContext.deleteAppointment - Resposta:', response);
+      showSuccess('Agendamento excluído!', 'O agendamento foi excluído com sucesso.');
     } catch (error) {
-      console.error('Error deleting appointment:', error);
+      console.error('❌ DataContext.deleteAppointment - Erro:', error);
       showError('Erro ao excluir agendamento', 'Não foi possível excluir o agendamento. Tente novamente.');
+      throw error;
     }
-  };
+  }, [showSuccess, showError]);
+
+  // User Profile Function
+  const loadUserProfile = useCallback(async () => {
+    try {
+      console.log('👤 DataContext.loadUserProfile - Carregando perfil do usuário...');
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, { method: 'GET' });
+      
+      console.log('✅ DataContext.loadUserProfile - Perfil carregado:', response);
+    } catch (error) {
+      console.error('❌ DataContext.loadUserProfile - Erro:', error);
+      // Não mostrar erro para o usuário, pois pode ser chamado em background
+    }
+  }, []);
 
   return (
     <DataContext.Provider value={{
+      // Companies
       companies,
       companyPagination,
-      residences,
-      residencePagination,
-      residents,
-      residentPagination,
-      employees,
-      employeePagination,
-      serviceProviders,
-      serviceProviderPagination,
-      guests,
-      guestPagination,
-      appointments,
-      appointmentPagination,
-      guestsSelect,
-      visitorSchedule,
-      visitorSchedulePagination,
       loadCompanies,
-      loadResidences,
-      loadResidents,
-      loadEmployees,
-      loadServiceProviders,
       addCompany,
       updateCompany,
       deleteCompany,
+
+      // Residences
+      residences,
+      residencePagination,
+      loadResidences,
       addResidence,
       updateResidence,
       deleteResidence,
+
+      // Residents
+      residents,
+      residentPagination,
+      loadResidents,
       addResident,
       updateResident,
       deleteResident,
+
+      // Employees
+      employees,
+      employeePagination,
+      loadEmployees,
       addEmployee,
       updateEmployee,
-      deleteEmployee,
       resetEmployeePassword,
+      deleteEmployee,
+
+      // Service Providers
+      serviceProviders,
+      serviceProviderPagination,
+      loadServiceProviders,
       addServiceProvider,
       updateServiceProvider,
       deleteServiceProvider,
+
+      // Guests
+      guests,
+      guestPagination,
+      guestsSelect,
       loadGuests,
-      loadAppointments,
       loadGuestsSelect,
-      loadVisitorSchedule,
       addGuest,
       updateGuest,
       deleteGuest,
+
+      // Appointments
+      appointments,
+      appointmentPagination,
+      loadAppointments,
       addAppointment,
       updateAppointment,
       deleteAppointment,
+
+      // User Profile
       loadUserProfile
     }}>
       {children}
