@@ -4,6 +4,7 @@ import Header from './Header';
 import CompanyManagement from '../management/CompanyManagement';
 import ResidenceManagement from '../management/ResidenceManagement';
 import EmployeeManagement from '../management/EmployeeManagement';
+import ServiceProviderManagement from '../management/ServiceProviderManagement';
 import GuestManagement from '../management/GuestManagement';
 import AppointmentManagement from '../management/AppointmentManagement';
 import VisitorScheduleView from '../views/VisitorScheduleView';
@@ -57,6 +58,8 @@ const Dashboard: React.FC = () => {
         return <CompanyManagement />;
       case 'residences':
         return <ResidenceManagement />;
+      case 'service-providers':
+        return <ServiceProviderManagement />;
       case 'employees':
         return <EmployeeManagement />;
       case 'guests':

@@ -13,6 +13,7 @@ export const API_CONFIG = {
     RESIDENCES: '/residence',
     RESIDENTS: '/resident',
     EMPLOYEES: '/employees',
+    PROVIDERS: '/provider',
     GUESTS: '/visitors',
     GUESTS_LIST: '/visitors/list-visitors',
     GUESTS_SELECT: '/visitors/list-visitors-select',

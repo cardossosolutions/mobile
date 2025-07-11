@@ -117,6 +117,38 @@ interface EmployeeResponse {
   total: number;
 }
 
+interface ServiceProvider {
+  id: string;
+  name: string;
+  mobile: string;
+  rg: string;
+  cpf: string;
+  plate: string | null;
+  date_start: string;
+  date_ending: string;
+  observation: string;
+}
+
+interface ServiceProviderResponse {
+  current_page: number;
+  data: ServiceProvider[];
+  first_page_url: string;
+  from: number;
+  last_page: number;
+  last_page_url: string;
+  links: Array<{
+    url: string | null;
+    label: string;
+    active: boolean;
+  }>;
+  next_page_url: string | null;
+  path: string;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number;
+  total: number;
+}
+
 interface Guest {
   id: string;
   name: string;
@@ -232,6 +264,8 @@ interface DataContextType {
   residentPagination: ResidentResponse | null;
   employees: Employee[];
   employeePagination: EmployeeResponse | null;
+  serviceProviders: ServiceProvider[];
+  serviceProviderPagination: ServiceProviderResponse | null;
   guests: Guest[];
   guestPagination: GuestResponse | null;
   appointments: Appointment[];
@@ -243,6 +277,7 @@ interface DataContextType {
   loadResidences: (page?: number, search?: string) => Promise<void>;
   loadResidents: (residenceId: string, page?: number, search?: string) => Promise<void>;
   loadEmployees: (page?: number, search?: string) => Promise<void>;
+  loadServiceProviders: (page?: number, search?: string) => Promise<void>;
   loadGuests: (page?: number, search?: string) => Promise<void>;
   loadAppointments: (page?: number, search?: string) => Promise<void>;
   loadGuestsSelect: () => Promise<void>;
@@ -256,11 +291,13 @@ interface DataContextType {
   addResident: (resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
   updateResident: (id: string, resident: { residence_id: string; name: string; email: string; mobile: string }) => Promise<void>;
   deleteResident: (id: string, residenceId: string) => Promise<void>;
-  addEmployee: (employee: { name: string; email: string; role: number }) => Promise<{ message: string; password: string }>;
   addEmployee: (employee: { name: string; email: string; role: number; status: number }) => Promise<{ message: string; password: string }>;
   updateEmployee: (id: string, employee: { name: string; email: string; role: number; status: number }) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
   resetEmployeePassword: (id: string) => Promise<{ message: string; password: string }>;
+  addServiceProvider: (provider: Omit<ServiceProvider, 'id'>) => Promise<void>;
+  updateServiceProvider: (id: string, provider: Partial<ServiceProvider>) => Promise<void>;
+  deleteServiceProvider: (id: string) => Promise<void>;
   addGuest: (guest: Omit<Guest, 'id'>) => Promise<void>;
   updateGuest: (id: string, guest: Partial<Guest>) => Promise<void>;
   deleteGuest: (id: string) => Promise<void>;
@@ -439,6 +476,31 @@ const mockEmployees: Employee[] = [
   }
 ];
 
+const mockServiceProviders: ServiceProvider[] = [
+  {
+    id: '1',
+    name: 'Lucas Cardoso',
+    mobile: '11-98650-1084',
+    rg: '25.306.455-7',
+    cpf: '728.935.670-53',
+    plate: 'ELS7538',
+    date_start: '2025-07-11',
+    date_ending: '2025-07-12',
+    observation: 'EFT1253'
+  },
+  {
+    id: '2',
+    name: 'Maria Santos',
+    mobile: '11-99999-8888',
+    rg: '12.345.678-9',
+    cpf: '123.456.789-00',
+    plate: null,
+    date_start: '2025-07-15',
+    date_ending: '2025-07-15',
+    observation: 'Limpeza de vidros'
+  }
+];
+
 const mockGuests: Guest[] = [
   {
     id: '1',
@@ -573,6 +635,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [residentPagination, setResidentPagination] = useState<ResidentResponse | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeePagination, setEmployeePagination] = useState<EmployeeResponse | null>(null);
+  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
+  const [serviceProviderPagination, setServiceProviderPagination] = useState<ServiceProviderResponse | null>(null);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [guestPagination, setGuestPagination] = useState<GuestResponse | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -763,6 +827,49 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Usar dados mock em caso de erro
       setEmployees(mockEmployees);
       setEmployeePagination(null);
+    }
+  };
+
+  // Função específica para carregar prestadores de serviços
+  const loadServiceProviders = async (page: number = 1, search?: string) => {
+    try {
+      console.log(`🔄 Carregando prestadores de serviços - Página: ${page}, Busca: ${search || 'N/A'}`);
+      
+      // Construir URL com parâmetros de paginação e busca
+      let url = `${API_CONFIG.ENDPOINTS.PROVIDERS}?page=${page}`;
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      
+      const response = await apiRequest(url, {
+        method: 'GET'
+      });
+      
+      console.log('✅ Resposta dos prestadores de serviços:', response);
+      
+      if (response) {
+        // Converter os dados da API para o formato esperado
+        const providersData: ServiceProvider[] = response.data.map((provider: any) => ({
+          id: provider.id ? provider.id.toString() : generateId(),
+          name: provider.name,
+          mobile: provider.mobile,
+          rg: provider.rg,
+          cpf: provider.cpf,
+          plate: provider.plate,
+          date_start: provider.date_start ? provider.date_start.split('T')[0] : provider.date_start,
+          date_ending: provider.date_ending ? provider.date_ending.split('T')[0] : provider.date_ending,
+          observation: provider.observation
+        }));
+        
+        setServiceProviders(providersData);
+        setServiceProviderPagination(response);
+        console.log('💾 Prestadores de serviços carregados:', providersData);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar prestadores de serviços:', error);
+      // Usar dados mock em caso de erro
+      setServiceProviders(mockServiceProviders);
+      setServiceProviderPagination(null);
     }
   };
 
@@ -1252,6 +1359,105 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Funções para prestadores de serviços
+  const addServiceProvider = async (provider: Omit<ServiceProvider, 'id'>) => {
+    try {
+      console.log('📤 Adicionando prestador de serviços...');
+      
+      // Preparar dados para envio conforme API
+      const providerData = {
+        name: provider.name,
+        rg: provider.rg,
+        cpf: provider.cpf.replace(/\D/g, ''), // Remover máscara
+        mobile: provider.mobile,
+        plate: provider.plate || null,
+        observation: provider.observation,
+        date_start: provider.date_start,
+        date_ending: provider.date_ending
+      };
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.PROVIDERS, {
+        method: 'POST',
+        body: JSON.stringify(providerData)
+      });
+      
+      console.log('✅ Resposta do cadastro:', response);
+      
+      if (response && response.message) {
+        // Recarregar lista após adicionar
+        await loadServiceProviders();
+        showSuccess('Prestador de serviços adicionado!', 'O prestador de serviços foi cadastrado com sucesso.');
+      } else {
+        // Fallback para mock
+        const newProvider = { 
+          ...provider, 
+          id: generateId()
+        };
+        setServiceProviders(prev => [...prev, newProvider]);
+        showSuccess('Prestador de serviços adicionado!', 'O prestador de serviços foi cadastrado com sucesso.');
+      }
+    } catch (error) {
+      console.error('Error adding service provider:', error);
+      showError('Erro ao adicionar prestador de serviços', 'Não foi possível cadastrar o prestador de serviços. Tente novamente.');
+      // Fallback para mock
+      const newProvider = { 
+        ...provider, 
+        id: generateId()
+      };
+      setServiceProviders(prev => [...prev, newProvider]);
+    }
+  };
+
+  const updateServiceProvider = async (id: string, provider: Partial<ServiceProvider>) => {
+    try {
+      console.log('📝 Atualizando prestador de serviços...');
+      
+      // Preparar dados para envio conforme API
+      const providerData = {
+        name: provider.name,
+        rg: provider.rg,
+        cpf: provider.cpf?.replace(/\D/g, ''), // Remover máscara
+        mobile: provider.mobile,
+        plate: provider.plate || null,
+        observation: provider.observation,
+        date_start: provider.date_start,
+        date_ending: provider.date_ending
+      };
+      
+      await apiRequest(`${API_CONFIG.ENDPOINTS.PROVIDERS}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(providerData)
+      });
+      
+      console.log('✅ Prestador de serviços atualizado');
+      
+      // Recarregar lista após atualizar
+      await loadServiceProviders();
+      showSuccess('Prestador de serviços atualizado!', 'Os dados do prestador de serviços foram atualizados com sucesso.');
+    } catch (error) {
+      console.error('Error updating service provider:', error);
+      showError('Erro ao atualizar prestador de serviços', 'Não foi possível atualizar o prestador de serviços. Tente novamente.');
+      // Fallback para mock
+      setServiceProviders(prev => prev.map(p => p.id === id ? { ...p, ...provider } : p));
+    }
+  };
+
+  const deleteServiceProvider = async (id: string) => {
+    try {
+      console.log('🗑️ Excluindo prestador de serviços...');
+      await apiRequest(`${API_CONFIG.ENDPOINTS.PROVIDERS}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      setServiceProviders(prev => prev.filter(p => p.id !== id));
+      showSuccess('Prestador de serviços excluído!', 'O prestador de serviços foi removido com sucesso.');
+    } catch (error) {
+      console.error('Error deleting service provider:', error);
+      showError('Erro ao excluir prestador de serviços', 'Não foi possível excluir o prestador de serviços. Tente novamente.');
+      setServiceProviders(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
   // Funções para convidados
   const addGuest = async (guest: Omit<Guest, 'id'>) => {
     try {
@@ -1421,6 +1627,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       residentPagination,
       employees,
       employeePagination,
+      serviceProviders,
+      serviceProviderPagination,
       guests,
       guestPagination,
       appointments,
@@ -1432,10 +1640,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loadResidences,
       loadResidents,
       loadEmployees,
-      loadGuests,
-      loadAppointments,
-      loadGuestsSelect,
-      loadVisitorSchedule,
+      loadServiceProviders,
       addCompany,
       updateCompany,
       deleteCompany,
@@ -1449,6 +1654,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateEmployee,
       deleteEmployee,
       resetEmployeePassword,
+      addServiceProvider,
+      updateServiceProvider,
+      deleteServiceProvider,
+      loadGuests,
+      loadAppointments,
+      loadGuestsSelect,
+      loadVisitorSchedule,
       addGuest,
       updateGuest,
       deleteGuest,

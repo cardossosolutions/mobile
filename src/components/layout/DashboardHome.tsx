@@ -1,9 +1,9 @@
 import React from 'react';
-import { Building, Home, Users, UserCheck, Calendar, TrendingUp } from 'lucide-react';
+import { Building, Home, Users, UserCheck, Calendar, TrendingUp, Briefcase } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 
 const DashboardHome: React.FC = () => {
-  const { companies, residences, employees, guests, appointments } = useData();
+  const { companies, residences, employees, serviceProviders, guests, appointments } = useData();
 
   const stats = [
     {
@@ -19,6 +19,13 @@ const DashboardHome: React.FC = () => {
       icon: Home,
       color: 'bg-green-500',
       change: '+5%'
+    },
+    {
+      title: 'Prestadores',
+      value: serviceProviders.length,
+      icon: Briefcase,
+      color: 'bg-indigo-500',
+      change: '+10%'
     },
     {
       title: 'Funcionários',
