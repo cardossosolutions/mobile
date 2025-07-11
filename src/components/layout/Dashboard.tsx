@@ -8,6 +8,7 @@ import ServiceProviderManagement from '../management/ServiceProviderManagement';
 import GuestManagement from '../management/GuestManagement';
 import AppointmentManagement from '../management/AppointmentManagement';
 import VisitorScheduleView from '../views/VisitorScheduleView';
+import ProviderScheduleView from '../views/ProviderScheduleView';
 import DashboardHome from './DashboardHome';
 import { useData } from '../../contexts/DataContext';
 
@@ -68,6 +69,8 @@ const Dashboard: React.FC = () => {
         return <AppointmentManagement />;
       case 'visitor-schedule':
         return <VisitorScheduleView />;
+      case 'provider-schedule':
+        return <ProviderScheduleView />;
       default:
         console.warn('⚠️ Seção desconhecida:', activeSection, '- redirecionando para home');
         // Se a seção não existir, voltar para home

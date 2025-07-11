@@ -24,6 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
   const menuItems = [
     { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'visitor-schedule', label: 'Visualizar Agendamentos', icon: Eye },
+    { id: 'provider-schedule', label: 'Visualizar Prestadores', icon: Briefcase },
     { id: 'companies', label: 'Empresas', icon: Building },
     { id: 'residences', label: 'Residências', icon: Home },
     { id: 'employees', label: 'Funcionários', icon: Users },
