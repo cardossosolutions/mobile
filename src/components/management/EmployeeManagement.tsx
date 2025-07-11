@@ -46,7 +46,7 @@ const EmployeeManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, [loadEmployees]);
+  }, []); // Executar apenas uma vez no mount
 
   // Debounce para busca
   useEffect(() => {

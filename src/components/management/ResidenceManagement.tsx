@@ -41,7 +41,7 @@ const ResidenceManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, [loadResidences]);
+  }, []); // Executar apenas uma vez no mount
 
   // Debounce para busca
   useEffect(() => {

@@ -38,7 +38,7 @@ const GuestManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, [loadGuests]);
+  }, []); // Executar apenas uma vez no mount
 
   // Debounce para busca
   useEffect(() => {

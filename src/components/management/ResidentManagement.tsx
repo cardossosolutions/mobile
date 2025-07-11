@@ -46,7 +46,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
       }
     };
     loadInitialData();
-  }, [residenceId, loadResidents]);
+  }, [residenceId]); // Executar quando residenceId mudar
 
   // Debounce para busca
   useEffect(() => {

@@ -38,7 +38,7 @@ const CompanyManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, [loadCompanies]);
+  }, []); // Executar apenas uma vez no mount
 
   // Debounce para busca
   useEffect(() => {

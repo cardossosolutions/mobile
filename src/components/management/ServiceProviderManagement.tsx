@@ -36,7 +36,7 @@ const ServiceProviderManagement: React.FC = () => {
       }
     };
     loadInitialData();
-  }, [loadServiceProviders]);
+  }, []); // Executar apenas uma vez no mount
 
   // Debounce para busca
   useEffect(() => {
