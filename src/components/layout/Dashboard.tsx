@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import CompanyManagement from '../management/CompanyManagement';
 import ResidenceManagement from '../management/ResidenceManagement';
 import EmployeeManagement from '../management/EmployeeManagement';
 import ServiceProviderManagement from '../management/ServiceProviderManagement';
@@ -10,7 +9,6 @@ import AppointmentManagement from '../management/AppointmentManagement';
 import VisitorScheduleView from '../views/VisitorScheduleView';
 import ProviderScheduleView from '../views/ProviderScheduleView';
 import DeliveryScheduleView from '../views/DeliveryScheduleView';
-import DashboardHome from './DashboardHome';
 import DeliveryManagement from '../management/DeliveryManagement';
 import { useData } from '../../contexts/DataContext';
 
@@ -19,7 +17,7 @@ const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState(() => {
     const savedSection = localStorage.getItem('dashboard_active_section');
     console.log('🔄 Dashboard inicializando - seção salva:', savedSection);
-    return savedSection || 'home';
+    return savedSection || 'visitor-schedule';
   });
   
   const { loadUserProfile } = useData();
@@ -55,10 +53,6 @@ const Dashboard: React.FC = () => {
     console.log('🎯 Renderizando conteúdo para seção:', activeSection);
     
     switch (activeSection) {
-      case 'home':
-        return <DashboardHome />;
-      case 'companies':
-        return <CompanyManagement />;
       case 'residences':
         return <ResidenceManagement />;
       case 'service-providers':
@@ -79,9 +73,9 @@ const Dashboard: React.FC = () => {
         return <DeliveryManagement />;
       default:
         console.warn('⚠️ Seção desconhecida:', activeSection, '- redirecionando para home');
-        // Se a seção não existir, voltar para home
-        setActiveSection('home');
-        return <DashboardHome />;
+        // Se a seção não existir, voltar para visitor-schedule
+        setActiveSection('visitor-schedule');
+        return <VisitorScheduleView />;
     }
   };
 

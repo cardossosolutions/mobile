@@ -3,26 +3,6 @@ import { apiRequest, API_CONFIG } from '../config/api';
 import { useToast } from './ToastContext';
 
 // Interfaces para tipagem
-interface Company {
-  id: string;
-  cnpj: string;
-  corporate_name: string;
-  fantasy_name: string;
-  cep: string;
-  street: string;
-  number: string;
-  complement?: string;
-  neighborhood: string;
-  city_id: number;
-  city_name?: string;
-  state_id: number;
-  state?: string;
-  state_name?: string;
-  email: string;
-  phone_number?: string;
-  mobile_number?: string;
-}
-
 interface Residence {
   id: string;
   name: string;
@@ -119,14 +99,6 @@ interface PaginationData {
 }
 
 interface DataContextType {
-  // Companies
-  companies: Company[];
-  companyPagination: PaginationData | null;
-  loadCompanies: (page?: number, search?: string) => Promise<void>;
-  addCompany: (companyData: any) => Promise<void>;
-  updateCompany: (id: string, companyData: any) => Promise<void>;
-  deleteCompany: (id: string) => Promise<void>;
-
   // Residences
   residences: Residence[];
   residencePagination: PaginationData | null;
@@ -209,10 +181,6 @@ interface DataProviderProps {
 export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const { showSuccess, showError } = useToast();
 
-  // Companies State
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [companyPagination, setCompanyPagination] = useState<PaginationData | null>(null);
-
   // Residences State
   const [residences, setResidences] = useState<Residence[]>([]);
   const [residencePagination, setResidencePagination] = useState<PaginationData | null>(null);
@@ -242,89 +210,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [deliveryPagination, setDeliveryPagination] = useState<PaginationData | null>(null);
   const [ecommerces, setEcommerces] = useState<Ecommerce[]>([]);
-
-  // Companies Functions
-  const loadCompanies = useCallback(async (page: number = 1, search: string = '') => {
-    try {
-      console.log(`🏢 DataContext.loadCompanies - Página: ${page}, Busca: "${search}"`);
-      
-      let url = `${API_CONFIG.ENDPOINTS.COMPANIES}?page=${page}`;
-      if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
-      }
-      
-      const response = await apiRequest(url, { method: 'GET' });
-      
-      if (response && response.data) {
-        setCompanies(response.data);
-        setCompanyPagination({
-          current_page: response.current_page,
-          last_page: response.last_page,
-          per_page: response.per_page,
-          total: response.total,
-          from: response.from,
-          to: response.to
-        });
-        console.log(`✅ DataContext.loadCompanies - ${response.data.length} empresas carregadas`);
-      }
-    } catch (error) {
-      console.error('❌ DataContext.loadCompanies - Erro:', error);
-      showError('Erro ao carregar empresas', 'Não foi possível carregar a lista de empresas.');
-    }
-  }, [showError]);
-
-  const addCompany = useCallback(async (companyData: any) => {
-    try {
-      console.log('🏢 DataContext.addCompany - Dados:', companyData);
-      
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.COMPANIES, {
-        method: 'POST',
-        body: JSON.stringify(companyData)
-      });
-      
-      console.log('✅ DataContext.addCompany - Resposta:', response);
-      showSuccess('Empresa cadastrada!', 'A empresa foi cadastrada com sucesso.');
-    } catch (error) {
-      console.error('❌ DataContext.addCompany - Erro:', error);
-      showError('Erro ao cadastrar empresa', 'Não foi possível cadastrar a empresa. Tente novamente.');
-      throw error;
-    }
-  }, [showSuccess, showError]);
-
-  const updateCompany = useCallback(async (id: string, companyData: any) => {
-    try {
-      console.log(`🏢 DataContext.updateCompany - ID: ${id}, Dados:`, companyData);
-      
-      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(companyData)
-      });
-      
-      console.log('✅ DataContext.updateCompany - Resposta:', response);
-      showSuccess('Empresa atualizada!', 'Os dados da empresa foram atualizados com sucesso.');
-    } catch (error) {
-      console.error('❌ DataContext.updateCompany - Erro:', error);
-      showError('Erro ao atualizar empresa', 'Não foi possível atualizar a empresa. Tente novamente.');
-      throw error;
-    }
-  }, [showSuccess, showError]);
-
-  const deleteCompany = useCallback(async (id: string) => {
-    try {
-      console.log(`🏢 DataContext.deleteCompany - ID: ${id}`);
-      
-      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.COMPANIES}/${id}`, {
-        method: 'DELETE'
-      });
-      
-      console.log('✅ DataContext.deleteCompany - Resposta:', response);
-      showSuccess('Empresa excluída!', 'A empresa foi excluída com sucesso.');
-    } catch (error) {
-      console.error('❌ DataContext.deleteCompany - Erro:', error);
-      showError('Erro ao excluir empresa', 'Não foi possível excluir a empresa. Tente novamente.');
-      throw error;
-    }
-  }, [showSuccess, showError]);
 
   // Residences Functions
   const loadResidences = useCallback(async (page: number = 1, search: string = '') => {
@@ -977,14 +862,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   return (
     <DataContext.Provider value={{
-      // Companies
-      companies,
-      companyPagination,
-      loadCompanies,
-      addCompany,
-      updateCompany,
-      deleteCompany,
-
       // Residences
       residences,
       residencePagination,

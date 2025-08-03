@@ -23,11 +23,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'visitor-schedule', label: 'Visualizar Agendamentos', icon: Eye },
     { id: 'provider-schedule', label: 'Visualizar Prestadores', icon: Briefcase },
     { id: 'delivery-schedule', label: 'Visualizar Entregas', icon: Package },
-    { id: 'companies', label: 'Empresas', icon: Building },
     { id: 'residences', label: 'Residências', icon: Home },
     { id: 'employees', label: 'Funcionários', icon: Users },
     { id: 'guests', label: 'Convidados', icon: UserCheck },
