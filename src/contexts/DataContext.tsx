@@ -97,8 +97,8 @@ interface Appointment {
 
 interface Delivery {
   id: number;
-  residence: string;
   ecommerce: string;
+  ecommerce_id: number | null;
   quantity: number;
   date_start: string;
   date_ending: string;

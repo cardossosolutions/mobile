@@ -73,8 +73,8 @@ const DeliveryManagement: React.FC = () => {
     // Converter dados da API para o formato esperado pelo formulário
     const deliveryData = {
       id: delivery.id,
-      ecommerce_id: delivery.ecommerce_id || '',
-      other_name: delivery.other_name || '',
+      ecommerce_id: delivery.ecommerce_id,
+      ecommerce: delivery.ecommerce,
       quantity: delivery.quantity,
       date_start: delivery.date_start,
       date_ending: delivery.date_ending

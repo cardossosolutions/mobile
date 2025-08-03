@@ -18,8 +18,8 @@ interface FormErrors {
 const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onClose }) => {
   const { addDelivery, updateDelivery, ecommerces, loadEcommerces } = useData();
   const [formData, setFormData] = useState({
-    ecommerce: delivery?.ecommerce_id || '',
-    other_name: delivery?.other_name || '',
+    ecommerce: delivery?.ecommerce_id ? delivery.ecommerce_id.toString() : (delivery?.ecommerce_id === null ? 'others' : ''),
+    other_name: delivery?.ecommerce_id === null ? delivery?.ecommerce || '' : '',
     quantity: delivery?.quantity || 1,
     date_start: delivery?.date_start ? delivery.date_start.split('T')[0] : '',
     date_ending: delivery?.date_ending ? delivery.date_ending.split('T')[0] : ''
