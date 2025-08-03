@@ -252,31 +252,30 @@ const LoginScreen: React.FC = () => {
             {/* API Configuration */}
             {currentView === 'login' && (
               <div className="border-t border-gray-200 pt-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-600">Configuração da API:</span>
-                <button
-                  onClick={() => setIsApiConfigModalOpen(true)}
-                  className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                  title="Configurar API"
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center space-x-2 text-xs text-gray-600">
-                  <Globe className="w-3 h-3 flex-shrink-0" />
-                  <span className="font-mono break-all">{API_CONFIG.BASE_URL}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-600">Configuração da API:</span>
+                  <button
+                    onClick={() => setIsApiConfigModalOpen(true)}
+                    className="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                    title="Configurar API"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center space-x-2 text-xs text-gray-600">
+                    <Globe className="w-3 h-3 flex-shrink-0" />
+                    <span className="font-mono break-all">{API_CONFIG.BASE_URL}</span>
+                  </div>
                 </div>
               </div>
             )}
 
-            {currentView === 'login' && (
-              <div className="text-center text-xs text-gray-500">
+            <div className="text-center text-xs text-gray-500">
               <p>Credenciais de teste:</p>
               <p>Email: admin@condominio.com</p>
               <p>Senha: admin123</p>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
