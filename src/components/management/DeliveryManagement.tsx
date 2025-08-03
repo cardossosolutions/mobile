@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Package, Calendar, Loader2, ChevronLeft, ChevronRight, MapPin, Hash } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Calendar, Loader2, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -301,9 +301,6 @@ const DeliveryManagement: React.FC = () => {
 
           {/* Tabela de entregas */}
           {!initialLoading && (
-            <table className="w-full table-auto">
-              <thead>
-                <tr className="bg-gray-50">
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     E-commerce
                   </th>
@@ -315,12 +312,6 @@ const DeliveryManagement: React.FC = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {deliveries.map((delivery) => (
-                  <tr key={delivery.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Package className="w-4 h-4 text-gray-400 mr-2" />
