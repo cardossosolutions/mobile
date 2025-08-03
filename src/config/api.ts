@@ -24,7 +24,7 @@ export const API_CONFIG = {
     STATES: '/infos/state',
     CITIES: '/infos/city',
     DELIVERIES: '/deliveries',
-    DELIVERIES_LIST: '/deliveries/list-residence',
+    DELIVERIES_LIST: '/deliveries',
     ECOMMERCES: '/infos/ecommerces'
   },
   

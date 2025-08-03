@@ -341,7 +341,7 @@ const DeliveryScheduleView: React.FC = () => {
       }
       
       // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.DELIVERIES_LIST}?page=${page}`;
+      let url = `/deliveries?page=${page}`;
       if (search && search.trim()) {
         url += `&search=${encodeURIComponent(search.trim())}`;
       }
