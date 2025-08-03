@@ -230,6 +230,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                 name="name"
                 value={profileData.name}
                 onChange={handleProfileChange}
+                disabled={true}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   profileErrors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -248,6 +249,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
                   name="email"
                   value={profileData.email}
                   onChange={handleProfileChange}
+                  disabled={true}
                   className={`w-full px-3 py-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     profileErrors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -260,54 +262,28 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Telefone
-              </label>
-              <input
-                type="text"
-                name="phone"
-                value={profileData.phone}
-                onChange={handleProfileChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="(11) 99999-9999"
-                maxLength={15}
-              />
-              <p className="text-xs text-gray-500 mt-1">Telefone fixo ou celular</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Departamento
-              </label>
-              <select
-                name="department"
-                value={profileData.department}
-                onChange={handleProfileChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Selecione o departamento</option>
-                <option value="Administração">Administração</option>
-                <option value="Portaria">Portaria</option>
-                <option value="Segurança">Segurança</option>
-                <option value="Manutenção">Manutenção</option>
-                <option value="Limpeza">Limpeza</option>
-              </select>
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cargo
+              Telefone
             </label>
             <input
               type="text"
-              name="position"
-              value={profileData.position}
+              name="phone"
+              value={profileData.phone}
               onChange={handleProfileChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ex: Administrador, Porteiro, Supervisor"
+              disabled={true}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+              placeholder="(11) 99999-9999"
+              maxLength={15}
             />
+            <p className="text-xs text-gray-500 mt-1">Telefone fixo ou celular</p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-blue-800 mb-2">Informação:</h4>
+            <p className="text-sm text-blue-700">
+              Os dados pessoais são somente leitura. Para alterações, entre em contato com o administrador do sistema.
+            </p>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
@@ -316,19 +292,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
               onClick={onClose}
               className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              <span>{loading ? 'Salvando...' : 'Salvar Alterações'}</span>
+              Fechar
             </button>
           </div>
         </form>
