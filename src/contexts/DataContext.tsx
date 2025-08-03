@@ -95,6 +95,20 @@ interface Appointment {
   visitor_id?: number;
 }
 
+interface Delivery {
+  id: number;
+  residence: string;
+  ecommerce: string;
+  quantity: number;
+  date_start: string;
+  date_ending: string;
+}
+
+interface Ecommerce {
+  id: number;
+  name: string;
+}
+
 interface PaginationData {
   current_page: number;
   last_page: number;
@@ -164,6 +178,16 @@ interface DataContextType {
   updateAppointment: (id: string, appointmentData: any) => Promise<void>;
   deleteAppointment: (id: string) => Promise<void>;
 
+  // Deliveries
+  deliveries: Delivery[];
+  deliveryPagination: PaginationData | null;
+  ecommerces: Ecommerce[];
+  loadDeliveries: (page?: number, search?: string) => Promise<void>;
+  loadEcommerces: () => Promise<void>;
+  addDelivery: (deliveryData: any) => Promise<void>;
+  updateDelivery: (id: number, deliveryData: any) => Promise<void>;
+  deleteDelivery: (id: number) => Promise<void>;
+
   // User Profile
   loadUserProfile: () => Promise<void>;
 }
@@ -213,6 +237,11 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   // Appointments State
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentPagination, setAppointmentPagination] = useState<PaginationData | null>(null);
+
+  // Deliveries State
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [deliveryPagination, setDeliveryPagination] = useState<PaginationData | null>(null);
+  const [ecommerces, setEcommerces] = useState<Ecommerce[]>([]);
 
   // Companies Functions
   const loadCompanies = useCallback(async (page: number = 1, search: string = '') => {
@@ -847,6 +876,105 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Deliveries Functions
+  const loadDeliveries = useCallback(async (page: number = 1, search: string = '') => {
+    try {
+      console.log(`📦 DataContext.loadDeliveries - Página: ${page}, Busca: "${search}"`);
+      
+      let url = `${API_CONFIG.ENDPOINTS.DELIVERIES_LIST}?page=${page}`;
+      if (search) {
+        url += `&search=${encodeURIComponent(search)}`;
+      }
+      
+      const response = await apiRequest(url, { method: 'GET' });
+      
+      if (response && response.data) {
+        setDeliveries(response.data);
+        setDeliveryPagination({
+          current_page: response.current_page,
+          last_page: response.last_page,
+          per_page: response.per_page,
+          total: response.total,
+          from: response.from,
+          to: response.to
+        });
+        console.log(`✅ DataContext.loadDeliveries - ${response.data.length} entregas carregadas`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadDeliveries - Erro:', error);
+      showError('Erro ao carregar entregas', 'Não foi possível carregar a lista de entregas.');
+    }
+  }, [showError]);
+
+  const loadEcommerces = useCallback(async () => {
+    try {
+      console.log('🛒 DataContext.loadEcommerces - Carregando e-commerces...');
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.ECOMMERCES, { method: 'GET' });
+      
+      if (response && Array.isArray(response)) {
+        setEcommerces(response);
+        console.log(`✅ DataContext.loadEcommerces - ${response.length} e-commerces carregados`);
+      }
+    } catch (error) {
+      console.error('❌ DataContext.loadEcommerces - Erro:', error);
+      showError('Erro ao carregar e-commerces', 'Não foi possível carregar a lista de e-commerces.');
+    }
+  }, [showError]);
+
+  const addDelivery = useCallback(async (deliveryData: any) => {
+    try {
+      console.log('📦 DataContext.addDelivery - Dados:', deliveryData);
+      
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.DELIVERIES, {
+        method: 'POST',
+        body: JSON.stringify(deliveryData)
+      });
+      
+      console.log('✅ DataContext.addDelivery - Resposta:', response);
+      showSuccess('Entrega cadastrada!', 'A entrega foi cadastrada com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.addDelivery - Erro:', error);
+      showError('Erro ao cadastrar entrega', 'Não foi possível cadastrar a entrega. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const updateDelivery = useCallback(async (id: number, deliveryData: any) => {
+    try {
+      console.log(`📦 DataContext.updateDelivery - ID: ${id}, Dados:`, deliveryData);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.DELIVERIES}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(deliveryData)
+      });
+      
+      console.log('✅ DataContext.updateDelivery - Resposta:', response);
+      showSuccess('Entrega atualizada!', 'Os dados da entrega foram atualizados com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.updateDelivery - Erro:', error);
+      showError('Erro ao atualizar entrega', 'Não foi possível atualizar a entrega. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
+  const deleteDelivery = useCallback(async (id: number) => {
+    try {
+      console.log(`📦 DataContext.deleteDelivery - ID: ${id}`);
+      
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.DELIVERIES}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      console.log('✅ DataContext.deleteDelivery - Resposta:', response);
+      showSuccess('Entrega excluída!', 'A entrega foi excluída com sucesso.');
+    } catch (error) {
+      console.error('❌ DataContext.deleteDelivery - Erro:', error);
+      showError('Erro ao excluir entrega', 'Não foi possível excluir a entrega. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
   return (
     <DataContext.Provider value={{
       // Companies
@@ -907,6 +1035,16 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       addAppointment,
       updateAppointment,
       deleteAppointment,
+
+      // Deliveries
+      deliveries,
+      deliveryPagination,
+      ecommerces,
+      loadDeliveries,
+      loadEcommerces,
+      addDelivery,
+      updateDelivery,
+      deleteDelivery,
 
       // User Profile
       loadUserProfile

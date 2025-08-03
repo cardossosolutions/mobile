@@ -22,7 +22,10 @@ export const API_CONFIG = {
     APPOINTMENTS_REGISTER: '/visitors/register-visitor',
     VISITOR_SCHEDULE: '/visitors/schedule',
     STATES: '/infos/state',
-    CITIES: '/infos/city'
+    CITIES: '/infos/city',
+    DELIVERIES: '/deliveries',
+    DELIVERIES_LIST: '/deliveries/list-residence',
+    ECOMMERCES: '/infos/ecommerces'
   },
   
   // Headers padrão

@@ -9,7 +9,8 @@ import {
   Shield,
   Menu,
   X,
-  Eye
+  Eye,
+  Package
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,6 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
     { id: 'guests', label: 'Convidados', icon: UserCheck },
     { id: 'appointments', label: 'Agendamentos', icon: Calendar },
     { id: 'service-providers', label: 'Prestadores de Serviços', icon: Briefcase },
+    { id: 'deliveries', label: 'Entregas', icon: Package },
   ];
 
   const handleMenuClick = (itemId: string) => {

@@ -10,6 +10,7 @@ import AppointmentManagement from '../management/AppointmentManagement';
 import VisitorScheduleView from '../views/VisitorScheduleView';
 import ProviderScheduleView from '../views/ProviderScheduleView';
 import DashboardHome from './DashboardHome';
+import DeliveryManagement from '../management/DeliveryManagement';
 import { useData } from '../../contexts/DataContext';
 
 const Dashboard: React.FC = () => {
@@ -71,6 +72,8 @@ const Dashboard: React.FC = () => {
         return <VisitorScheduleView />;
       case 'provider-schedule':
         return <ProviderScheduleView />;
+      case 'deliveries':
+        return <DeliveryManagement />;
       default:
         console.warn('⚠️ Seção desconhecida:', activeSection, '- redirecionando para home');
         // Se a seção não existir, voltar para home

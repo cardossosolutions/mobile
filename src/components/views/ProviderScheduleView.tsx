@@ -7,6 +7,7 @@ interface ProviderDetails {
   id: number;
   name: string;
   residence: string;
+  residence: string;
   mobile: string;
   rg: string;
   cpf: string;
@@ -145,9 +146,6 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onClick: () => void }>
         {/* Footer - Sempre no final */}
         <div className="mt-4 pt-4 border-t border-gray-100">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-xs text-gray-500">
-              <span>RG: {provider.rg}</span>
-            </div>
             <div className="flex items-center space-x-1 text-indigo-600 flex-shrink-0">
               <Eye className="w-4 h-4" />
               <span className="text-sm font-medium">Ver detalhes</span>
