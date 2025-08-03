@@ -93,6 +93,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
   const menuItems = getMenuItemsByRole(user?.role);
 
   console.log(`📋 Menu filtrado para role ${user?.role}:`, menuItems.map(item => item.label));
+
+  // Verificar se a seção ativa está disponível para a role atual
+  React.useEffect(() => {
+    if (menuItems.length > 0) {
+      const isCurrentSectionAvailable = menuItems.some(item => item.id === activeSection);
+      
+      if (!isCurrentSectionAvailable) {
+        const firstAvailableSection = menuItems[0].id;
+        console.log(`🔄 Seção atual "${activeSection}" não disponível para role ${user?.role}, redirecionando para: ${firstAvailableSection}`);
+        setActiveSection(firstAvailableSection);
+      }
+    }
+  }, [user?.role, menuItems, activeSection, setActiveSection]);
+
   const handleMenuClick = (itemId: string) => {
     console.log('📱 Sidebar - Item clicado:', itemId);
     setActiveSection(itemId);

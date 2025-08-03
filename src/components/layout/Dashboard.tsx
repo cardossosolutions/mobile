@@ -15,18 +15,50 @@ import { useData } from '../../contexts/DataContext';
 const Dashboard: React.FC = () => {
   // Recuperar seção ativa do localStorage ou usar 'home' como padrão
   const [activeSection, setActiveSection] = useState(() => {
-    const savedSection = localStorage.getItem('dashboard_active_section');
-    console.log('🔄 Dashboard inicializando - seção salva:', savedSection);
-    return savedSection || 'visitor-schedule';
+    // Não usar localStorage na inicialização, será definido baseado na role
+    console.log('🔄 Dashboard inicializando - aguardando role do usuário...');
+    return 'visitor-schedule'; // Valor temporário
   });
   
   const { loadUserProfile } = useData();
+  const { user } = useAuth();
 
-  // Salvar seção ativa no localStorage sempre que mudar
+  // Definir seção inicial baseada na role do usuário
   useEffect(() => {
-    console.log('💾 Salvando seção ativa no localStorage:', activeSection);
-    localStorage.setItem('dashboard_active_section', activeSection);
-  }, [activeSection]);
+    if (user?.role) {
+      console.log(`🎯 Definindo seção inicial para role ${user.role}...`);
+      
+      let firstSection = 'visitor-schedule'; // fallback
+      
+      switch (user.role) {
+        case 4:
+          // Role 4: Primeira opção é visualizar agendamentos
+          firstSection = 'visitor-schedule';
+          break;
+        case 5:
+          // Role 5: Primeira opção é visualizar agendamentos
+          firstSection = 'visitor-schedule';
+          break;
+        case 6:
+          // Role 6: Primeira opção é convidados
+          firstSection = 'guests';
+          break;
+        default:
+          firstSection = 'visitor-schedule';
+      }
+      
+      console.log(`✅ Seção inicial definida: ${firstSection}`);
+      setActiveSection(firstSection);
+    }
+  }, [user?.role]); // Executar quando a role for carregada
+
+  // Salvar seção ativa no localStorage sempre que mudar (exceto na inicialização)
+  useEffect(() => {
+    if (user?.role) { // Só salvar se já tiver role carregada
+      console.log('💾 Salvando seção ativa no localStorage:', activeSection);
+      localStorage.setItem('dashboard_active_section', activeSection);
+    }
+  }, [activeSection, user?.role]);
 
   // Carregar apenas dados do usuário quando o dashboard for montado
   useEffect(() => {
