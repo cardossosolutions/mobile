@@ -9,6 +9,7 @@ export const API_CONFIG = {
     LOGIN: '/login',
     LOGOUT: '/logout',
     SEND_RESET: '/send-reset',
+    RESET_PASSWORD: '/reset-password',
     USER_PROFILE: '/user/me',
     PASSWORD_CHANGE: '/password/change',
     COMPANIES: '/company',
