@@ -46,29 +46,39 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
 
     console.log(`🎯 Filtrando menu para role: ${role}`);
 
-    const commonItems = [
-      'visitor-schedule',    // Visualizar Agendamentos
-      'provider-schedule',   // Visualizar Prestadores  
-      'delivery-schedule'    // Visualizar Entregas
-    ];
-
-    let allowedItems: string[] = [...commonItems];
+    let allowedItems: string[] = [];
 
     switch (role) {
       case 4:
-        // Role 4: Comum + Residências + Funcionários
-        allowedItems.push('residences', 'employees');
+        // Role 4: Visualização + Residências + Funcionários
+        allowedItems = [
+          'visitor-schedule',    // Visualizar Agendamentos
+          'provider-schedule',   // Visualizar Prestadores  
+          'delivery-schedule',   // Visualizar Entregas
+          'residences', 
+          'employees'
+        ];
         console.log('👑 Role 4 (Admin): Acesso a residências e funcionários');
         break;
       
       case 5:
-        // Role 5: Apenas itens comuns
+        // Role 5: Apenas visualização
+        allowedItems = [
+          'visitor-schedule',    // Visualizar Agendamentos
+          'provider-schedule',   // Visualizar Prestadores  
+          'delivery-schedule'    // Visualizar Entregas
+        ];
         console.log('👤 Role 5 (Visualização): Apenas visualização');
         break;
       
       case 6:
-        // Role 6: Comum + Convidados + Agendamentos + Prestadores + Entregas
-        allowedItems.push('guests', 'appointments', 'service-providers', 'deliveries');
+        // Role 6: Apenas gestão operacional (SEM visualização)
+        allowedItems = [
+          'guests', 
+          'appointments', 
+          'service-providers', 
+          'deliveries'
+        ];
         console.log('🔧 Role 6 (Operacional): Acesso a gestão operacional');
         break;
       
