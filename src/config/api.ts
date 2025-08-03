@@ -8,6 +8,7 @@ export const API_CONFIG = {
   ENDPOINTS: {
     LOGIN: '/login',
     LOGOUT: '/logout',
+    SEND_RESET: '/send-reset',
     USER_PROFILE: '/user/me',
     PASSWORD_CHANGE: '/password/change',
     COMPANIES: '/company',
