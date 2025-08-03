@@ -262,7 +262,7 @@ const DeliveryManagement: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Buscar por residência ou e-commerce..."
+              placeholder="Buscar por e-commerce..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -305,9 +305,6 @@ const DeliveryManagement: React.FC = () => {
               <thead>
                 <tr className="bg-gray-50">
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Residência
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     E-commerce
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -324,16 +321,6 @@ const DeliveryManagement: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {deliveries.map((delivery) => (
                   <tr key={delivery.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="bg-amber-100 p-2 rounded-full mr-3">
-                          <MapPin className="w-5 h-5 text-amber-600" />
-                        </div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {delivery.residence}
-                        </div>
-                      </div>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Package className="w-4 h-4 text-gray-400 mr-2" />
@@ -413,7 +400,7 @@ const DeliveryManagement: React.FC = () => {
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Confirmar Exclusão"
-        message={`Tem certeza que deseja excluir a entrega para "${deleteConfirmation.delivery?.residence}"? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir a entrega do e-commerce "${deleteConfirmation.delivery?.ecommerce}"? Esta ação não pode ser desfeita.`}
         confirmText="Excluir Entrega"
         cancelText="Cancelar"
         type="danger"
