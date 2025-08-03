@@ -11,6 +11,7 @@ interface User {
   position?: string;
   status?: string;
   token?: string;
+  role?: number;
 }
 
 interface AuthContextType {
@@ -108,7 +109,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: response.phone || response.telefone,
           department: response.department || response.departamento,
           position: response.position || response.cargo,
-          token: localStorage.getItem('auth_token') || undefined
+          token: localStorage.getItem('auth_token') || undefined,
+          role: response.role
         };
 
         setUser(userData);
@@ -174,7 +176,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               phone: userResponse.phone || userResponse.telefone,
               department: userResponse.department || userResponse.departamento,
               position: userResponse.position || userResponse.cargo,
-              token: response.token
+              token: response.token,
+              role: userResponse.role
             };
 
             setIsAuthenticated(true);
@@ -196,7 +199,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             phone: response.user?.phone || response.user?.telefone,
             department: response.user?.department || response.user?.departamento,
             position: response.user?.position || response.user?.cargo,
-            token: response.token
+            token: response.token,
+            role: response.user?.role
           };
 
           setIsAuthenticated(true);
@@ -218,7 +222,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: 'Administrador do Sistema',
           phone: '(11) 99999-9999',
           department: 'Administração',
-          position: 'Administrador'
+          position: 'Administrador',
+          role: 4 // Role de administrador para teste
         };
         
         setIsAuthenticated(true);

@@ -13,6 +13,7 @@ import {
   Package
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
   activeSection: string;
@@ -21,8 +22,10 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user } = useAuth();
 
-  const menuItems = [
+  // Definir todos os itens de menu possíveis
+  const allMenuItems = [
     { id: 'visitor-schedule', label: 'Visualizar Agendamentos', icon: Eye },
     { id: 'provider-schedule', label: 'Visualizar Prestadores', icon: Briefcase },
     { id: 'delivery-schedule', label: 'Visualizar Entregas', icon: Package },
@@ -34,6 +37,52 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
     { id: 'deliveries', label: 'Entregas', icon: Package },
   ];
 
+  // Filtrar itens baseado na role do usuário
+  const getMenuItemsByRole = (role?: number) => {
+    if (!role) {
+      console.log('🔒 Nenhuma role definida, mostrando menu padrão');
+      return allMenuItems; // Fallback para mostrar tudo se não houver role
+    }
+
+    console.log(`🎯 Filtrando menu para role: ${role}`);
+
+    const commonItems = [
+      'visitor-schedule',    // Visualizar Agendamentos
+      'provider-schedule',   // Visualizar Prestadores  
+      'delivery-schedule'    // Visualizar Entregas
+    ];
+
+    let allowedItems: string[] = [...commonItems];
+
+    switch (role) {
+      case 4:
+        // Role 4: Comum + Residências + Funcionários
+        allowedItems.push('residences', 'employees');
+        console.log('👑 Role 4 (Admin): Acesso a residências e funcionários');
+        break;
+      
+      case 5:
+        // Role 5: Apenas itens comuns
+        console.log('👤 Role 5 (Visualização): Apenas visualização');
+        break;
+      
+      case 6:
+        // Role 6: Comum + Convidados + Agendamentos + Prestadores + Entregas
+        allowedItems.push('guests', 'appointments', 'service-providers', 'deliveries');
+        console.log('🔧 Role 6 (Operacional): Acesso a gestão operacional');
+        break;
+      
+      default:
+        console.log(`⚠️ Role ${role} não reconhecida, mostrando menu padrão`);
+        return allMenuItems; // Fallback para roles não reconhecidas
+    }
+
+    return allMenuItems.filter(item => allowedItems.includes(item.id));
+  };
+
+  const menuItems = getMenuItemsByRole(user?.role);
+
+  console.log(`📋 Menu filtrado para role ${user?.role}:`, menuItems.map(item => item.label));
   const handleMenuClick = (itemId: string) => {
     console.log('📱 Sidebar - Item clicado:', itemId);
     setActiveSection(itemId);
