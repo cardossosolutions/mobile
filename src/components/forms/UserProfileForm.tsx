@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Lock, Mail, Save, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { apiRequest, API_CONFIG } from '../../config/api';
 import { phoneMasks } from '../../utils/masks';
 
 interface UserProfileFormProps {
@@ -42,7 +43,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    newPasswordConfirmation: ''
   });
 
   const validateProfile = (): boolean => {
@@ -75,9 +76,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
       newErrors.newPassword = 'A nova senha deve ter pelo menos 6 caracteres';
     }
 
-    if (!passwordData.confirmPassword) {
+    if (!passwordData.newPasswordConfirmation) {
       newErrors.confirmPassword = 'Confirmação de senha é obrigatória';
-    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+    } else if (passwordData.newPassword !== passwordData.newPasswordConfirmation) {
       newErrors.confirmPassword = 'As senhas não coincidem';
     }
 
@@ -161,15 +162,25 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
     setMessage('');
 
     try {
-      // Mock password update - replace with real API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Fazer requisição para a API real
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.PASSWORD_CHANGE, {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword,
+          new_password_confirmation: passwordData.newPasswordConfirmation
+        })
+      });
+      
+      console.log('✅ Senha alterada com sucesso:', response);
       showSuccess('Senha alterada!', 'Sua senha foi alterada com sucesso.');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        newPasswordConfirmation: ''
       });
     } catch (error) {
+      console.error('❌ Erro ao alterar senha:', error);
       showError('Erro ao alterar senha', 'Verifique a senha atual e tente novamente.');
     } finally {
       setLoading(false);
@@ -372,8 +383,8 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ onClose }) => {
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                value={passwordData.confirmPassword}
+                name="newPasswordConfirmation"
+                value={passwordData.newPasswordConfirmation}
                 onChange={handlePasswordChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
                   passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
