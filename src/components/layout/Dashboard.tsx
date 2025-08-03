@@ -9,6 +9,7 @@ import GuestManagement from '../management/GuestManagement';
 import AppointmentManagement from '../management/AppointmentManagement';
 import VisitorScheduleView from '../views/VisitorScheduleView';
 import ProviderScheduleView from '../views/ProviderScheduleView';
+import DeliveryScheduleView from '../views/DeliveryScheduleView';
 import DashboardHome from './DashboardHome';
 import DeliveryManagement from '../management/DeliveryManagement';
 import { useData } from '../../contexts/DataContext';
@@ -72,6 +73,8 @@ const Dashboard: React.FC = () => {
         return <VisitorScheduleView />;
       case 'provider-schedule':
         return <ProviderScheduleView />;
+      case 'delivery-schedule':
+        return <DeliveryScheduleView />;
       case 'deliveries':
         return <DeliveryManagement />;
       default:
