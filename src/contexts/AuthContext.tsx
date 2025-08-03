@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           department: response.department || response.departamento,
           position: response.position || response.cargo,
           token: localStorage.getItem('auth_token') || undefined,
-          role: response.role
+          role: response.role_id
         };
 
         setUser(userData);
@@ -177,7 +177,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               department: userResponse.department || userResponse.departamento,
               position: userResponse.position || userResponse.cargo,
               token: response.token,
-              role: userResponse.role
+              role: userResponse.role_id
             };
 
             setIsAuthenticated(true);
@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             department: response.user?.department || response.user?.departamento,
             position: response.user?.position || response.user?.cargo,
             token: response.token,
-            role: response.user?.role
+            role: response.user?.role_id
           };
 
           setIsAuthenticated(true);
