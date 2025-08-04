@@ -18,7 +18,6 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
   const startCamera = useCallback(async () => {
     try {
       setError(null);
-      setIsLoading(true);
       
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -32,12 +31,6 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Aguardar o vídeo carregar antes de remover loading
-        videoRef.current.onloadedmetadata = () => {
-          setIsLoading(false);
-        };
-      } else {
-        setIsLoading(false);
       }
     } catch (err: any) {
       console.error('Erro ao acessar câmera:', err);
@@ -50,7 +43,6 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
       } else {
         setError(`Não foi possível acessar a câmera: ${err.message}. Verifique as permissões e tente novamente.`);
       }
-      setIsLoading(false);
     }
   }, []);
 
@@ -108,10 +100,27 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
 
   // Iniciar câmera quando modal abrir
   React.useEffect(() => {
-    if (isOpen && !stream && !capturedImage && !error) {
+    if (isOpen && !stream && !capturedImage) {
+      setIsLoading(true);
       startCamera();
     }
-  }, [isOpen, stream, capturedImage, startCamera]);
+  }, [isOpen, stream, capturedImage, error, startCamera]);
+
+  // Remover loading quando stream estiver ativo
+  React.useEffect(() => {
+    if (stream && videoRef.current) {
+      const video = videoRef.current;
+      const handleLoadedData = () => {
+        setIsLoading(false);
+      };
+      
+      video.addEventListener('loadeddata', handleLoadedData);
+      
+      return () => {
+        video.removeEventListener('loadeddata', handleLoadedData);
+      };
+    }
+  }, [stream]);
 
   // Limpar recursos quando modal fechar
   React.useEffect(() => {
@@ -220,7 +229,7 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
                   />
                   
                   {/* Overlay para guiar o posicionamento */}
-                  {!isLoading && (
+                  {stream && !isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="border-2 border-white border-dashed rounded-lg p-8 bg-black bg-opacity-30">
                       <div className="text-white text-center">
@@ -256,12 +265,12 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
               <div className="flex justify-center">
                 <button
                   onClick={capturePhoto}
-                  disabled={isLoading || !stream}
+                  disabled={isLoading}
                   className="px-8 py-4 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   <Camera className="w-6 h-6" />
                   <span className="text-lg font-medium">
-                    {isLoading ? 'Aguarde...' : 'Capturar Foto'}
+                    {isLoading ? 'Iniciando câmera...' : 'Capturar Foto'}
                   </span>
                 </button>
               </div>
