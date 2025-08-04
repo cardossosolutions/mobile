@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -62,17 +62,27 @@ const Dashboard: React.FC = () => {
   }, [activeSection, user?.role]);
 
   // Carregar apenas dados do usuário quando o dashboard for montado
-  useEffect(() => {
-    const initializeDashboard = async () => {
+  const initializeDashboard = useCallback(async () => {
+    try {
+      console.log('🚀 Dashboard.initializeDashboard - Inicializando dashboard...');
+      
+      // Tentar carregar perfil do usuário (não crítico se falhar)
       try {
-        console.log('🚀 Inicializando Dashboard...');
         await loadUserProfile();
-        console.log('✅ Dashboard inicializado com sucesso');
-      } catch (error) {
-        console.warn('⚠️ Erro ao carregar dados do usuário:', error);
+      } catch (profileError) {
+        // Ignorar erro de perfil - não é crítico para o funcionamento
+        console.warn('⚠️ Não foi possível carregar perfil do usuário, mas o sistema continuará funcionando');
       }
-    };
+      
+      console.log('✅ Dashboard.initializeDashboard - Dashboard inicializado com sucesso');
+    } catch (error) {
+      console.error('❌ Dashboard.initializeDashboard - Erro:', error);
+      // Não mostrar erro crítico - deixar o sistema funcionar
+      console.warn('⚠️ Dashboard inicializado com funcionalidades limitadas devido a problemas de conexão');
+    }
+  }, [loadUserProfile]);
 
+  useEffect(() => {
     initializeDashboard();
   }, []);
 
