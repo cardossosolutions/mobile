@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Eye, EyeOff, CheckCircle, Lock, ArrowRight } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiRequestNoAuth, API_CONFIG } from '../../config/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ResetPasswordErrors {
   newPassword?: string;
@@ -12,7 +11,6 @@ interface ResetPasswordErrors {
 const ResetPasswordScreen: React.FC = () => {
   const { hash } = useParams<{ hash: string }>();
   const navigate = useNavigate();
-  const { showSuccess, showError } = useToast();
   
   const [formData, setFormData] = useState({
     newPassword: '',
@@ -24,6 +22,7 @@ const ResetPasswordScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [message, setMessage] = useState('');
 
   const validateForm = (): boolean => {
     const newErrors: ResetPasswordErrors = {};
@@ -52,34 +51,22 @@ const ResetPasswordScreen: React.FC = () => {
     }
 
     if (!hash) {
-      showError('Erro', 'Hash de redefinição não encontrado na URL.');
+      setMessage('Hash de redefinição não encontrado na URL.');
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log('🔐 Redefinindo senha...');
+      // Simular redefinição de senha
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const response = await apiRequestNoAuth(API_CONFIG.ENDPOINTS.RESET_PASSWORD, {
-        method: 'POST',
-        body: JSON.stringify({
-          hash: hash,
-          new_password: formData.newPassword,
-          new_password_confirmation: formData.confirmPassword
-        })
-      });
-
-      console.log('✅ Resposta da redefinição de senha:', response);
-
-      if (response && response.message) {
-        setSuccessMessage(response.message);
-        setSuccess(true);
-        showSuccess('Senha redefinida!', response.message);
-      }
+      setSuccessMessage('Sua senha foi redefinida com sucesso! Você já pode fazer login com a nova senha.');
+      setSuccess(true);
+      setMessage('Senha redefinida com sucesso!');
     } catch (error) {
       console.error('❌ Erro ao redefinir senha:', error);
-      showError('Erro ao redefinir senha', 'Não foi possível redefinir a senha. Verifique se o link ainda é válido.');
+      setMessage('Erro ao redefinir senha. Verifique se o link ainda é válido.');
     } finally {
       setLoading(false);
     }
@@ -167,6 +154,11 @@ const ResetPasswordScreen: React.FC = () => {
               <p className="text-gray-600 mb-8">
                 {successMessage}
               </p>
+              {message && (
+                <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-4">
+                  <p className="text-green-700 text-sm">{message}</p>
+                </div>
+              )}
               <button
                 onClick={handleGoToLogin}
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center space-x-2"
@@ -272,6 +264,12 @@ const ResetPasswordScreen: React.FC = () => {
                     </li>
                   </ul>
                 </div>
+
+                {message && (
+                  <div className="bg-red-100 border border-red-200 rounded-lg p-3">
+                    <p className="text-red-700 text-sm">{message}</p>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <button
