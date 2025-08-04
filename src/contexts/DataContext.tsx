@@ -757,7 +757,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.log('✅ DataContext.loadUserProfile - Perfil carregado:', response);
     } catch (error) {
       console.error('❌ DataContext.loadUserProfile - Erro:', error);
-      // Não mostrar erro para o usuário, pois pode ser chamado em background
+      // Verificar se é erro de conexão
+      if (error.message === 'Failed to fetch') {
+        console.warn('⚠️ Servidor API não está respondendo. Verifique se o servidor está rodando em http://localhost:8080');
+      }
     }
   }, []);
 

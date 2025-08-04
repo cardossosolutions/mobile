@@ -2,7 +2,7 @@
 import { AuthContextType } from '../contexts/AuthContext';
 export const API_CONFIG = {
   // Host base da API - alterado para localhost
-  BASE_URL: 'http://127.0.0.1:8080/api',
+  BASE_URL: 'http://localhost:8080/api',
   
   // Endpoints disponíveis
   ENDPOINTS: {

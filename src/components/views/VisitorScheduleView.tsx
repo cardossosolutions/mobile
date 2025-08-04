@@ -429,12 +429,18 @@ const VisitorScheduleView: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Erro ao carregar cronograma de visitantes:', error);
+      // Verificar se é erro de conexão com a API
+      if (error.message === 'Failed to fetch') {
+        console.warn('⚠️ Servidor API não está respondendo. Verifique se o servidor está rodando em http://localhost:8080');
+        showError('Servidor indisponível', 'Não foi possível conectar ao servidor. Verifique se a API está rodando.');
+      } else {
+        showError('Erro ao carregar agendamentos', 'Não foi possível carregar os agendamentos. Tente novamente.');
+      }
       if (reset || page === 1) {
         setVisitors([]);
         setTotalCount(0);
         setHasNextPage(false);
       }
-    } finally {
       loadingRef.current = false;
       setInitialLoading(false);
       setLoadingMore(false);

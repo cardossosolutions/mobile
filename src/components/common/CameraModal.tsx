@@ -35,7 +35,15 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
       }
     } catch (err) {
       console.error('Erro ao acessar câmera:', err);
-      setError('Não foi possível acessar a câmera. Verifique as permissões.');
+      if (err.name === 'NotAllowedError' || err.message.includes('Permission dismissed')) {
+        setError('Acesso à câmera foi negado. Por favor, permita o acesso à câmera nas configurações do navegador e recarregue a página.');
+      } else if (err.name === 'NotFoundError') {
+        setError('Nenhuma câmera foi encontrada no dispositivo.');
+      } else if (err.name === 'NotReadableError') {
+        setError('A câmera está sendo usada por outro aplicativo.');
+      } else {
+        setError('Não foi possível acessar a câmera. Verifique as permissões e tente novamente.');
+      }
     } finally {
       setIsLoading(false);
     }
