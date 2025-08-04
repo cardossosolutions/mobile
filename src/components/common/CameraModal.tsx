@@ -100,24 +100,36 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
 
   // Iniciar câmera quando modal abrir
   React.useEffect(() => {
-    if (isOpen && !stream && !capturedImage) {
+    if (isOpen && !stream && !capturedImage && !error) {
       setIsLoading(true);
       startCamera();
     }
-  }, [isOpen, stream, capturedImage, error, startCamera]);
+  }, [isOpen, stream, capturedImage, startCamera]);
 
-  // Remover loading quando stream estiver ativo
+  // Remover loading quando vídeo estiver pronto para reproduzir
   React.useEffect(() => {
     if (stream && videoRef.current) {
       const video = videoRef.current;
-      const handleLoadedData = () => {
+      
+      const handleCanPlay = () => {
+        console.log('📹 Vídeo pronto para reproduzir');
         setIsLoading(false);
       };
       
-      video.addEventListener('loadeddata', handleLoadedData);
+      const handleLoadedMetadata = () => {
+        console.log('📹 Metadados do vídeo carregados');
+        // Fallback: remover loading após 2 segundos se canplay não disparar
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 2000);
+      };
+      
+      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('loadedmetadata', handleLoadedMetadata);
       
       return () => {
-        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       };
     }
   }, [stream]);
