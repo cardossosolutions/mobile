@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Eye, EyeOff, CheckCircle, Lock, ArrowRight } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { apiRequestNoAuth, API_CONFIG } from '../../config/api';
 
 interface ResetPasswordErrors {
   newPassword?: string;
@@ -7,6 +9,7 @@ interface ResetPasswordErrors {
 }
 
 const ResetPasswordScreen: React.FC = () => {
+  const { hash } = useParams<{ hash: string }>();
   const [formData, setFormData] = useState({
     newPassword: '',
     confirmPassword: ''
@@ -45,18 +48,51 @@ const ResetPasswordScreen: React.FC = () => {
       return;
     }
 
+    if (!hash) {
+      setMessage('Link de redefinição inválido. Solicite um novo link.');
+      return;
+    }
+
     setLoading(true);
+    setMessage('');
 
     try {
-      // Simular redefinição de senha
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('🔐 Enviando requisição de reset de senha...');
       
-      setSuccessMessage('Sua senha foi redefinida com sucesso! Você já pode fazer login com a nova senha.');
+      const response = await apiRequestNoAuth(API_CONFIG.ENDPOINTS.RESET_PASSWORD, {
+        method: 'POST',
+        body: JSON.stringify({
+          hash: hash,
+          new_password: formData.newPassword,
+          new_password_confirmation: formData.confirmPassword
+        })
+      });
+
+      console.log('✅ Resposta do reset de senha:', response);
+      
+      if (response && response.message) {
+        setSuccessMessage(response.message);
+      } else {
+        setSuccessMessage('Sua senha foi redefinida com sucesso! Você já pode fazer login com a nova senha.');
+      }
+      
       setSuccess(true);
-      setMessage('Senha redefinida com sucesso!');
     } catch (error) {
       console.error('❌ Erro ao redefinir senha:', error);
-      setMessage('Erro ao redefinir senha. Verifique se o link ainda é válido.');
+      
+      if (error instanceof Error) {
+        if (error.message.includes('400')) {
+          setMessage('Dados inválidos. Verifique se o link ainda é válido.');
+        } else if (error.message.includes('404')) {
+          setMessage('Link de redefinição não encontrado ou expirado.');
+        } else if (error.message.includes('422')) {
+          setMessage('Dados de entrada inválidos. Verifique os campos.');
+        } else {
+          setMessage('Erro ao redefinir senha. Tente novamente mais tarde.');
+        }
+      } else {
+        setMessage('Erro ao redefinir senha. Verifique se o link ainda é válido.');
+      }
     } finally {
       setLoading(false);
     }
@@ -81,6 +117,32 @@ const ResetPasswordScreen: React.FC = () => {
   const handleGoToLogin = () => {
     window.location.href = '/';
   };
+
+  // Verificar se o hash existe na URL
+  if (!hash) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div className="max-w-md w-full text-center">
+          <div className="flex justify-center mb-6">
+            <div className="bg-red-100 p-4 rounded-full">
+              <Lock className="w-12 h-12 text-red-600" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Link Inválido</h2>
+          <p className="text-gray-600 mb-8">
+            O link de redefinição de senha é inválido ou está malformado.
+          </p>
+          <button
+            onClick={handleGoToLogin}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center space-x-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Voltar ao Login</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
