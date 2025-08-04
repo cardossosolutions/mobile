@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2, MessageCircle } from 'lucide-react';
+import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2, MessageCircle, Camera } from 'lucide-react';
+import CameraModal from '../common/CameraModal';
+import { useToast } from '../../contexts/ToastContext';
+import { apiRequest } from '../../config/api';
 
 // Interface para os dados do visitante baseada na API
 interface VisitorDetails {
@@ -333,10 +336,13 @@ const VisitorDetailsModal: React.FC<{
 };
 
 const VisitorScheduleView: React.FC = () => {
+  const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorDetails | null>(null);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   
   // Estados para scroll infinito
   const [visitors, setVisitors] = useState<VisitorDetails[]>([]);
@@ -498,6 +504,37 @@ const VisitorScheduleView: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, loadVisitorData]);
 
+  const handlePhotoCapture = async (imageFile: File) => {
+    setUploadingPhoto(true);
+    
+    try {
+      console.log('📸 Enviando foto da placa...', imageFile);
+      
+      // Criar FormData para envio da imagem
+      const formData = new FormData();
+      formData.append('plate', imageFile);
+      
+      // Fazer requisição POST para /visitors/schedule
+      const response = await apiRequest('/visitors/schedule', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          // Não definir Content-Type para FormData - o browser define automaticamente
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      
+      console.log('✅ Foto enviada com sucesso:', response);
+      showSuccess('Foto enviada!', 'A foto da placa foi enviada com sucesso.');
+      
+    } catch (error) {
+      console.error('❌ Erro ao enviar foto:', error);
+      showError('Erro ao enviar foto', 'Não foi possível enviar a foto da placa. Tente novamente.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -510,6 +547,15 @@ const VisitorScheduleView: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => setIsCameraModalOpen(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 shadow-md"
+            title="Capturar foto da placa"
+          >
+            <Camera className="w-5 h-5" />
+            <span>Foto da Placa</span>
+          </button>
+          
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -606,6 +652,23 @@ const VisitorScheduleView: React.FC = () => {
         visitor={selectedVisitor}
         onClose={() => setSelectedVisitor(null)}
       />
+
+      {/* Camera Modal */}
+      <CameraModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onPhotoTaken={handlePhotoCapture}
+      />
+
+      {/* Loading overlay para upload */}
+      {uploadingPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <span className="text-lg font-medium text-gray-900">Enviando foto...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
