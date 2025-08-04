@@ -378,25 +378,14 @@ const VisitorScheduleView: React.FC = () => {
       }
       
       // Construir URL com parâmetros de paginação e busca
-      let url = `/visitors/schedule?page=${page}`;
+      let endpoint = `/visitors/schedule?page=${page}`;
       if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
+        endpoint += `&search=${encodeURIComponent(search.trim())}`;
       }
       
-      const response = await fetch(`http://127.0.0.1:8080/api${url}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
+      const data = await apiRequest(endpoint, {
+        method: 'GET'
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
       console.log('✅ Resposta do cronograma de visitantes:', data);
       
       if (data && data.data && Array.isArray(data.data)) {
@@ -520,14 +509,10 @@ const VisitorScheduleView: React.FC = () => {
       const formData = new FormData();
       formData.append('plate', imageFile);
       
-      // Fazer requisição POST para /visitors/schedule
+      // Fazer requisição POST para /visitors/schedule usando apiRequest
       const response = await apiRequest('/visitors/schedule', {
         method: 'POST',
-        body: formData,
-        headers: {
-          // Não definir Content-Type para FormData - o browser define automaticamente
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
+        body: formData
       });
       
       console.log('✅ Foto enviada com sucesso:', response);
