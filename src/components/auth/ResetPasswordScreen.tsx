@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Shield, Eye, EyeOff, CheckCircle, Lock, ArrowRight } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 
 interface ResetPasswordErrors {
   newPassword?: string;
@@ -9,9 +7,6 @@ interface ResetPasswordErrors {
 }
 
 const ResetPasswordScreen: React.FC = () => {
-  const { hash } = useParams<{ hash: string }>();
-  const navigate = useNavigate();
-  
   const [formData, setFormData] = useState({
     newPassword: '',
     confirmPassword: ''
@@ -50,11 +45,6 @@ const ResetPasswordScreen: React.FC = () => {
       return;
     }
 
-    if (!hash) {
-      setMessage('Hash de redefinição não encontrado na URL.');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -89,32 +79,8 @@ const ResetPasswordScreen: React.FC = () => {
   };
 
   const handleGoToLogin = () => {
-    navigate('/');
+    window.location.href = '/';
   };
-
-  // Se não há hash na URL, mostrar erro
-  if (!hash) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-8">
-        <div className="max-w-md w-full text-center">
-          <div className="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <Lock className="w-8 h-8 text-red-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Link Inválido</h2>
-          <p className="text-gray-600 mb-6">
-            O link de redefinição de senha é inválido ou expirou.
-          </p>
-          <button
-            onClick={handleGoToLogin}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
-          >
-            <ArrowRight className="w-4 h-4" />
-            <span>Ir para Login</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex">
