@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { 
   Home, 
   Building, 
@@ -12,7 +13,6 @@ import {
   Eye,
   Package
 } from 'lucide-react';
-import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {

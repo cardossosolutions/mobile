@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2, MessageCircle } from 'lucide-react';
-import { useData } from '../../contexts/DataContext';
 
 // Interface para os dados do visitante baseada na API
 interface VisitorDetails {
