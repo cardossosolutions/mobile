@@ -32,19 +32,24 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Aguardar o vídeo carregar antes de remover loading
+        videoRef.current.onloadedmetadata = () => {
+          setIsLoading(false);
+        };
+      } else {
+        setIsLoading(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao acessar câmera:', err);
-      if (err.name === 'NotAllowedError' || err.message.includes('Permission dismissed')) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message.includes('Permission dismissed')) {
         setError('Acesso à câmera foi negado. Por favor, permita o acesso à câmera nas configurações do navegador e recarregue a página.');
       } else if (err.name === 'NotFoundError') {
         setError('Nenhuma câmera foi encontrada no dispositivo.');
       } else if (err.name === 'NotReadableError') {
         setError('A câmera está sendo usada por outro aplicativo.');
       } else {
-        setError('Não foi possível acessar a câmera. Verifique as permissões e tente novamente.');
+        setError(`Não foi possível acessar a câmera: ${err.message}. Verifique as permissões e tente novamente.`);
       }
-    } finally {
       setIsLoading(false);
     }
   }, []);
@@ -103,7 +108,7 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
 
   // Iniciar câmera quando modal abrir
   React.useEffect(() => {
-    if (isOpen && !stream && !capturedImage) {
+    if (isOpen && !stream && !capturedImage && !error) {
       startCamera();
     }
   }, [isOpen, stream, capturedImage, startCamera]);
@@ -210,18 +215,31 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
                     autoPlay
                     playsInline
                     muted
-                    className="max-w-full max-h-96"
+                    className="max-w-full max-h-96 w-full"
+                    style={{ minHeight: '300px' }}
                   />
                   
                   {/* Overlay para guiar o posicionamento */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  {!isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="border-2 border-white border-dashed rounded-lg p-8 bg-black bg-opacity-30">
                       <div className="text-white text-center">
                         <Camera className="w-8 h-8 mx-auto mb-2" />
                         <p className="text-sm">Posicione a placa aqui</p>
                       </div>
                     </div>
-                  </div>
+                    </div>
+                  )}
+                  
+                  {/* Loading overlay */}
+                  {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                      <div className="text-white text-center">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                        <p className="text-sm">Iniciando câmera...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -238,10 +256,13 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
               <div className="flex justify-center">
                 <button
                   onClick={capturePhoto}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-3"
+                  disabled={isLoading || !stream}
+                  className="px-8 py-4 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   <Camera className="w-6 h-6" />
-                  <span className="text-lg font-medium">Capturar Foto</span>
+                  <span className="text-lg font-medium">
+                    {isLoading ? 'Aguarde...' : 'Capturar Foto'}
+                  </span>
                 </button>
               </div>
             </div>
