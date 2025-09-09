@@ -44,11 +44,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     };
 
     console.log('🍞 Adicionando toast:', newToast);
-    setToasts(prev => {
-      const updated = [...prev, newToast];
-      console.log('🍞 Toasts atualizados:', updated);
-      return updated;
-    });
+    setToasts(prev => [...prev, newToast]);
     return id;
   }, []);
 
@@ -58,27 +54,22 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   }, []);
 
   const showSuccess = useCallback((title: string, message?: string, duration?: number) => {
-    console.log('✅ Mostrando toast de sucesso:', title, message);
     return addToast({ type: 'success', title, message, duration });
   }, [addToast]);
 
   const showError = useCallback((title: string, message?: string, duration?: number) => {
-    console.log('❌ Mostrando toast de erro:', title, message);
     return addToast({ type: 'error', title, message, duration });
   }, [addToast]);
 
   const showWarning = useCallback((title: string, message?: string, duration?: number) => {
-    console.log('⚠️ Mostrando toast de aviso:', title, message);
     return addToast({ type: 'warning', title, message, duration });
   }, [addToast]);
 
   const showInfo = useCallback((title: string, message?: string, duration?: number) => {
-    console.log('ℹ️ Mostrando toast de info:', title, message);
     return addToast({ type: 'info', title, message, duration });
   }, [addToast]);
 
   const clearAll = useCallback(() => {
-    console.log('🧹 Limpando todos os toasts');
     setToasts([]);
   }, []);
 

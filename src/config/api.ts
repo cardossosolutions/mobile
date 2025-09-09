@@ -1,10 +1,8 @@
-// Configuração centralizada da API
-import { AuthContextType } from '../contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export const API_CONFIG = {
-  // Host base da API - alterado para localhost
   BASE_URL: 'http://localhost:8080/api',
   
-  // Endpoints disponíveis
   ENDPOINTS: {
     LOGIN: '/login',
     LOGOUT: '/logout',
@@ -32,29 +30,24 @@ export const API_CONFIG = {
     ACTION_GATE: '/gate/actions',
   },
   
-  // Headers padrão
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   }
 };
 
-// Função para atualizar o host da API
 export const updateApiHost = (newHost: string) => {
   API_CONFIG.BASE_URL = newHost.endsWith('/api') ? newHost : `${newHost}/api`;
 };
 
-// Função para obter URL completa do endpoint
 export const getApiUrl = (endpoint: string) => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
-// Função para obter headers com autenticação
-export const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('auth_token');
-  const tokenType = localStorage.getItem('token_type') || 'bearer';
+export const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const token = await AsyncStorage.getItem('auth_token');
+  const tokenType = await AsyncStorage.getItem('token_type') || 'bearer';
   
-  // const headers = { ...API_CONFIG.DEFAULT_HEADERS };
   const headers = {};
 
   if (token) {
@@ -64,33 +57,28 @@ export const getAuthHeaders = (): Record<string, string> => {
   return headers;
 };
 
-// Função para verificar se a resposta é HTML (indicando erro de configuração da API)
 const isHtmlResponse = (text: string): boolean => {
   return text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html');
 };
 
-// Função para fazer logout quando token expira
-const handleTokenExpired = () => {
+const handleTokenExpired = async () => {
   console.log('🔒 Token expirado - fazendo logout automático...');
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('token_type');
-  localStorage.removeItem('token_expires_in');
-  localStorage.removeItem('user_profile');
-  window.location.reload(); // Força reload para ir para tela de login
+  await AsyncStorage.multiRemove(['auth_token', 'token_type', 'token_expires_in', 'user_profile']);
+  // Em React Native, você pode usar navigation para ir para tela de login
+  // ou recarregar o app state
 };
 
-// Função para fazer requisições HTTP com autenticação automática
 export const apiRequest = async (
   endpoint: string, 
   options: RequestInit = {},
-  file?: boolean = false,
+  isFormData: boolean = false,
 ): Promise<any> => {
   const url = getApiUrl(endpoint);
+  const authHeaders = await getAuthHeaders();
 
-  // Combinar headers padrão com headers de autenticação e headers customizados
   const headers = {
-    ...getAuthHeaders(),
-    ...(!file && {
+    ...authHeaders,
+    ...(!isFormData && {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     }),
@@ -103,18 +91,15 @@ export const apiRequest = async (
 
   try {
     console.log(`🌐 Fazendo requisição para: ${url}`);
-    console.log(`📋 Headers:`, headers);
-    console.log(`⚙️ Config:`, config);
     
     const response = await fetch(url, config);
     
     console.log(`📊 Status da resposta: ${response.status}`);
     
-    // Verificar se o token expirou (401 Unauthorized)
     if (response.status === 401) {
       console.log('🔒 Token expirado ou inválido (401)');
-      handleTokenExpired();
-      return; // Não continua a execução
+      await handleTokenExpired();
+      return;
     }
     
     if (!response.ok) {
@@ -122,14 +107,11 @@ export const apiRequest = async (
     }
     
     const responseText = await response.text();
-    console.log(`📝 Resposta (texto):`, responseText);
     
-    // Verificar se a resposta é HTML (indicando problema de configuração da API)
     if (isHtmlResponse(responseText)) {
       throw new Error('API returned HTML instead of JSON - check API configuration');
     }
     
-    // Tentar fazer parse do JSON
     try {
       const data = JSON.parse(responseText);
       console.log(`✅ Dados parseados:`, data);
@@ -144,7 +126,6 @@ export const apiRequest = async (
   }
 };
 
-// Função para fazer requisições sem autenticação (para login, por exemplo)
 export const apiRequestNoAuth = async (
   endpoint: string, 
   options: RequestInit = {}
@@ -161,32 +142,23 @@ export const apiRequestNoAuth = async (
 
   try {
     console.log(`🌐 Fazendo requisição (sem auth) para: ${url}`);
-    console.log(`📋 Headers:`, config.headers);
-    console.log(`⚙️ Config:`, config);
     
     const response = await fetch(url, config);
-    
-    console.log(`📊 Status da resposta: ${response.status}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
     const responseText = await response.text();
-    console.log(`📝 Resposta (texto):`, responseText);
     
-    // Verificar se a resposta é HTML (indicando problema de configuração da API)
     if (isHtmlResponse(responseText)) {
       throw new Error('API returned HTML instead of JSON - check API configuration');
     }
     
-    // Tentar fazer parse do JSON
     try {
       const data = JSON.parse(responseText);
-      console.log(`✅ Dados parseados:`, data);
       return data;
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', responseText);
       throw new Error('Invalid JSON response from API');
     }
   } catch (error) {

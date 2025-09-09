@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiRequestNoAuth, apiRequest, API_CONFIG } from '../config/api';
 
 interface User {
@@ -40,35 +41,31 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Adicionar estado de loading
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Verificar se há token salvo ao inicializar
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('🔄 Inicializando autenticação...');
       
-      const savedToken = localStorage.getItem('auth_token');
-      const savedUser = localStorage.getItem('user_profile');
-      
-      if (savedToken && savedUser) {
-        console.log('🔑 Token e dados do usuário encontrados no localStorage');
+      try {
+        const savedToken = await AsyncStorage.getItem('auth_token');
+        const savedUser = await AsyncStorage.getItem('user_profile');
         
-        try {
-          // Primeiro, tentar usar os dados salvos
+        if (savedToken && savedUser) {
+          console.log('🔑 Token e dados do usuário encontrados no AsyncStorage');
+          
           const userData = JSON.parse(savedUser);
           setUser(userData);
           setIsAuthenticated(true);
           console.log('✅ Usuário autenticado com dados salvos:', userData);
           
-          // Em background, verificar se o token ainda é válido
           checkTokenValidity();
-        } catch (error) {
-          console.error('❌ Erro ao parsear dados do usuário salvos:', error);
-          // Se houver erro nos dados salvos, limpar tudo
-          clearAuthData();
+        } else {
+          console.log('❌ Nenhum token ou dados de usuário encontrados');
         }
-      } else {
-        console.log('❌ Nenhum token ou dados de usuário encontrados');
+      } catch (error) {
+        console.error('❌ Erro ao inicializar autenticação:', error);
+        clearAuthData();
       }
       
       setIsLoading(false);
@@ -77,12 +74,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const clearAuthData = () => {
+  const clearAuthData = async () => {
     console.log('🧹 Limpando dados de autenticação...');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('token_type');
-    localStorage.removeItem('token_expires_in');
-    localStorage.removeItem('user_profile');
+    await AsyncStorage.multiRemove(['auth_token', 'token_type', 'token_expires_in', 'user_profile']);
     setIsAuthenticated(false);
     setUser(null);
   };
@@ -91,7 +85,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔍 Verificando validade do token em background...');
       
-      // Fazer uma requisição para verificar se o token ainda é válido
       const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
         method: 'GET'
       });
@@ -99,7 +92,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('✅ Token válido, dados atualizados:', response);
 
       if (response) {
-        // Atualizar dados do usuário se a requisição foi bem-sucedida
         const userData: User = {
           id: response.id,
           company_id: response.company_id,
@@ -109,26 +101,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: response.phone || response.telefone,
           department: response.department || response.departamento,
           position: response.position || response.cargo,
-          token: localStorage.getItem('auth_token') || undefined,
+          token: await AsyncStorage.getItem('auth_token') || undefined,
           role: response.role_id
         };
 
         setUser(userData);
-        
-        // Atualizar dados salvos
-        localStorage.setItem('user_profile', JSON.stringify(userData));
-        console.log('💾 Dados do usuário atualizados no localStorage');
+        await AsyncStorage.setItem('user_profile', JSON.stringify(userData));
+        console.log('💾 Dados do usuário atualizados no AsyncStorage');
       }
     } catch (error) {
       console.warn('⚠️ Token pode estar expirado ou API indisponível:', error);
       
-      // Se o erro for 401 (token expirado), limpar dados
       if (error instanceof Error && error.message.includes('401')) {
         console.log('🔒 Token expirado, fazendo logout...');
         clearAuthData();
-      } else {
-        // Para outros erros (rede, servidor), manter o usuário logado
-        console.log('🌐 Erro de rede/servidor, mantendo usuário logado');
       }
     }
   };
@@ -138,27 +124,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔐 Tentando fazer login...');
       setIsLoading(true);
       
-      // Fazer requisição para a API real usando apiRequestNoAuth (sem token)
       const response = await apiRequestNoAuth(API_CONFIG.ENDPOINTS.LOGIN, {
         method: 'POST',
-        body: JSON.stringify({
-          email,
-          password
-        })
+        body: JSON.stringify({ email, password })
       });
 
       console.log('📨 Resposta do login:', response);
 
-      // Verificar se a resposta contém o token conforme sua API
       if (response && response.token) {
         console.log('✅ Login bem-sucedido, salvando token...');
         
-        // Salvar token no localStorage
-        localStorage.setItem('auth_token', response.token);
-        localStorage.setItem('token_type', response.type || 'bearer');
-        localStorage.setItem('token_expires_in', response.experes_in || response.expires_in || '3600');
+        await AsyncStorage.multiSet([
+          ['auth_token', response.token],
+          ['token_type', response.type || 'bearer'],
+          ['token_expires_in', response.experes_in || response.expires_in || '3600']
+        ]);
 
-        // Agora fazer requisição para obter dados do usuário
         try {
           const userResponse = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
             method: 'GET'
@@ -183,16 +164,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setIsAuthenticated(true);
             setUser(userData);
             
-            // Salvar dados do usuário no localStorage
-            localStorage.setItem('user_profile', JSON.stringify(userData));
-            console.log('💾 Dados do usuário salvos no localStorage');
+            await AsyncStorage.setItem('user_profile', JSON.stringify(userData));
+            console.log('💾 Dados do usuário salvos no AsyncStorage');
             
             return true;
           }
         } catch (userError) {
           console.warn('⚠️ Erro ao obter dados do usuário, usando dados básicos:', userError);
           
-          // Usar dados básicos se não conseguir obter dados completos
           const userData: User = {
             email,
             name: response.user?.name || response.user?.nome || email.split('@')[0],
@@ -205,7 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           setIsAuthenticated(true);
           setUser(userData);
-          localStorage.setItem('user_profile', JSON.stringify(userData));
+          await AsyncStorage.setItem('user_profile', JSON.stringify(userData));
           return true;
         }
       }
@@ -214,7 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('❌ Erro no login:', error);
       
-      // Fallback para autenticação mock em caso de erro na API
+      // Fallback para autenticação mock
       if (email === 'admin@condominio.com' && password === 'admin123') {
         console.log('🔄 Usando autenticação mock...');
         const userData: User = {
@@ -223,13 +202,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: '(11) 99999-9999',
           department: 'Administração',
           position: 'Administrador',
-          role: 4 // Role de administrador para teste
+          role: 4
         };
         
         setIsAuthenticated(true);
         setUser(userData);
-        localStorage.setItem('user_profile', JSON.stringify(userData));
-        localStorage.setItem('auth_token', 'mock_token_' + Date.now());
+        await AsyncStorage.multiSet([
+          ['user_profile', JSON.stringify(userData)],
+          ['auth_token', 'mock_token_' + Date.now()]
+        ]);
         return true;
       }
       
@@ -244,25 +225,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🚪 Fazendo logout...');
       setIsLoading(true);
       
-      // Tentar fazer logout na API se houver token
-      const token = localStorage.getItem('auth_token');
+      const token = await AsyncStorage.getItem('auth_token');
       if (token && !token.startsWith('mock_token_')) {
-        // Tentar fazer logout na API, mas não falhar se der erro
         try {
           await apiRequest(API_CONFIG.ENDPOINTS.LOGOUT, {
             method: 'POST'
           });
           console.log('✅ Logout na API realizado com sucesso');
         } catch (apiError) {
-          // Ignorar erros da API no logout (endpoint pode não existir ou estar indisponível)
           console.warn('⚠️ Logout API call failed, proceeding with local logout:', apiError);
         }
       }
     } catch (error) {
       console.error('❌ Erro no logout:', error);
     } finally {
-      // Limpar dados locais independentemente do resultado da API
-      clearAuthData();
+      await clearAuthData();
       setIsLoading(false);
       console.log('🧹 Logout concluído');
     }
@@ -273,7 +250,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('📝 Atualizando perfil do usuário...');
       setIsLoading(true);
       
-      // Tentar atualizar via API (o token será incluído automaticamente)
       const response = await apiRequest(API_CONFIG.ENDPOINTS.USER_PROFILE, {
         method: 'PUT',
         body: JSON.stringify(profileData)
@@ -282,30 +258,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response && response.user) {
         const updatedUser = { ...user, ...response.user };
         setUser(updatedUser);
-        localStorage.setItem('user_profile', JSON.stringify(updatedUser));
+        await AsyncStorage.setItem('user_profile', JSON.stringify(updatedUser));
         console.log('✅ Perfil atualizado via API');
         return;
       }
 
-      // Fallback para atualização local
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       if (user) {
         const updatedUser = { ...user, ...profileData };
         setUser(updatedUser);
-        localStorage.setItem('user_profile', JSON.stringify(updatedUser));
+        await AsyncStorage.setItem('user_profile', JSON.stringify(updatedUser));
         console.log('✅ Perfil atualizado localmente');
       }
     } catch (error) {
       console.error('❌ Erro ao atualizar perfil:', error);
       
-      // Fallback para atualização local em caso de erro
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       if (user) {
         const updatedUser = { ...user, ...profileData };
         setUser(updatedUser);
-        localStorage.setItem('user_profile', JSON.stringify(updatedUser));
+        await AsyncStorage.setItem('user_profile', JSON.stringify(updatedUser));
         console.log('✅ Perfil atualizado localmente (fallback)');
       }
     } finally {
