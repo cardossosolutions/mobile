@@ -54,20 +54,20 @@ const GuestManagement: React.FC = () => {
   }, [searchTerm, loadGuests]);
 
   const handleSearch = async () => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadGuests(1, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = async (page: number) => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadGuests(page, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 

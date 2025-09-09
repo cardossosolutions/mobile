@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+  import React, { useState } from 'react';
 import { Bell, User, LogOut, Settings, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../common/Modal';
@@ -37,12 +37,12 @@ const Header: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="p-2 rounded-full hover:bg-gray-100 transition-colors relative">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                3
-              </span>
-            </button>
+            {/*<button className="p-2 rounded-full hover:bg-gray-100 transition-colors relative">*/}
+            {/*  <Bell className="w-5 h-5 text-gray-600" />*/}
+            {/*  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">*/}
+            {/*    3*/}
+            {/*  </span>*/}
+            {/*</button>*/}
             
             <div className="relative">
               <button
@@ -54,7 +54,7 @@ const Header: React.FC = () => {
                 </div>
                 <div className="text-left hidden md:block">
                   <div className="text-sm font-medium text-gray-700">{user?.name}</div>
-                  <div className="text-xs text-gray-500">{user?.position || 'Usuário'}</div>
+                  {/*<div className="text-xs text-gray-500">{user?.position || 'Usuário'}</div>*/}
                 </div>
               </button>
 

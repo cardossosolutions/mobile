@@ -62,20 +62,20 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
   }, [searchTerm, residenceId, loadResidents]);
 
   const handleSearch = async () => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadResidents(residenceId, 1, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = async (page: number) => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadResidents(residenceId, page, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
@@ -234,12 +234,7 @@ const ResidentManagement: React.FC<ResidentManagementProps> = ({ residenceId, on
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          {loading && (
-            <div className="flex items-center space-x-2 text-purple-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-              <span className="text-sm">Carregando...</span>
-            </div>
-          )}
+
         </div>
 
         {/* Informações de paginação */}

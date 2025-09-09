@@ -57,7 +57,7 @@ const ResidenceManagement: React.FC = () => {
   }, [searchTerm, statusFilter, loadResidences]);
 
   const handleSearch = async () => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       // Construir parâmetros de busca
       const searchParams = new URLSearchParams();
@@ -67,12 +67,12 @@ const ResidenceManagement: React.FC = () => {
       const searchQuery = searchParams.toString();
       await loadResidences(1, searchQuery);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = async (page: number) => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       // Construir parâmetros de busca
       const searchParams = new URLSearchParams();
@@ -82,7 +82,7 @@ const ResidenceManagement: React.FC = () => {
       const searchQuery = searchParams.toString();
       await loadResidences(page, searchQuery);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 

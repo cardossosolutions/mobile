@@ -1,8 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, User, Home, Car, Phone, Mail, MapPin, X, Filter, Search, Eye, Loader2, MessageCircle, Camera } from 'lucide-react';
+import {
+  Calendar, Clock, User, Home,
+  Car, Phone, X,
+  Search, Eye, Loader2,
+  Camera,
+} from 'lucide-react';
 import CameraModal from '../common/CameraModal';
 import { useToast } from '../../contexts/ToastContext';
-import { apiRequest } from '../../config/api';
+import {API_CONFIG, apiRequest} from '../../config/api';
+import ActionGateView from "./components/ActionGateView.tsx";
+import { useData } from '../../contexts/DataContext';
+import DatePicker , { registerLocale } from "react-datepicker";
+import 'react-datepicker/dist/react-datepicker.css'
+import {ptBR} from "date-fns/locale";
+import { format } from "date-fns";
+
+registerLocale("ptBR", ptBR); // register it with the name you want
 
 // Interface para os dados do visitante baseada na API
 interface VisitorDetails {
@@ -21,6 +34,20 @@ interface VisitorDetails {
     name: string;
     mobile: string;
   }>;
+  actions_gate: {
+    entrance: Array<{
+      "id": number,
+      "name": string,
+      "action": string,
+      "created_at": string
+    }>;
+    exit: Array<{
+      "id": number,
+      "name": string,
+      "action": string,
+      "created_at": string
+    }>;
+  }
 }
 
 const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
@@ -165,11 +192,44 @@ const openWhatsApp = (phoneNumber: string, visitorName: string, residenceName: s
   window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
 };
 
-const VisitorDetailsModal: React.FC<{ 
-  visitor: VisitorDetails | null; 
+const VisitorDetailsModal: React.FC<{
+  visitorData: VisitorDetails | null;
   onClose: () => void 
-}> = ({ visitor, onClose }) => {
-  if (!visitor) return null;
+}> = ({ visitorData, onClose }) => {
+  if (!visitorData) return null
+
+  const [actionsGateEntrance, setActionsGateEntrance] = useState([]);
+  const [actionsGateExit, setActionsGateExit] = useState([]);
+
+  const [loadingActionEntance, setLoadingActionEntance] = useState(false);
+  const [loadingActionExit, setLoadingActionExit] = useState(false);
+  const [loadCard,setLoadCard] = useState(true);
+  const [visitor,setVisitor] = useState(visitorData);
+
+  const { registerAction } = useData();
+
+  useEffect(() => {
+
+    const fetchVisitorDetails = async () => {
+      try {
+        const response = await apiRequest(`/visitors/schedule/card/${visitor.id}`, {
+          method: 'GET',
+        });
+        setVisitor(response); // Atualizamos o visitante com os dados da API
+        setActionsGateEntrance(response?.actions_gate?.entrance || []);
+        setActionsGateExit(response?.actions_gate?.exit || []);
+      } catch (error) {
+        console.error('Erro ao buscar os detalhes do visitante:', error);
+      } finally {
+        setLoadCard(false);
+      }
+    };
+
+    setLoadCard(true);
+    fetchVisitorDetails();
+
+  }, []);
+
 
   const formatDateRange = (dateBegin: string, dateEnding: string) => {
     if (dateBegin === dateEnding) {
@@ -177,6 +237,48 @@ const VisitorDetailsModal: React.FC<{
     }
     return `${dateBegin} até ${dateEnding}`;
   };
+
+  const submitRegisterAction = async (register: { event_id: number; action: string; type: string }) => {
+
+    const dataToSubmit = {
+      event_id: register.event_id,
+      action: register.action,
+      type: register.type
+    };
+
+    console.log('dataToSubmit', dataToSubmit);
+
+    if(register.action === 'entrance'){
+      setLoadingActionEntance(true);
+    }else{
+      setLoadingActionExit(true);
+    }
+
+
+    const actions = registerAction(dataToSubmit)
+
+    actions
+        .then((response) => {
+
+          setActionsGateEntrance(response?.entrance ?? []);
+          setActionsGateExit(response?.exit ?? []);
+          btnLoading(register.action);
+        })
+        .catch(() => {
+          btnLoading(register.action);
+        })
+        .finally(() => {
+          btnLoading(register.action);
+        });
+
+  }
+
+
+  const btnLoading = (actionLoad: string) => {
+    actionLoad === 'entrance'
+        ? setLoadingActionEntance(false)
+        : setLoadingActionExit(false);
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -189,151 +291,215 @@ const VisitorDetailsModal: React.FC<{
             <X className="w-6 h-6" />
           </button>
         </div>
-        
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Visitor Information and Residents */}
-            <div className="space-y-6">
-              {/* Visitor Information */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações do Visitante</h2>
-                
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-full shadow-lg">
-                      <User className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{visitor.visitor_name}</h3>
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mt-2">
+
+        {loadCard ? (
+            <div className="h-20 flex items-center justify-center">
+              <div className="flex items-center space-x-3 text-blue-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-sm font-medium">Carregando detalhes do agendamento...</span>
+              </div>
+            </div>
+        ) : (
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Visitor Information and Residents */}
+                <div className="space-y-6">
+                  {/* Visitor Information */}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações do Visitante</h2>
+
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-full shadow-lg">
+                          <User className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-gray-900">{visitor.visitor_name}</h3>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mt-2">
                         <Calendar className="w-4 h-4 mr-1" />
                         Agendamento Confirmado
                       </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <span className="font-medium text-gray-700">CPF:</span>
-                      <span className="text-gray-900 font-mono">{visitor.cpf}</span>
-                    </div>
-                    
-                    {visitor.rg && (
-                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                        <span className="font-medium text-gray-700">RG:</span>
-                        <span className="text-gray-900 font-mono">{visitor.rg}</span>
+                        </div>
                       </div>
-                    )}
-                    
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-900">{visitor.visitor_mobile}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Residents Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Moradores da Residência</h3>
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-full shadow-lg">
-                      <Home className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-semibold text-gray-900">
-                        {visitor.residence}
-                      </h4>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                          <span className="font-medium text-gray-700">CPF:</span>
+                          <span className="text-gray-900 font-mono">{visitor.cpf}</span>
+                        </div>
 
-                  <div className="space-y-3">
-                    {visitor.responsibles.map((responsible, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                        <div className="flex items-center space-x-3">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <div>
-                          <p className="font-medium text-gray-900">{responsible.name}</p>
-                          <p className="text-sm text-gray-600">{responsible.mobile}</p>
-                        </div>
-                        </div>
-                        {responsible.mobile && (
-                          <button
-                            onClick={() => openWhatsApp(responsible.mobile, visitor.visitor_name, visitor.residence)}
-                            className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex-shrink-0"
-                            title={`Enviar mensagem no WhatsApp para ${responsible.name}`}
-                          >
-                            <img 
-                              src="/icone_whastaap.png" 
-                              alt="WhatsApp" 
-                              className="w-4 h-4"
-                            />
-                          </button>
+                        {visitor.rg && (
+                            <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                              <span className="font-medium text-gray-700">RG:</span>
+                              <span className="text-gray-900 font-mono">{visitor.rg}</span>
+                            </div>
                         )}
+
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                          <Phone className="w-4 h-4 text-gray-500" />
+                          <span className="text-gray-900">{visitor.visitor_mobile}</span>
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                  </div>
+
+                  {/* Residents Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Moradores da Residência</h3>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-full shadow-lg">
+                          <Home className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-semibold text-gray-900">
+                            {visitor.residence}
+                          </h4>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {visitor.responsibles.map((responsible, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                              <div className="flex items-center space-x-3">
+                                <User className="w-4 h-4 text-gray-500" />
+                                <div>
+                                  <p className="font-medium text-gray-900">{responsible.name}</p>
+                                  <p className="text-sm text-gray-600">{responsible.mobile}</p>
+                                </div>
+                              </div>
+                              {responsible.mobile && (
+                                  <button
+                                      onClick={() => openWhatsApp(responsible.mobile, visitor.visitor_name, visitor.residence)}
+                                      className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex-shrink-0"
+                                      title={`Enviar mensagem no WhatsApp para ${responsible.name}`}
+                                  >
+                                    <img
+                                        src="/icone_whastaap.png"
+                                        alt="WhatsApp"
+                                        className="w-4 h-4"
+                                    />
+                                  </button>
+                              )}
+                            </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Right Column - Appointment Details, Vehicle and Actions */}
-            <div className="space-y-6">
-              {/* Appointment Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Agendamento</h3>
-                <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <span className="font-medium text-gray-700">Período da Estadia:</span>
-                      <p className="text-gray-900">Início: {visitor.dateBegin}</p>
-                      <p className="text-gray-900">Fim: {visitor.dateEnding}</p>
+                {/* Right Column - Appointment Details, Vehicle and Actions */}
+                <div className="space-y-6">
+                  {/* Appointment Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Agendamento</h3>
+                    <div className="bg-gray-50 p-6 rounded-xl space-y-4">
+                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <span className="font-medium text-gray-700">Período da Estadia:</span>
+                          <p className="text-gray-900">Início: {visitor.dateBegin}</p>
+                          <p className="text-gray-900">Fim: {visitor.dateEnding}</p>
+                        </div>
+                      </div>
+
+                      {visitor.observation && (
+                          <div className="p-4 bg-white rounded-lg border border-gray-200">
+                            <span className="font-medium text-gray-700">Observações:</span>
+                            <p className="text-gray-900 mt-2">{visitor.observation}</p>
+                          </div>
+                      )}
                     </div>
                   </div>
 
-                  {visitor.observation && (
-                    <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <span className="font-medium text-gray-700">Observações:</span>
-                      <p className="text-gray-900 mt-2">{visitor.observation}</p>
-                    </div>
+                  {/* Vehicle Information */}
+                  {visitor.plate && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Veículo</h3>
+                        <div className="bg-gray-50 p-6 rounded-xl">
+                          <div className="flex items-center justify-center mb-4">
+                            <LicensePlate plate={visitor.plate} />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600">Placa do veículo registrada</p>
+                            <p className="text-xs text-gray-500 mt-1">Padrão Mercosul</p>
+                          </div>
+                        </div>
+                      </div>
                   )}
-                </div>
-              </div>
 
-              {/* Vehicle Information */}
-              {visitor.plate && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Veículo</h3>
-                  <div className="bg-gray-50 p-6 rounded-xl">
-                    <div className="flex items-center justify-center mb-4">
-                      <LicensePlate plate={visitor.plate} />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600">Placa do veículo registrada</p>
-                      <p className="text-xs text-gray-500 mt-1">Padrão Mercosul</p>
+                  {/* Ações Rápidas */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-4">Ações Rápidas</h4>
+                    <div className="space-y-3">
+                      <button
+                          onClick={() => submitRegisterAction({
+                            event_id: visitor.id,
+                            action: "entrance",
+                            type: "schedule"
+                          })}
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium shadow-md"
+                          disabled={loadingActionEntance}
+                      >
+                        {loadingActionEntance ? (
+                            <div className="flex justify-center items-center space-x-2">
+                              <span>Processando...</span>
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                            </div>
+                        ) : (
+                            'Confirmar Entrada'
+                        )}
+                      </button>
+
+                      <button
+                          onClick={() => submitRegisterAction({
+                            event_id: visitor.id,
+                            action: "exit",
+                            type: "schedule"
+                          })}
+                          className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 px-4 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 font-medium shadow-md"
+                          disabled={loadingActionExit}
+                      >
+
+                        {loadingActionExit? (
+                            <div className="flex justify-center items-center space-x-2">
+                              <span>Processando...</span>
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                            </div>
+                        ) : (
+                            'Registrar Saída'
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
-              )}
 
-              {/* Ações Rápidas */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h4 className="font-semibold text-gray-900 mb-4">Ações Rápidas</h4>
-                <div className="space-y-3">
-                  <button className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium shadow-md">
-                    Confirmar Entrada
-                  </button>
-                </div>
+                {actionsGateEntrance.length > 0 && (
+                    <ActionGateView
+                        title="Entrada"
+                        actions={actionsGateEntrance}
+                        isEntrance={true}
+                    />
+                )}
+
+                {actionsGateExit.length > 0 && (
+                    <ActionGateView
+                        title="Saída"
+                        actions={actionsGateExit}
+                        isEntrance={false}
+                    />
+                )}
+
+
               </div>
             </div>
-          </div>
-        </div>
+        )}
+
       </div>
     </div>
   );
 };
+
 
 const VisitorScheduleView: React.FC = () => {
   const { showSuccess, showError } = useToast();
@@ -343,7 +509,10 @@ const VisitorScheduleView: React.FC = () => {
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorDetails | null>(null);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+
+
   // Estados para scroll infinito
   const [visitors, setVisitors] = useState<VisitorDetails[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -359,8 +528,51 @@ const VisitorScheduleView: React.FC = () => {
   const loadingRef = useRef(false);
   const lastSearchRef = useRef('');
 
+  const onChange = (dates) => {
+    const [start, end] = dates;
+    setStartDate(start);
+    setEndDate(end);
+    if(start && end){
+      loadVisitorData(1,searchTerm,true,start,end);
+    }
+  };
+
+  const dataVisitors = (data:any,reset:any,page:any) => {
+
+    console.log('AQUIIII',reset,page,data)
+    if (data && data.data && Array.isArray(data.data)) {
+      const newVisitors = data.data;
+
+      if (reset || page === 1) {
+        // Primeira página ou reset - substituir todos os dados
+        setVisitors(newVisitors);
+      } else {
+        // Páginas subsequentes - adicionar aos dados existentes, evitando duplicatas
+        setVisitors(prev => {
+          const existingIds = new Set(prev.map(v => `${v.id}-${v.visitor_id}`));
+          const uniqueNewVisitors = newVisitors.filter(v => !existingIds.has(`${v.id}-${v.visitor_id}`));
+          return [...prev, ...uniqueNewVisitors];
+        });
+      }
+
+      setCurrentPage(data.current_page);
+      setHasNextPage(data.current_page < data.last_page);
+      setTotalCount(data.total);
+
+      console.log(`💾 Visitantes carregados - Página: ${data.current_page}/${data.last_page}, Total: ${data.total}`);
+    } else {
+      console.warn('⚠️ Resposta do cronograma de visitantes inválida:', data);
+      if (reset || page === 1) {
+        setVisitors([]);
+        setTotalCount(0);
+        setHasNextPage(false);
+      }
+    }
+
+  }
+
   // Função para carregar dados da API
-  const loadVisitorData = useCallback(async (page: number, search?: string, reset: boolean = false) => {
+  const loadVisitorData = useCallback(async (page: number, search?: string, reset: boolean = false,start = startDate,end = endDate) => {
     // Evitar múltiplas requisições simultâneas
     if (loadingRef.current) {
       console.log('⏳ Requisição já em andamento, ignorando...');
@@ -368,6 +580,8 @@ const VisitorScheduleView: React.FC = () => {
     }
 
     try {
+      setLoading(true);
+
       loadingRef.current = true;
       console.log(`🔄 Carregando visitantes - Página: ${page}, Busca: ${search || 'N/A'}, Reset: ${reset}`);
       
@@ -380,42 +594,22 @@ const VisitorScheduleView: React.FC = () => {
       // Construir URL com parâmetros de paginação e busca
       let endpoint = `/visitors/schedule?page=${page}`;
       if (search && search.trim()) {
-        endpoint += `&search=${encodeURIComponent(search.trim())}`;
+          endpoint += `&search=${encodeURIComponent(search.trim())}`;
+      }
+
+      if (start && end) {
+          const formattedStartDate = format(start, 'yyyy-MM-dd');
+          const formattedEndDate = format(end, 'yyyy-MM-dd');
+          endpoint += `&dateBegin=${formattedStartDate}&dateEnding=${formattedEndDate}`;
       }
       
       const data = await apiRequest(endpoint, {
         method: 'GET'
       });
       console.log('✅ Resposta do cronograma de visitantes:', data);
-      
-      if (data && data.data && Array.isArray(data.data)) {
-        const newVisitors = data.data;
-        
-        if (reset || page === 1) {
-          // Primeira página ou reset - substituir todos os dados
-          setVisitors(newVisitors);
-        } else {
-          // Páginas subsequentes - adicionar aos dados existentes, evitando duplicatas
-          setVisitors(prev => {
-            const existingIds = new Set(prev.map(v => `${v.id}-${v.visitor_id}`));
-            const uniqueNewVisitors = newVisitors.filter(v => !existingIds.has(`${v.id}-${v.visitor_id}`));
-            return [...prev, ...uniqueNewVisitors];
-          });
-        }
-        
-        setCurrentPage(data.current_page);
-        setHasNextPage(data.current_page < data.last_page);
-        setTotalCount(data.total);
-        
-        console.log(`💾 Visitantes carregados - Página: ${data.current_page}/${data.last_page}, Total: ${data.total}`);
-      } else {
-        console.warn('⚠️ Resposta do cronograma de visitantes inválida:', data);
-        if (reset || page === 1) {
-          setVisitors([]);
-          setTotalCount(0);
-          setHasNextPage(false);
-        }
-      }
+
+      dataVisitors(data,reset,page)
+
     } catch (error) {
       console.error('❌ Erro ao carregar cronograma de visitantes:', error);
       
@@ -443,13 +637,13 @@ const VisitorScheduleView: React.FC = () => {
       setLoadingMore(false);
       setLoading(false);
     }
-  }, []);
+  }, [endDate]);
 
   // Função para carregar próxima página
   const loadNextPage = useCallback(() => {
     if (!loadingMore && hasNextPage && !loadingRef.current) {
       console.log(`📄 Carregando próxima página: ${currentPage + 1}`);
-      loadVisitorData(currentPage + 1, searchTerm);
+      loadVisitorData(currentPage + 1, searchTerm,false);
     }
   }, [loadVisitorData, currentPage, searchTerm, loadingMore, hasNextPage]);
 
@@ -500,7 +694,6 @@ const VisitorScheduleView: React.FC = () => {
     const timeoutId = setTimeout(() => {
       console.log(`🔍 Executando busca: "${searchTerm}"`);
       lastSearchRef.current = searchTerm;
-      setLoading(true);
       loadVisitorData(1, searchTerm, true);
     }, 500);
 
@@ -516,15 +709,24 @@ const VisitorScheduleView: React.FC = () => {
       // Criar FormData para envio da imagem
       const formData = new FormData();
       formData.append('plate', imageFile);
-      
+
       // Fazer requisição POST para /visitors/schedule usando apiRequest
       const response = await apiRequest('/visitors/schedule', {
         method: 'POST',
-        body: formData
-      });
+        body: formData,
+      },true);
+
+      dataVisitors(response,true,1);
+
+      console.log('RESPOSTAAA',response.data);
+
+      if(response.data.length === 1){
+        console.log('ENTROUUUU',response.data[0]);
+        setSelectedVisitor(response.data[0])
+      }
       
       console.log('✅ Foto enviada com sucesso:', response);
-      showSuccess('Foto enviada!', 'A foto da placa foi enviada com sucesso.');
+      // showSuccess('Foto enviada!', 'A foto da placa foi enviada com sucesso.');
       
     } catch (error) {
       console.error('❌ Erro ao enviar foto:', error);
@@ -534,27 +736,59 @@ const VisitorScheduleView: React.FC = () => {
     }
   };
 
+  // const handleVisitorDatail = async (visitorId :number) => {
+  //
+  //
+  //   try{
+  //
+  //     const data = await apiRequest('/visitors/schedule/card/'+visitorId, {
+  //       method: 'GET'
+  //     });
+  //
+  //     setSelectedVisitor(data);
+  //
+  //     console.log('CARD',data)
+  //
+  //   } catch (error) {}
+  //
+  // }
+
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Agendamentos de Visitantes</h1>
+          <h1 className="text-3xl font-bold text-gray-900"><>Agendamentos de Visitantes</></h1>
           <p className="text-gray-600 mt-1">
             Visualize e gerencie todos os agendamentos de forma organizada
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
           <button
             onClick={() => setIsCameraModalOpen(true)}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 shadow-md"
             title="Capturar foto da placa"
           >
             <Camera className="w-5 h-5" />
-            <span>Foto da Placa</span>
+            <span>Pesquisar Placa</span>
           </button>
-          
+
+          <div>
+            <DatePicker
+                selected={startDate}
+                onChange={onChange}
+                startDate={startDate}
+                endDate={endDate}
+                selectsRange
+                rangeSeparator=" - "
+                locale="ptBR"
+                dateFormat="dd/MM/yyyy"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
+            />
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -562,16 +796,9 @@ const VisitorScheduleView: React.FC = () => {
               placeholder="Buscar visitante, CPF ou responsável..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[300px]"
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-[350px]"
             />
           </div>
-          
-          {loading && (
-            <div className="flex items-center space-x-2 text-blue-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span className="text-sm">Buscando...</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -596,8 +823,9 @@ const VisitorScheduleView: React.FC = () => {
         </div>
       </div>
 
+
       {/* Visitors Grid */}
-      {initialLoading ? (
+      {initialLoading || loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="flex items-center space-x-3 text-blue-600">
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -648,7 +876,7 @@ const VisitorScheduleView: React.FC = () => {
 
       {/* Visitor Details Modal */}
       <VisitorDetailsModal
-        visitor={selectedVisitor}
+       visitorData={selectedVisitor}
         onClose={() => setSelectedVisitor(null)}
       />
 
@@ -664,7 +892,7 @@ const VisitorScheduleView: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
             <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="text-lg font-medium text-gray-900">Enviando foto...</span>
+            <span className="text-lg font-medium text-gray-900">Pesquisando a placa...</span>
           </div>
         </div>
       )}

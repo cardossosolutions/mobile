@@ -1,6 +1,24 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Package, Clock, Home, Hash, MapPin, X, Search, Eye, Loader2, Calendar, Truck, ShoppingBag } from 'lucide-react';
+import {
+  Package,
+  Clock,
+  Home,
+  Hash,
+  MapPin,
+  X,
+  Search,
+  Eye,
+  Loader2,
+  Calendar,
+  Truck,
+  ShoppingBag,
+  LogIn, User, LogOut
+} from 'lucide-react';
 import { apiRequest, API_CONFIG } from '../../config/api';
+import ActionGateView from "./components/ActionGateView.tsx";
+import {useData} from "../../contexts/DataContext.tsx";
+import DatePicker from "react-datepicker";
+import {format} from "date-fns";
 
 // Interface para os dados da entrega baseada na API
 interface DeliveryDetails {
@@ -11,6 +29,20 @@ interface DeliveryDetails {
   quantity: number;
   date_start: string;
   date_ending: string;
+  actions_gate: {
+    entrance: Array<{
+      "id": number,
+      "name": string,
+      "action": string,
+      "created_at": string
+    }>;
+    exit: Array<{
+      "id": number,
+      "name": string,
+      "action": string,
+      "created_at": string
+    }>;
+  }
 }
 
 const DeliveryCard: React.FC<{ delivery: DeliveryDetails; onClick: () => void }> = ({ delivery, onClick }) => {
@@ -125,20 +157,99 @@ const DeliveryCard: React.FC<{ delivery: DeliveryDetails; onClick: () => void }>
 };
 
 const DeliveryDetailsModal: React.FC<{ 
-  delivery: DeliveryDetails | null; 
+  deliveryData: DeliveryDetails | null;
   onClose: () => void 
-}> = ({ delivery, onClose }) => {
-  if (!delivery) return null;
+}> = ({ deliveryData, onClose }) => {
+  if (!deliveryData) return null;
+
+  const [actionsGateEntrance, setActionsGateEntrance] = useState(deliveryData?.actions_gate?.entrance || []);
+
 
   const formatDateRange = (dateStart: string, dateEnding: string) => {
     const start = new Date(dateStart).toLocaleDateString('pt-BR');
     const end = new Date(dateEnding).toLocaleDateString('pt-BR');
-    
+
     if (start === end) {
       return start;
     }
     return `${start} até ${end}`;
   };
+
+  const [actionsGateExit, setActionsGateExit] = useState(deliveryData?.actions_gate?.exit || []);
+
+  const [loadingActionEntance, setLoadingActionEntance] = useState(false);
+  const [loadingActionExit, setLoadingActionExit] = useState(false);
+  const [loadCard,setLoadCard] = useState(true);
+  const [delivery,setDelivery] = useState(deliveryData);
+  const [quantity, setQuantity] = useState(delivery?.delivered_quantity);
+
+
+  const { registerAction } = useData();
+
+  useEffect(() => {
+
+    const fetchVisitorDetails = async () => {
+      try {
+        const response = await apiRequest(`/deliveries/card/${delivery.id}`, {
+          method: 'GET',
+        });
+        setDelivery(response); // Atualizamos o visitante com os dados da API
+        setActionsGateEntrance(response?.actions_gate?.entrance || []);
+        setActionsGateExit(response?.actions_gate?.exit || []);
+        setQuantity(response?.delivered_quantity)
+      } catch (error) {
+        console.error('Erro ao buscar os detalhes do visitante:', error);
+      } finally {
+        setLoadCard(false);
+      }
+    };
+
+    setLoadCard(true);
+    fetchVisitorDetails();
+
+  }, []);
+
+  const submitRegisterAction = async (register: { event_id: number; action: string; type: string }) => {
+
+    const dataToSubmit = {
+      event_id: register.event_id,
+      action: register.action,
+      type: register.type
+    };
+
+    console.log('dataToSubmit', dataToSubmit);
+
+    if(register.action === 'entrance'){
+      setLoadingActionEntance(true);
+    }else{
+      setLoadingActionExit(true);
+    }
+
+
+    const actions = registerAction(dataToSubmit)
+
+    actions
+        .then((response) => {
+          setActionsGateEntrance(response?.action?.entrance ?? []);
+          setActionsGateExit(response?.action?.exit ?? []);
+          setQuantity(response.quantity);
+          btnLoading(register.action);
+        })
+        .catch(() => {
+          btnLoading(register.action);
+        })
+        .finally(() => {
+          btnLoading(register.action);
+        });
+
+  }
+
+  const btnLoading = (actionLoad: string) => {
+    actionLoad === 'entrance'
+        ? setLoadingActionEntance(false)
+        : setLoadingActionExit(false);
+  }
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -151,151 +262,208 @@ const DeliveryDetailsModal: React.FC<{
             <X className="w-6 h-6" />
           </button>
         </div>
-        
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Delivery Information */}
-            <div className="space-y-6">
-              {/* Delivery Information */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações da Entrega</h2>
-                
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-4 rounded-full shadow-lg">
-                      {delivery.ecommerce_id ? (
-                        <ShoppingBag className="w-8 h-8 text-white" />
-                      ) : (
-                        <Truck className="w-8 h-8 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{delivery.ecommerce}</h3>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-2 ${
-                        delivery.ecommerce_id 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        <Package className="w-4 h-4 mr-1" />
-                        {delivery.ecommerce_id ? 'E-commerce Cadastrado' : 'Entrega Personalizada'}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <Hash className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">Quantidade:</span>
-                        <span className="text-gray-900 ml-2 font-semibold">
+        {loadCard ? (
+            <div className="h-20 flex items-center justify-center">
+              <div className="flex items-center space-x-3 text-amber-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-sm font-medium">Carregando detalhes da entrega...</span>
+              </div>
+            </div>
+        ) : (
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Delivery Information */}
+                <div className="space-y-6">
+                  {/* Delivery Information */}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações da Entrega</h2>
+
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200 space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-4 rounded-full shadow-lg">
+                          {delivery.ecommerce_id ? (
+                              <ShoppingBag className="w-8 h-8 text-white" />
+                          ) : (
+                              <Truck className="w-8 h-8 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-gray-900">{delivery.ecommerce}</h3>
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-2 ${
+                              delivery.ecommerce_id
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-amber-100 text-amber-800'
+                          }`}>
+                        <Package className="w-4 h-4 mr-1" />
+                            {delivery.ecommerce_id ? 'E-commerce Cadastrado' : 'Entrega Personalizada'}
+                      </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                          <Hash className="w-5 h-5 text-gray-500" />
+                          <div>
+                            <span className="font-medium text-gray-700">Quantidade:</span>
+                            <span className="text-gray-900 ml-2 font-semibold">
                           {delivery.quantity} {delivery.quantity === 1 ? 'entrega' : 'entregas'}
                         </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <Package className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">ID da Entrega:</span>
-                        <span className="text-gray-900 font-mono ml-2">#{delivery.id}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                          </div>
+                        </div>
 
-              {/* Residence Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Local de Entrega</h3>
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-full shadow-lg">
-                      <Home className="w-8 h-8 text-white" />
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                          <Package className="w-5 h-5 text-gray-500" />
+                          <div>
+                            <span className="font-medium text-gray-700">ID da Entrega:</span>
+                            <span className="text-gray-900 font-mono ml-2">#{delivery.id}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-xl font-semibold text-gray-900">
-                        {delivery.residence}
-                      </h4>
-                      <p className="text-sm text-green-700 mt-1">Endereço autorizado para entrega</p>
+                  </div>
+
+                  {/* Residence Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Local de Entrega</h3>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-full shadow-lg">
+                          <Home className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-semibold text-gray-900">
+                            {delivery.residence}
+                          </h4>
+                          <p className="text-sm text-green-700 mt-1">Endereço autorizado para entrega</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Right Column - Delivery Details and Actions */}
+                <div className="space-y-6">
+                  {/* Delivery Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes da Entrega</h3>
+                    <div className="bg-gray-50 p-6 rounded-xl space-y-4">
+                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                        <Calendar className="w-5 h-5 text-amber-600" />
+                        <div>
+                          <span className="font-medium text-gray-700">Período Autorizado:</span>
+                          <p className="text-gray-900">Início: {new Date(delivery.date_start).toLocaleDateString('pt-BR')}</p>
+                          <p className="text-gray-900">Fim: {new Date(delivery.date_ending).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-white rounded-lg border border-gray-200">
+                        <div className="flex items-center space-x-3 mb-3">
+                          {delivery.ecommerce_id ? (
+                              <>
+                                <ShoppingBag className="w-5 h-5 text-emerald-600" />
+                                <span className="font-medium text-gray-700">E-commerce Oficial:</span>
+                              </>
+                          ) : (
+                              <>
+                                <Truck className="w-5 h-5 text-amber-600" />
+                                <span className="font-medium text-gray-700">Entrega Personalizada:</span>
+                              </>
+                          )}
+                        </div>
+                        <p className="text-gray-900 font-semibold">{delivery.ecommerce}</p>
+                        {delivery.ecommerce_id && (
+                            <p className="text-sm text-gray-600 mt-1">ID do E-commerce: #{delivery.ecommerce_id}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delivery Statistics */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Estatísticas</h3>
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-white rounded-lg">
+                          <div className="text-2xl font-bold from-green-600">{quantity}</div>
+                          <div className="text-sm from-green-600">
+                            Entregue
+                          </div>
+                        </div>
+                        <div className="text-center p-4 bg-white rounded-lg">
+                          <div className="text-2xl font-bold text-green-600">
+                            {Math.ceil((new Date(delivery.date_ending).getTime() - new Date(delivery.date_start).getTime()) / (1000 * 60 * 60 * 24)) + 1}
+                          </div>
+                          <div className="text-sm text-gray-600">Dias</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-4">Ações Rápidas</h4>
+                    <div className="space-y-3">
+                      <button
+                          onClick={() => submitRegisterAction({
+                            event_id: delivery.id,
+                            action: "entrance",
+                            type: "delivery"
+                          })}
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium shadow-md"
+                          disabled={loadingActionEntance}
+                      >
+                        {loadingActionEntance ? (
+                            <div className="flex justify-center items-center space-x-2">
+                              <span>Processando...</span>
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                            </div>
+                        ) : (
+                            'Confirmar Entrada'
+                        )}
+                      </button>
+                      <button
+                          onClick={() => submitRegisterAction({
+                            event_id: delivery.id,
+                            action: "exit",
+                            type: "delivery"
+                          })}
+                          className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 px-4 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 font-medium shadow-md"
+                          disabled={loadingActionExit}
+                      >
+                        {loadingActionExit? (
+                            <div className="flex justify-center items-center space-x-2">
+                              <span>Processando...</span>
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                            </div>
+                        ) : (
+                            'Registrar Saída'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {actionsGateEntrance.length > 0 && (
+                    <ActionGateView
+                        title="Entrada"
+                        actions={actionsGateEntrance}
+                        isEntrance={true}
+                    />
+                )}
+
+                {actionsGateExit.length > 0 && (
+                    <ActionGateView
+                        title="Saída"
+                        actions={actionsGateExit}
+                        isEntrance={false}
+                    />
+                )}
+
               </div>
             </div>
-
-            {/* Right Column - Delivery Details and Actions */}
-            <div className="space-y-6">
-              {/* Delivery Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes da Entrega</h3>
-                <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <Calendar className="w-5 h-5 text-amber-600" />
-                    <div>
-                      <span className="font-medium text-gray-700">Período Autorizado:</span>
-                      <p className="text-gray-900">Início: {new Date(delivery.date_start).toLocaleDateString('pt-BR')}</p>
-                      <p className="text-gray-900">Fim: {new Date(delivery.date_ending).toLocaleDateString('pt-BR')}</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-white rounded-lg border border-gray-200">
-                    <div className="flex items-center space-x-3 mb-3">
-                      {delivery.ecommerce_id ? (
-                        <>
-                          <ShoppingBag className="w-5 h-5 text-emerald-600" />
-                          <span className="font-medium text-gray-700">E-commerce Oficial:</span>
-                        </>
-                      ) : (
-                        <>
-                          <Truck className="w-5 h-5 text-amber-600" />
-                          <span className="font-medium text-gray-700">Entrega Personalizada:</span>
-                        </>
-                      )}
-                    </div>
-                    <p className="text-gray-900 font-semibold">{delivery.ecommerce}</p>
-                    {delivery.ecommerce_id && (
-                      <p className="text-sm text-gray-600 mt-1">ID do E-commerce: #{delivery.ecommerce_id}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Delivery Statistics */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Estatísticas</h3>
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-white rounded-lg">
-                      <div className="text-2xl font-bold text-amber-600">{delivery.quantity}</div>
-                      <div className="text-sm text-gray-600">
-                        {delivery.quantity === 1 ? 'Entrega' : 'Entregas'}
-                      </div>
-                    </div>
-                    <div className="text-center p-4 bg-white rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
-                        {Math.ceil((new Date(delivery.date_ending).getTime() - new Date(delivery.date_start).getTime()) / (1000 * 60 * 60 * 24)) + 1}
-                      </div>
-                      <div className="text-sm text-gray-600">Dias</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h4 className="font-semibold text-gray-900 mb-4">Ações Rápidas</h4>
-                <div className="space-y-3">
-                  <button className="w-full bg-gradient-to-r from-amber-600 to-orange-700 text-white py-3 px-4 rounded-lg hover:from-amber-700 hover:to-orange-800 transition-all duration-200 font-medium shadow-md">
-                    Confirmar Recebimento
-                  </button>
-                  <button className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium shadow-md">
-                    Marcar como Entregue
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
+        
       </div>
     </div>
   );
@@ -313,7 +481,9 @@ const DeliveryScheduleView: React.FC = () => {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
-  
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+
   // Ref para o elemento sentinela do scroll infinito
   const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -323,7 +493,7 @@ const DeliveryScheduleView: React.FC = () => {
   const lastSearchRef = useRef('');
 
   // Função para carregar dados da API
-  const loadDeliveryData = useCallback(async (page: number, search?: string, reset: boolean = false) => {
+  const loadDeliveryData = useCallback(async (page: number, search?: string, reset: boolean = false,start = startDate,end = endDate) => {
     // Evitar múltiplas requisições simultâneas
     if (loadingRef.current) {
       console.log('⏳ Requisição já em andamento, ignorando...');
@@ -331,6 +501,9 @@ const DeliveryScheduleView: React.FC = () => {
     }
 
     try {
+
+      setLoading(true);
+
       loadingRef.current = true;
       console.log(`🔄 Carregando entregas - Página: ${page}, Busca: ${search || 'N/A'}, Reset: ${reset}`);
       
@@ -341,12 +514,18 @@ const DeliveryScheduleView: React.FC = () => {
       }
       
       // Construir URL com parâmetros de paginação e busca
-      let url = `/deliveries?page=${page}`;
+      let endpoint = `/deliveries?page=${page}`;
       if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
+        endpoint += `&search=${encodeURIComponent(search.trim())}`;
+      }
+
+      if (start && end) {
+        const formattedStartDate = format(start, 'yyyy-MM-dd');
+        const formattedEndDate = format(end, 'yyyy-MM-dd');
+        endpoint += `&dateBegin=${formattedStartDate}&dateEnding=${formattedEndDate}`;
       }
       
-      const response = await apiRequest(url, {
+      const response = await apiRequest(endpoint, {
         method: 'GET'
       });
       
@@ -399,7 +578,7 @@ const DeliveryScheduleView: React.FC = () => {
   const loadNextPage = useCallback(() => {
     if (!loadingMore && hasNextPage && !loadingRef.current) {
       console.log(`📄 Carregando próxima página: ${currentPage + 1}`);
-      loadDeliveryData(currentPage + 1, searchTerm);
+      loadDeliveryData(currentPage + 1, searchTerm,false);
     }
   }, [loadDeliveryData, currentPage, searchTerm, loadingMore, hasNextPage]);
 
@@ -457,6 +636,15 @@ const DeliveryScheduleView: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, loadDeliveryData]);
 
+  const onChange = (dates) => {
+    const [start, end] = dates;
+    setStartDate(start);
+    setEndDate(end);
+    if(start && end){
+      loadDeliveryData(1,searchTerm,true,start,end);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -469,6 +657,21 @@ const DeliveryScheduleView: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
+
+          <div>
+            <DatePicker
+                selected={startDate}
+                onChange={onChange}
+                startDate={startDate}
+                endDate={endDate}
+                selectsRange
+                rangeSeparator=" - "
+                locale="ptBR"
+                dateFormat="dd/MM/yyyy"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
+            />
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -479,13 +682,6 @@ const DeliveryScheduleView: React.FC = () => {
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 min-w-[300px]"
             />
           </div>
-          
-          {loading && (
-            <div className="flex items-center space-x-2 text-amber-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600"></div>
-              <span className="text-sm">Buscando...</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -511,7 +707,7 @@ const DeliveryScheduleView: React.FC = () => {
       </div>
 
       {/* Deliveries Grid */}
-      {initialLoading ? (
+      {initialLoading || loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="flex items-center space-x-3 text-amber-600">
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -562,7 +758,7 @@ const DeliveryScheduleView: React.FC = () => {
 
       {/* Delivery Details Modal */}
       <DeliveryDetailsModal
-        delivery={selectedDelivery}
+        deliveryData={selectedDelivery}
         onClose={() => setSelectedDelivery(null)}
       />
     </div>

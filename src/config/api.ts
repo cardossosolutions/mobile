@@ -27,8 +27,9 @@ export const API_CONFIG = {
     STATES: '/infos/state',
     CITIES: '/infos/city',
     DELIVERIES: '/deliveries',
-    DELIVERIES_LIST: '/deliveries',
-    ECOMMERCES: '/infos/ecommerces'
+    DELIVERIES_LIST: '/deliveries/list-residence',
+    ECOMMERCES: '/infos/ecommerces',
+    ACTION_GATE: '/gate/actions',
   },
   
   // Headers padrão
@@ -53,8 +54,9 @@ export const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('auth_token');
   const tokenType = localStorage.getItem('token_type') || 'bearer';
   
-  const headers = { ...API_CONFIG.DEFAULT_HEADERS };
-  
+  // const headers = { ...API_CONFIG.DEFAULT_HEADERS };
+  const headers = {};
+
   if (token) {
     headers['Authorization'] = `${tokenType.charAt(0).toUpperCase() + tokenType.slice(1)} ${token}`;
   }
@@ -80,14 +82,18 @@ const handleTokenExpired = () => {
 // Função para fazer requisições HTTP com autenticação automática
 export const apiRequest = async (
   endpoint: string, 
-  options: RequestInit = {}
+  options: RequestInit = {},
+  file?: boolean = false,
 ): Promise<any> => {
   const url = getApiUrl(endpoint);
-  
+
   // Combinar headers padrão com headers de autenticação e headers customizados
   const headers = {
     ...getAuthHeaders(),
-    ...options.headers
+    ...(!file && {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }),
   };
   
   const config: RequestInit = {

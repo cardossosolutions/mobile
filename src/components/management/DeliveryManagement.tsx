@@ -40,9 +40,9 @@ const DeliveryManagement: React.FC = () => {
 
   // Debounce para busca
   useEffect(() => {
-    if (searchTerm === '') {
-      return; // Não fazer busca se termo vazio
-    }
+    // if (searchTerm === '') {
+    //   return; // Não fazer busca se termo vazio
+    // }
 
     const timeoutId = setTimeout(() => {
       handleSearch();
@@ -52,20 +52,20 @@ const DeliveryManagement: React.FC = () => {
   }, [searchTerm]);
 
   const handleSearch = async () => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadDeliveries(1, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = async (page: number) => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadDeliveries(page, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 

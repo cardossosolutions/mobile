@@ -53,20 +53,20 @@ const AppointmentManagement: React.FC = () => {
   }, [searchTerm, loadAppointments]);
 
   const handleSearch = async () => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadAppointments(1, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = async (page: number) => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadAppointments(page, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 

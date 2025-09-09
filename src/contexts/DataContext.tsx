@@ -162,6 +162,9 @@ interface DataContextType {
 
   // User Profile
   loadUserProfile: () => Promise<void>;
+
+  // action Gates
+  registerAction: (registerActionData: any) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -217,10 +220,11 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.log(`🏠 DataContext.loadResidences - Página: ${page}, Busca: "${search}"`);
       
       let url = `${API_CONFIG.ENDPOINTS.RESIDENCES}?page=${page}`;
+      console.log('AQUIIIIII',search)
       if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
+        url += `&${search}`;
       }
-      
+      console.log('AQUIIIIII',url)
       const response = await apiRequest(url, { method: 'GET' });
       
       if (response && response.data) {
@@ -301,7 +305,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       
       let url = `${API_CONFIG.ENDPOINTS.RESIDENTS}/${residenceId}?page=${page}`;
       if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
+        url += `&search=${search}`;
       }
       
       const response = await apiRequest(url, { method: 'GET' });
@@ -387,7 +391,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       
       let url = `${API_CONFIG.ENDPOINTS.EMPLOYEES}?page=${page}`;
       if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
+        url += `&${(search)}`;
       }
       
       const response = await apiRequest(url, { method: 'GET' });
@@ -865,6 +869,25 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     }
   }, [showSuccess, showError]);
 
+  const registerAction = useCallback(async (registerData: any) => {
+    try {
+      console.log('🏠 DataContext.registerAction - Dados:', registerData);
+
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.ACTION_GATE, {
+        method: 'POST',
+        body: JSON.stringify(registerData)
+      });
+
+      console.log('✅ DataContext.addResidence - Resposta:', response);
+      showSuccess('Ação registrada!', 'A ação foi registrada com sucesso.');
+      return response;
+    } catch (error) {
+      console.error('❌ DataContext.addResidence - Erro:', error);
+      showError('Erro ao registrar', 'Não foi possível registrar a ação. Tente novamente.');
+      throw error;
+    }
+  }, [showSuccess, showError]);
+
   return (
     <DataContext.Provider value={{
       // Residences
@@ -929,7 +952,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       deleteDelivery,
 
       // User Profile
-      loadUserProfile
+      loadUserProfile,
+
+      // action Gates
+      registerAction
     }}>
       {children}
     </DataContext.Provider>

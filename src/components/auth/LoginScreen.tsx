@@ -81,7 +81,12 @@ const LoginScreen: React.FC = () => {
       <div className="min-h-screen flex">
         {/* Left side - Logo variations */}
         <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 p-8 flex-col justify-center items-center">
-          <LogoVariations />
+          {/*<LogoVariations />*/}
+          <img
+              src="/public/tela_login_casa_transparente_v2.png"
+              alt="Login illustration"
+              className="w-3/4 mt-8"
+          />
         </div>
 
         {/* Right side - Login form */}

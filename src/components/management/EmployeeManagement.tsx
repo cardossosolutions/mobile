@@ -62,7 +62,7 @@ const EmployeeManagement: React.FC = () => {
   }, [searchTerm, statusFilter, permissionFilter, loadEmployees]);
 
   const handleSearch = async () => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       // Construir parâmetros de busca
       const searchParams = new URLSearchParams();
@@ -73,12 +73,12 @@ const EmployeeManagement: React.FC = () => {
       const searchQuery = searchParams.toString();
       await loadEmployees(1, searchQuery);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = async (page: number) => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       // Construir parâmetros de busca
       const searchParams = new URLSearchParams();
@@ -89,7 +89,7 @@ const EmployeeManagement: React.FC = () => {
       const searchQuery = searchParams.toString();
       await loadEmployees(page, searchQuery);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 

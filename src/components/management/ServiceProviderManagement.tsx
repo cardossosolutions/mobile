@@ -41,9 +41,9 @@ const ServiceProviderManagement: React.FC = () => {
   // Debounce para busca
   useEffect(() => {
     // Evitar busca na primeira renderização se não há termo de busca
-    if (searchTerm === '') {
-      return; // Não fazer busca se o termo estiver vazio
-    }
+    // if (searchTerm === '') {
+    //   return; // Não fazer busca se o termo estiver vazio
+    // }
 
     const timeoutId = setTimeout(() => {
       handleSearch();
@@ -53,20 +53,20 @@ const ServiceProviderManagement: React.FC = () => {
   }, [searchTerm]); // Remover loadServiceProviders das dependências
 
   const handleSearch = async () => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadServiceProviders(1, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = async (page: number) => {
-    setLoading(true);
+    setInitialLoading(true);
     try {
       await loadServiceProviders(page, searchTerm);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 

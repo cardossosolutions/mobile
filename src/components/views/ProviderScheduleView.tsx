@@ -1,6 +1,29 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Briefcase, Clock, User, Phone, Car, MapPin, X, Search, Eye, Loader2, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  Briefcase,
+  Clock,
+  User,
+  Phone,
+  Car,
+  MapPin,
+  X,
+  Search,
+  Eye,
+  Loader2,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  LogIn, LogOut, Camera
+} from 'lucide-react';
 import { apiRequest, API_CONFIG } from '../../config/api';
+import ActionGateView from "./components/ActionGateView.tsx";
+import CameraModal from "../common/CameraModal.tsx";
+import {useToast} from "../../contexts/ToastContext.tsx";
+import DatePicker , { registerLocale } from "react-datepicker";
+import 'react-datepicker/dist/react-datepicker.css'
+import {ptBR} from "date-fns/locale";
+import { format } from "date-fns";
+import {useData} from "../../contexts/DataContext.tsx";
 
 // Interface para os dados do prestador baseada na API
 interface ProviderDetails {
@@ -15,6 +38,20 @@ interface ProviderDetails {
   date_start: string;
   date_ending: string;
   observation: string;
+  actions_gate: {
+    entrance: Array<{
+      "id": number,
+      "name": string,
+      "action": string,
+      "created_at": string
+    }>;
+    exit: Array<{
+      "id": number,
+      "name": string,
+      "action": string,
+      "created_at": string
+    }>;
+  }
 }
 
 const LicensePlate: React.FC<{ plate: string }> = ({ plate }) => {
@@ -158,10 +195,20 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onClick: () => void }>
 };
 
 const ProviderDetailsModal: React.FC<{ 
-  provider: ProviderDetails | null; 
+  providerData: ProviderDetails | null;
   onClose: () => void 
-}> = ({ provider, onClose }) => {
-  if (!provider) return null;
+}> = ({ providerData, onClose }) => {
+  if (!providerData) return null;
+
+  const [loadingActionEntance, setLoadingActionEntance] = useState(false);
+  const [loadingActionExit, setLoadingActionExit] = useState(false);
+  const [loadCard,setLoadCard] = useState(true);
+  const [provider,setVisitor] = useState(providerData);
+
+  const [actionsGateEntrance, setActionsGateEntrance] = useState([]);
+  const [actionsGateExit, setActionsGateExit] = useState([]);
+
+  const { registerAction } = useData();
 
   const formatDateRange = (dateStart: string, dateEnding: string) => {
     const start = new Date(dateStart).toLocaleDateString('pt-BR');
@@ -172,6 +219,69 @@ const ProviderDetailsModal: React.FC<{
     }
     return `${start} até ${end}`;
   };
+
+  useEffect(() => {
+
+    const fetchVisitorDetails = async () => {
+      try {
+        const response = await apiRequest(`/provider/list-providers/card/${provider.id}`, {
+          method: 'GET',
+        });
+        setVisitor(response); // Atualizamos o visitante com os dados da API
+        setActionsGateEntrance(response?.actions_gate?.entrance || []);
+        setActionsGateExit(response?.actions_gate?.exit || []);
+      } catch (error) {
+        console.error('Erro ao buscar os detalhes do visitante:', error);
+      } finally {
+        setLoadCard(false);
+      }
+    };
+
+    setLoadCard(true);
+    fetchVisitorDetails();
+
+  }, []);
+
+  const submitRegisterAction = async (register: { event_id: number; action: string; type: string }) => {
+
+    const dataToSubmit = {
+      event_id: register.event_id,
+      action: register.action,
+      type: register.type
+    };
+
+    console.log('dataToSubmit', dataToSubmit);
+
+    if(register.action === 'entrance'){
+      setLoadingActionEntance(true);
+    }else{
+      setLoadingActionExit(true);
+    }
+
+
+    const actions = registerAction(dataToSubmit)
+
+    actions
+        .then((response) => {
+
+          setActionsGateEntrance(response?.entrance ?? []);
+          setActionsGateExit(response?.exit ?? []);
+          btnLoading(register.action);
+        })
+        .catch(() => {
+          btnLoading(register.action);
+        })
+        .finally(() => {
+          btnLoading(register.action);
+        });
+
+  }
+
+  const btnLoading = (actionLoad: string) => {
+    actionLoad === 'entrance'
+        ? setLoadingActionEntance(false)
+        : setLoadingActionExit(false);
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -184,134 +294,199 @@ const ProviderDetailsModal: React.FC<{
             <X className="w-6 h-6" />
           </button>
         </div>
-        
-        <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Provider Information */}
-            <div className="space-y-6">
-              {/* Provider Information */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações do Prestador</h2>
-                
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-full shadow-lg">
-                      <Briefcase className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{provider.name}</h3>
-                      <p className="text-gray-600 mt-1">{provider.residence}</p>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <User className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">CPF:</span>
-                        <span className="text-gray-900 font-mono ml-2">{provider.cpf}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <MapPin className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">RG:</span>
-                        <span className="text-gray-900 font-mono ml-2">{provider.rg}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                      <Phone className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-700">Celular:</span>
-                        <span className="text-gray-900 ml-2">{provider.mobile}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Residence Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Local de Trabalho</h3>
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="w-6 h-6 text-green-600" />
-                    <div>
-                      <span className="font-semibold text-lg text-gray-900">{provider.residence}</span>
-                      <p className="text-sm text-green-700">Local autorizado para prestação de serviços</p>
-                    </div>
-                  </div>
-                </div>
+        {loadCard ? (
+            <div className="h-20 flex items-center justify-center">
+              <div className="flex items-center space-x-3 text-indigo-600">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span className="text-sm font-medium">Carregando detalhes do agendamento...</span>
               </div>
             </div>
+        ) : (
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Provider Information */}
+                <div className="space-y-6">
+                  {/* Provider Information */}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações do Prestador</h2>
 
-            {/* Right Column - Service Details and Vehicle */}
-            <div className="space-y-6">
-              {/* Service Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Serviço</h3>
-                <div className="bg-gray-50 p-6 rounded-xl space-y-4">
-                  <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
-                    <Calendar className="w-5 h-5 text-indigo-600" />
-                    <div>
-                      <span className="font-medium text-gray-700">Período Autorizado:</span>
-                      <p className="text-gray-900">Início: {new Date(provider.date_start).toLocaleDateString('pt-BR')}</p>
-                      <p className="text-gray-900">Fim: {new Date(provider.date_ending).toLocaleDateString('pt-BR')}</p>
+                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200 space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-full shadow-lg">
+                          <Briefcase className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-gray-900">{provider?.name}</h3>
+                          <p className="text-gray-600 mt-1">{provider?.residence}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                          <User className="w-5 h-5 text-gray-500" />
+                          <div>
+                            <span className="font-medium text-gray-700">CPF:</span>
+                            <span className="text-gray-900 font-mono ml-2">{provider?.cpf}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                          <MapPin className="w-5 h-5 text-gray-500" />
+                          <div>
+                            <span className="font-medium text-gray-700">RG:</span>
+                            <span className="text-gray-900 font-mono ml-2">{provider?.rg}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                          <Phone className="w-5 h-5 text-gray-500" />
+                          <div>
+                            <span className="font-medium text-gray-700">Celular:</span>
+                            <span className="text-gray-900 ml-2">{provider?.mobile}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {provider.observation && (
-                    <div className="p-4 bg-white rounded-lg border border-gray-200">
-                      <span className="font-medium text-gray-700">Observações:</span>
-                      <p className="text-gray-900 mt-2">{provider.observation}</p>
+                  {/* Residence Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Local de Trabalho</h3>
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+                      <div className="flex items-center space-x-3">
+                        <MapPin className="w-6 h-6 text-green-600" />
+                        <div>
+                          <span className="font-semibold text-lg text-gray-900">{provider?.residence}</span>
+                          <p className="text-sm text-green-700">Local autorizado para prestação de serviços</p>
+                        </div>
+                      </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Service Details and Vehicle */}
+                <div className="space-y-6">
+                  {/* Service Details */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Serviço</h3>
+                    <div className="bg-gray-50 p-6 rounded-xl space-y-4">
+                      <div className="flex items-center space-x-3 p-3 bg-white rounded-lg">
+                        <Calendar className="w-5 h-5 text-indigo-600" />
+                        <div>
+                          <span className="font-medium text-gray-700">Período Autorizado:</span>
+                          <p className="text-gray-900">Início: {new Date(provider?.date_start).toLocaleDateString('pt-BR')}</p>
+                          <p className="text-gray-900">Fim: {new Date(provider?.date_ending).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                      </div>
+
+                      {provider?.observation && (
+                          <div className="p-4 bg-white rounded-lg border border-gray-200">
+                            <span className="font-medium text-gray-700">Observações:</span>
+                            <p className="text-gray-900 mt-2">{provider?.observation}</p>
+                          </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Vehicle Information */}
+                  {provider?.plate && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Veículo</h3>
+                        <div className="bg-gray-50 p-6 rounded-xl">
+                          <div className="flex items-center justify-center mb-4">
+                            <LicensePlate plate={provider?.plate} />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm text-gray-600">Placa do veículo autorizada</p>
+                            <p className="text-xs text-gray-500 mt-1">Padrão Mercosul</p>
+                          </div>
+                        </div>
+                      </div>
                   )}
-                </div>
-              </div>
 
-              {/* Vehicle Information */}
-              {provider.plate && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações do Veículo</h3>
-                  <div className="bg-gray-50 p-6 rounded-xl">
-                    <div className="flex items-center justify-center mb-4">
-                      <LicensePlate plate={provider.plate} />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600">Placa do veículo autorizada</p>
-                      <p className="text-xs text-gray-500 mt-1">Padrão Mercosul</p>
+                  {/* Quick Actions */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-4">Ações Rápidas</h4>
+                    <div className="space-y-3">
+                      <button
+                          onClick={() => submitRegisterAction({
+                            event_id: provider.id,
+                            action: "entrance",
+                            type: "provider"
+                          })}
+                          className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-medium shadow-md"
+                          disabled={loadingActionEntance}
+                      >
+                        {loadingActionEntance ? (
+                            <div className="flex justify-center items-center space-x-2">
+                              <span>Processando...</span>
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                            </div>
+                        ) : (
+                            'Confirmar Entrada'
+                        )}
+                      </button>
+
+                      <button
+                          onClick={() => submitRegisterAction({
+                            event_id: provider.id,
+                            action: "exit",
+                            type: "provider"
+                          })}
+                          className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 px-4 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 font-medium shadow-md"
+                          disabled={loadingActionExit}
+                      >
+
+                        {loadingActionExit? (
+                            <div className="flex justify-center items-center space-x-2">
+                              <span>Processando...</span>
+                              <Loader2 className="w-6 h-6 animate-spin" />
+                            </div>
+                        ) : (
+                            'Registrar Saída'
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
-              )}
 
-              {/* Quick Actions */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h4 className="font-semibold text-gray-900 mb-4">Ações Rápidas</h4>
-                <div className="space-y-3">
-                  <button className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 font-medium shadow-md">
-                    Confirmar Entrada
-                  </button>
-                  <button className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3 px-4 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 font-medium shadow-md">
-                    Registrar Saída
-                  </button>
-                </div>
+                {actionsGateEntrance.length > 0 && (
+                    <ActionGateView
+                        title="Entrada"
+                        actions={actionsGateEntrance}
+                        isEntrance={true}
+                    />
+                )}
+
+                {actionsGateExit.length > 0 && (
+                    <ActionGateView
+                        title="Saída"
+                        actions={actionsGateExit}
+                        isEntrance={false}
+                    />
+                )}
+
+
               </div>
             </div>
-          </div>
-        </div>
+        )}
+
       </div>
     </div>
   );
 };
 
 const ProviderScheduleView: React.FC = () => {
+  const { showSuccess, showError } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectedProvider, setSelectedProvider] = useState<ProviderDetails | null>(null);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
   
   // Estados para scroll infinito
   const [providers, setProviders] = useState<ProviderDetails[]>([]);
@@ -328,8 +503,56 @@ const ProviderScheduleView: React.FC = () => {
   const loadingRef = useRef(false);
   const lastSearchRef = useRef('');
 
+
+  const onChange = (dates) => {
+    const [start, end] = dates;
+    setStartDate(start);
+    setEndDate(end);
+    if(start && end){
+      loadProviderData(1,searchTerm,true,start,end);
+    }
+  };
+
+  const dataProviders = (response:any,reset:any,page:any) => {
+
+    if (response && response.data && Array.isArray(response.data)) {
+
+
+      const newProviders = response.data;
+
+      if (reset || page === 1) {
+        // Primeira página ou reset - substituir todos os dados
+        setProviders(newProviders);
+      } else {
+        // Páginas subsequentes - adicionar aos dados existentes, evitando duplicatas
+        setProviders(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueNewProviders = newProviders.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueNewProviders];
+        });
+      }
+
+      setCurrentPage(response.current_page);
+      setHasNextPage(response.current_page < response.last_page);
+      setTotalCount(response.total);
+
+      console.log(`💾 Prestadores carregados - Página: ${response.current_page}/${response.last_page}, Total: ${response.total}`);
+
+
+    }
+    else {
+      console.warn('⚠️ Resposta do cronograma de prestadores inválida:', response);
+      if (reset || page === 1) {
+        setProviders([]);
+        setTotalCount(0);
+        setHasNextPage(false);
+      }
+    }
+
+  }
+
   // Função para carregar dados da API
-  const loadProviderData = useCallback(async (page: number, search?: string, reset: boolean = false) => {
+  const loadProviderData = useCallback(async (page: number, search?: string, reset: boolean = false,start = startDate,end = endDate) => {
     // Evitar múltiplas requisições simultâneas
     if (loadingRef.current) {
       console.log('⏳ Requisição já em andamento, ignorando...');
@@ -347,45 +570,23 @@ const ProviderScheduleView: React.FC = () => {
       }
       
       // Construir URL com parâmetros de paginação e busca
-      let url = `${API_CONFIG.ENDPOINTS.PROVIDERS_SCHEDULE}?page=${page}`;
+      let endpoint = `${API_CONFIG.ENDPOINTS.PROVIDERS_SCHEDULE}?page=${page}`;
       if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
+        endpoint += `&search=${encodeURIComponent(search.trim())}`;
+      }
+
+      if (start && end) {
+        const formattedStartDate = format(start, 'yyyy-MM-dd');
+        const formattedEndDate = format(end, 'yyyy-MM-dd');
+        endpoint += `&dateBegin=${formattedStartDate}&dateEnding=${formattedEndDate}`;
       }
       
-      const response = await apiRequest(url, {
+      const response = await apiRequest(endpoint, {
         method: 'GET'
       });
-      
-      console.log('✅ Resposta do cronograma de prestadores:', response);
-      
-      if (response && response.data && Array.isArray(response.data)) {
-        const newProviders = response.data;
-        
-        if (reset || page === 1) {
-          // Primeira página ou reset - substituir todos os dados
-          setProviders(newProviders);
-        } else {
-          // Páginas subsequentes - adicionar aos dados existentes, evitando duplicatas
-          setProviders(prev => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const uniqueNewProviders = newProviders.filter(p => !existingIds.has(p.id));
-            return [...prev, ...uniqueNewProviders];
-          });
-        }
-        
-        setCurrentPage(response.current_page);
-        setHasNextPage(response.current_page < response.last_page);
-        setTotalCount(response.total);
-        
-        console.log(`💾 Prestadores carregados - Página: ${response.current_page}/${response.last_page}, Total: ${response.total}`);
-      } else {
-        console.warn('⚠️ Resposta do cronograma de prestadores inválida:', response);
-        if (reset || page === 1) {
-          setProviders([]);
-          setTotalCount(0);
-          setHasNextPage(false);
-        }
-      }
+
+      dataProviders(response,reset,page)
+
     } catch (error) {
       console.error('❌ Erro ao carregar cronograma de prestadores:', error);
       if (reset || page === 1) {
@@ -405,7 +606,7 @@ const ProviderScheduleView: React.FC = () => {
   const loadNextPage = useCallback(() => {
     if (!loadingMore && hasNextPage && !loadingRef.current) {
       console.log(`📄 Carregando próxima página: ${currentPage + 1}`);
-      loadProviderData(currentPage + 1, searchTerm);
+      loadProviderData(currentPage + 1, searchTerm,false);
     }
   }, [loadProviderData, currentPage, searchTerm, loadingMore, hasNextPage]);
 
@@ -456,12 +657,46 @@ const ProviderScheduleView: React.FC = () => {
     const timeoutId = setTimeout(() => {
       console.log(`🔍 Executando busca: "${searchTerm}"`);
       lastSearchRef.current = searchTerm;
-      setLoading(true);
-      loadProviderData(1, searchTerm, true);
+      loadProviderData(1, searchTerm, false);
     }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm, loadProviderData]);
+
+  const handlePhotoCapture = async (imageFile: File) => {
+    setUploadingPhoto(true);
+
+    try {
+      console.log('📸 Enviando foto da placa...', imageFile);
+
+      // Criar FormData para envio da imagem
+      const formData = new FormData();
+      formData.append('plate', imageFile);
+
+      const response = await apiRequest('/provider/list-providers', {
+        method: 'POST',
+        body: formData,
+      },true);
+
+      dataProviders(response,true,1);
+
+      console.log('RESPOSTAAA',response.data);
+
+      if(response.data.length === 1){
+        console.log('ENTROUUUU',response.data[0]);
+        setSelectedProvider(response.data[0])
+      }
+
+      console.log('✅ Foto enviada com sucesso:', response);
+      // showSuccess('Foto enviada!', 'A foto da placa foi enviada com sucesso.');
+
+    } catch (error) {
+      console.error('❌ Erro ao enviar foto:', error);
+      showError('Erro ao enviar foto', 'Não foi possível enviar a foto da placa. Tente novamente.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -475,6 +710,31 @@ const ProviderScheduleView: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
+
+
+          <button
+              onClick={() => setIsCameraModalOpen(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 shadow-md"
+              title="Capturar foto da placa"
+          >
+            <Camera className="w-5 h-5" />
+            <span>Pesquisar Placa</span>
+          </button>
+
+          <div>
+            <DatePicker
+                selected={startDate}
+                onChange={onChange}
+                startDate={startDate}
+                endDate={endDate}
+                selectsRange
+                rangeSeparator=" - "
+                locale="ptBR"
+                dateFormat="dd/MM/yyyy"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
+            />
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -568,9 +828,27 @@ const ProviderScheduleView: React.FC = () => {
 
       {/* Provider Details Modal */}
       <ProviderDetailsModal
-        provider={selectedProvider}
-        onClose={() => setSelectedProvider(null)}
+          providerData={selectedProvider}
+          onClose={() => setSelectedProvider(null)}
       />
+
+      {/* Camera Modal */}
+      <CameraModal
+          isOpen={isCameraModalOpen}
+          onClose={() => setIsCameraModalOpen(false)}
+          onPhotoTaken={handlePhotoCapture}
+      />
+
+      {/* Loading overlay para upload */}
+      {uploadingPhoto && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <span className="text-lg font-medium text-gray-900">Pesquisando a placa...</span>
+            </div>
+          </div>
+      )}
+
     </div>
   );
 };

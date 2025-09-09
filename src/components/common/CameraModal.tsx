@@ -12,10 +12,12 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const startCamera = useCallback(async () => {
+
+    setIsLoading(true);
     try {
       setError(null);
       
@@ -26,12 +28,16 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
           facingMode: 'environment' // Usar câmera traseira se disponível
         }
       });
-      
+
       setStream(mediaStream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          setIsLoading(false)
+        }
+      }, 1000); // Adicionando leve atraso
+
     } catch (err: any) {
       console.error('Erro ao acessar câmera:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message.includes('Permission dismissed')) {
@@ -76,6 +82,7 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
 
   const confirmPhoto = useCallback(() => {
     if (!capturedImage || !canvasRef.current) return;
+    stopCamera();
 
     // Converter data URL para File
     canvasRef.current.toBlob((blob) => {
@@ -88,6 +95,7 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
   }, [capturedImage, onPhotoTaken]);
 
   const retakePhoto = useCallback(() => {
+    startCamera()
     setCapturedImage(null);
   }, []);
 
@@ -101,7 +109,6 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
   // Iniciar câmera quando modal abrir
   React.useEffect(() => {
     if (isOpen && !stream && !capturedImage && !error) {
-      setIsLoading(true);
       startCamera();
     }
   }, [isOpen, stream, capturedImage, startCamera]);
@@ -164,6 +171,7 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
 
         {/* Content */}
         <div className="p-6">
+          <h3>{isLoading}</h3>
           {error ? (
             <div className="text-center py-12">
               <div className="bg-red-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -178,14 +186,7 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
                 Tentar Novamente
               </button>
             </div>
-          ) : isLoading ? (
-            <div className="text-center py-12">
-              <div className="flex items-center justify-center space-x-3 text-blue-600">
-                <Loader2 className="w-8 h-8 animate-spin" />
-                <span className="text-lg font-medium">Iniciando câmera...</span>
-              </div>
-            </div>
-          ) : capturedImage ? (
+          )  : capturedImage ? (
             // Foto capturada - mostrar preview
             <div className="space-y-6">
               <div className="text-center">
@@ -239,18 +240,6 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onPhotoTaken
                     className="max-w-full max-h-96 w-full"
                     style={{ minHeight: '300px' }}
                   />
-                  
-                  {/* Overlay para guiar o posicionamento */}
-                  {stream && !isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="border-2 border-white border-dashed rounded-lg p-8 bg-black bg-opacity-30">
-                      <div className="text-white text-center">
-                        <Camera className="w-8 h-8 mx-auto mb-2" />
-                        <p className="text-sm">Posicione a placa aqui</p>
-                      </div>
-                    </div>
-                    </div>
-                  )}
                   
                   {/* Loading overlay */}
                   {isLoading && (
