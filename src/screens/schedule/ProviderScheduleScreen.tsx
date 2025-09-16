@@ -7,13 +7,16 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  Modal,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiRequest } from '../../config/api';
 import { useToast } from '../../contexts/ToastContext';
+import { useData } from '../../contexts/DataContext';
 
 interface ProviderDetails {
   id: number;
@@ -85,10 +88,13 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onPress: () => void }>
 
 const ProviderScheduleScreen: React.FC = () => {
   const { showError } = useToast();
+  const { registerAction } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [providers, setProviders] = useState<ProviderDetails[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<ProviderDetails | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
 
@@ -149,8 +155,26 @@ const ProviderScheduleScreen: React.FC = () => {
     }
   };
 
+  const handleRegisterAction = async (providerId: number, action: string) => {
+    try {
+      await registerAction({
+        provider_id: providerId,
+        action: action,
+        type: 'provider'
+      });
+      
+      // Recarregar dados após registrar ação
+      loadProviderData(1, searchTerm, true);
+    } catch (error) {
+      console.error('Erro ao registrar ação:', error);
+    }
+  };
+
   const renderProviderItem = ({ item }: { item: ProviderDetails }) => (
-    <ProviderCard provider={item} onPress={() => {}} />
+    <ProviderCard provider={item} onPress={() => {
+      setSelectedProvider(item);
+      setShowDetailsModal(true);
+    }} />
   );
 
   const renderFooter = () => {
@@ -160,6 +184,150 @@ const ProviderScheduleScreen: React.FC = () => {
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color="#6366F1" />
       </View>
+    );
+  };
+
+  const ProviderDetailsModal: React.FC = () => {
+    if (!selectedProvider) return null;
+
+    const formatDateRange = (dateStart: string, dateEnding: string) => {
+      const start = new Date(dateStart).toLocaleDateString('pt-BR');
+      const end = new Date(dateEnding).toLocaleDateString('pt-BR');
+      
+      if (start === end) {
+        return start;
+      }
+      return `${start} até ${end}`;
+    };
+
+    return (
+      <Modal
+        visible={showDetailsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDetailsModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowDetailsModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Detalhes do Prestador</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.providerHeader}>
+              <View style={styles.providerAvatar}>
+                <Ionicons name="briefcase" size={40} color="#FFFFFF" />
+              </View>
+              <View style={styles.providerInfo}>
+                <Text style={styles.providerNameLarge}>{selectedProvider.name}</Text>
+                <Text style={styles.providerCpfLarge}>CPF: {selectedProvider.cpf}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailsSection}>
+              <Text style={styles.sectionTitle}>Informações Pessoais</Text>
+              
+              <View style={styles.detailItem}>
+                <Ionicons name="person-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Nome Completo</Text>
+                  <Text style={styles.detailValue}>{selectedProvider.name}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="card-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>CPF</Text>
+                  <Text style={styles.detailValue}>{selectedProvider.cpf}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="card-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>RG</Text>
+                  <Text style={styles.detailValue}>{selectedProvider.rg}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="call-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Telefone</Text>
+                  <Text style={styles.detailValue}>{selectedProvider.mobile}</Text>
+                </View>
+              </View>
+
+              {selectedProvider.plate && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="car-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Placa do Veículo</Text>
+                    <Text style={styles.detailValue}>{selectedProvider.plate}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.detailsSection}>
+              <Text style={styles.sectionTitle}>Informações do Serviço</Text>
+              
+              <View style={styles.detailItem}>
+                <Ionicons name="home-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Residência</Text>
+                  <Text style={styles.detailValue}>{selectedProvider.residence}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Período do Serviço</Text>
+                  <Text style={styles.detailValue}>
+                    {formatDateRange(selectedProvider.date_start, selectedProvider.date_ending)}
+                  </Text>
+                </View>
+              </View>
+
+              {selectedProvider.observation && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="document-text-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Observações</Text>
+                    <Text style={styles.detailValue}>{selectedProvider.observation}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.actionsSection}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.entryButton]}
+                onPress={() => handleRegisterAction(selectedProvider.id, 'entry')}
+              >
+                <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Registrar Entrada</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.exitButton]}
+                onPress={() => handleRegisterAction(selectedProvider.id, 'exit')}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Registrar Saída</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     );
   };
 
@@ -218,6 +386,8 @@ const ProviderScheduleScreen: React.FC = () => {
           }
         />
       )}
+      
+      <ProviderDetailsModal />
     </SafeAreaView>
   );
 };
@@ -364,6 +534,136 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  placeholder: {
+    width: 40,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  providerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  providerAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#6366F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  providerInfo: {
+    flex: 1,
+  },
+  providerNameLarge: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  providerCpfLarge: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  detailsSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  detailText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '500',
+  },
+  actionsSection: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 32,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  entryButton: {
+    backgroundColor: '#10B981',
+  },
+  exitButton: {
+    backgroundColor: '#EF4444',
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

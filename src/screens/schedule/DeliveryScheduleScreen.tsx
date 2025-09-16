@@ -7,13 +7,16 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  Modal,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiRequest } from '../../config/api';
 import { useToast } from '../../contexts/ToastContext';
+import { useData } from '../../contexts/DataContext';
 
 interface DeliveryDetails {
   id: number;
@@ -74,10 +77,13 @@ const DeliveryCard: React.FC<{ delivery: DeliveryDetails; onPress: () => void }>
 
 const DeliveryScheduleScreen: React.FC = () => {
   const { showError } = useToast();
+  const { registerAction } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [deliveries, setDeliveries] = useState<DeliveryDetails[]>([]);
+  const [selectedDelivery, setSelectedDelivery] = useState<DeliveryDetails | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
 
@@ -138,8 +144,26 @@ const DeliveryScheduleScreen: React.FC = () => {
     }
   };
 
+  const handleRegisterAction = async (deliveryId: number, action: string) => {
+    try {
+      await registerAction({
+        delivery_id: deliveryId,
+        action: action,
+        type: 'delivery'
+      });
+      
+      // Recarregar dados após registrar ação
+      loadDeliveryData(1, searchTerm, true);
+    } catch (error) {
+      console.error('Erro ao registrar ação:', error);
+    }
+  };
+
   const renderDeliveryItem = ({ item }: { item: DeliveryDetails }) => (
-    <DeliveryCard delivery={item} onPress={() => {}} />
+    <DeliveryCard delivery={item} onPress={() => {
+      setSelectedDelivery(item);
+      setShowDetailsModal(true);
+    }} />
   );
 
   const renderFooter = () => {
@@ -149,6 +173,129 @@ const DeliveryScheduleScreen: React.FC = () => {
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color="#F59E0B" />
       </View>
+    );
+  };
+
+  const DeliveryDetailsModal: React.FC = () => {
+    if (!selectedDelivery) return null;
+
+    const formatDateRange = (dateStart: string, dateEnding: string) => {
+      const start = new Date(dateStart).toLocaleDateString('pt-BR');
+      const end = new Date(dateEnding).toLocaleDateString('pt-BR');
+      
+      if (start === end) {
+        return start;
+      }
+      return `${start} até ${end}`;
+    };
+
+    return (
+      <Modal
+        visible={showDetailsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDetailsModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowDetailsModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Detalhes da Entrega</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.deliveryHeader}>
+              <View style={styles.deliveryAvatar}>
+                <Ionicons name="cube" size={40} color="#FFFFFF" />
+              </View>
+              <View style={styles.deliveryInfo}>
+                <Text style={styles.deliveryNameLarge}>{selectedDelivery.ecommerce}</Text>
+                <Text style={styles.deliveryQuantityLarge}>
+                  {selectedDelivery.quantity} {selectedDelivery.quantity === 1 ? 'entrega' : 'entregas'}
+                </Text>
+              </View>
+              <View style={[styles.typeBadge, { backgroundColor: selectedDelivery.ecommerce_id ? '#D1FAE5' : '#FEF3C7' }]}>
+                <Text style={[styles.typeText, { color: selectedDelivery.ecommerce_id ? '#065F46' : '#92400E' }]}>
+                  {selectedDelivery.ecommerce_id ? 'E-commerce' : 'Outros'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.detailsSection}>
+              <Text style={styles.sectionTitle}>Informações da Entrega</Text>
+              
+              <View style={styles.detailItem}>
+                <Ionicons name="storefront-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>E-commerce / Loja</Text>
+                  <Text style={styles.detailValue}>{selectedDelivery.ecommerce}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="home-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Residência</Text>
+                  <Text style={styles.detailValue}>{selectedDelivery.residence}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="cube-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Quantidade</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedDelivery.quantity} {selectedDelivery.quantity === 1 ? 'entrega' : 'entregas'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Período de Entrega</Text>
+                  <Text style={styles.detailValue}>
+                    {formatDateRange(selectedDelivery.date_start, selectedDelivery.date_ending)}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="pricetag-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Tipo</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedDelivery.ecommerce_id ? 'E-commerce Cadastrado' : 'Entrega Avulsa'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.actionsSection}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.receiveButton]}
+                onPress={() => handleRegisterAction(selectedDelivery.id, 'receive')}
+              >
+                <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Registrar Recebimento</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.deliverButton]}
+                onPress={() => handleRegisterAction(selectedDelivery.id, 'deliver')}
+              >
+                <Ionicons name="arrow-forward-circle-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Registrar Entrega</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     );
   };
 
@@ -207,6 +354,8 @@ const DeliveryScheduleScreen: React.FC = () => {
           }
         />
       )}
+      
+      <DeliveryDetailsModal />
     </SafeAreaView>
   );
 };
@@ -350,6 +499,145 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  placeholder: {
+    width: 40,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  deliveryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  deliveryAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  deliveryInfo: {
+    flex: 1,
+  },
+  deliveryNameLarge: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  deliveryQuantityLarge: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  typeBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  typeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  detailsSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  detailText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '500',
+  },
+  actionsSection: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 32,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  receiveButton: {
+    backgroundColor: '#10B981',
+  },
+  deliverButton: {
+    backgroundColor: '#3B82F6',
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 
