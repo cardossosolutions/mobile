@@ -32,7 +32,7 @@ const DeliveryCard: React.FC<{ delivery: DeliveryDetails; onPress: () => void }>
   const formatDateRange = (dateStart: string, dateEnding: string) => {
     const start = new Date(dateStart).toLocaleDateString('pt-BR');
     const end = new Date(dateEnding).toLocaleDateString('pt-BR');
-    
+
     if (start === end) {
       return start;
     }
@@ -40,38 +40,38 @@ const DeliveryCard: React.FC<{ delivery: DeliveryDetails; onPress: () => void }>
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <View style={styles.cardHeader}>
-        <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
-          <Ionicons name="cube" size={24} color="#FFFFFF" />
+      <TouchableOpacity style={styles.card} onPress={onPress}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.iconContainer, { backgroundColor: '#F59E0B' }]}>
+            <Ionicons name="cube" size={24} color="#FFFFFF" />
+          </View>
+          <View style={styles.cardInfo}>
+            <Text style={styles.deliveryName}>{delivery.ecommerce}</Text>
+            <Text style={styles.deliveryQuantity}>
+              {delivery.quantity} {delivery.quantity === 1 ? 'entrega' : 'entregas'}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: delivery.ecommerce_id ? '#D1FAE5' : '#FEF3C7' }]}>
+            <Text style={[styles.statusText, { color: delivery.ecommerce_id ? '#065F46' : '#92400E' }]}>
+              {delivery.ecommerce_id ? 'E-commerce' : 'Outros'}
+            </Text>
+          </View>
         </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.deliveryName}>{delivery.ecommerce}</Text>
-          <Text style={styles.deliveryQuantity}>
-            {delivery.quantity} {delivery.quantity === 1 ? 'entrega' : 'entregas'}
-          </Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: delivery.ecommerce_id ? '#D1FAE5' : '#FEF3C7' }]}>
-          <Text style={[styles.statusText, { color: delivery.ecommerce_id ? '#065F46' : '#92400E' }]}>
-            {delivery.ecommerce_id ? 'E-commerce' : 'Outros'}
-          </Text>
-        </View>
-      </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <Ionicons name="home-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>Residência: {delivery.residence}</Text>
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <Ionicons name="home-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>Residência: {delivery.residence}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>
+              {formatDateRange(delivery.date_start, delivery.date_ending)}
+            </Text>
+          </View>
         </View>
-        
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>
-            {formatDateRange(delivery.date_start, delivery.date_ending)}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
   );
 };
 
@@ -92,23 +92,23 @@ const DeliveryScheduleScreen: React.FC = () => {
       if (reset) {
         setLoading(true);
       }
-      
+
       let endpoint = `/deliveries?page=${page}`;
       if (search && search.trim()) {
         endpoint += `&search=${encodeURIComponent(search.trim())}`;
       }
-      
+
       const response = await apiRequest(endpoint, { method: 'GET' });
-      
+
       if (response && response.data && Array.isArray(response.data)) {
         const newDeliveries = response.data;
-        
+
         if (reset || page === 1) {
           setDeliveries(newDeliveries);
         } else {
           setDeliveries(prev => [...prev, ...newDeliveries]);
         }
-        
+
         setCurrentPage(response.current_page);
         setHasNextPage(response.current_page < response.last_page);
       }
@@ -151,7 +151,7 @@ const DeliveryScheduleScreen: React.FC = () => {
         action: action,
         type: 'delivery'
       });
-      
+
       // Recarregar dados após registrar ação
       loadDeliveryData(1, searchTerm, true);
     } catch (error) {
@@ -160,19 +160,19 @@ const DeliveryScheduleScreen: React.FC = () => {
   };
 
   const renderDeliveryItem = ({ item }: { item: DeliveryDetails }) => (
-    <DeliveryCard delivery={item} onPress={() => {
-      setSelectedDelivery(item);
-      setShowDetailsModal(true);
-    }} />
+      <DeliveryCard delivery={item} onPress={() => {
+        setSelectedDelivery(item);
+        setShowDetailsModal(true);
+      }} />
   );
 
   const renderFooter = () => {
     if (!loading || deliveries.length === 0) return null;
-    
+
     return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#F59E0B" />
-      </View>
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color="#F59E0B" />
+        </View>
     );
   };
 
@@ -182,7 +182,7 @@ const DeliveryScheduleScreen: React.FC = () => {
     const formatDateRange = (dateStart: string, dateEnding: string) => {
       const start = new Date(dateStart).toLocaleDateString('pt-BR');
       const end = new Date(dateEnding).toLocaleDateString('pt-BR');
-      
+
       if (start === end) {
         return start;
       }
@@ -190,173 +190,173 @@ const DeliveryScheduleScreen: React.FC = () => {
     };
 
     return (
-      <Modal
-        visible={showDetailsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowDetailsModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowDetailsModal(false)}
-            >
-              <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Detalhes da Entrega</Text>
-            <View style={styles.placeholder} />
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.deliveryHeader}>
-              <View style={styles.deliveryAvatar}>
-                <Ionicons name="cube" size={40} color="#FFFFFF" />
-              </View>
-              <View style={styles.deliveryInfo}>
-                <Text style={styles.deliveryNameLarge}>{selectedDelivery.ecommerce}</Text>
-                <Text style={styles.deliveryQuantityLarge}>
-                  {selectedDelivery.quantity} {selectedDelivery.quantity === 1 ? 'entrega' : 'entregas'}
-                </Text>
-              </View>
-              <View style={[styles.typeBadge, { backgroundColor: selectedDelivery.ecommerce_id ? '#D1FAE5' : '#FEF3C7' }]}>
-                <Text style={[styles.typeText, { color: selectedDelivery.ecommerce_id ? '#065F46' : '#92400E' }]}>
-                  {selectedDelivery.ecommerce_id ? 'E-commerce' : 'Outros'}
-                </Text>
-              </View>
+        <Modal
+            visible={showDetailsModal}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setShowDetailsModal(false)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowDetailsModal(false)}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Detalhes da Entrega</Text>
+              <View style={styles.placeholder} />
             </View>
 
-            <View style={styles.detailsSection}>
-              <Text style={styles.sectionTitle}>Informações da Entrega</Text>
-              
-              <View style={styles.detailItem}>
-                <Ionicons name="storefront-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>E-commerce / Loja</Text>
-                  <Text style={styles.detailValue}>{selectedDelivery.ecommerce}</Text>
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.deliveryHeader}>
+                <View style={styles.deliveryAvatar}>
+                  <Ionicons name="cube" size={40} color="#FFFFFF" />
                 </View>
-              </View>
-
-              <View style={styles.detailItem}>
-                <Ionicons name="home-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Residência</Text>
-                  <Text style={styles.detailValue}>{selectedDelivery.residence}</Text>
-                </View>
-              </View>
-
-              <View style={styles.detailItem}>
-                <Ionicons name="cube-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Quantidade</Text>
-                  <Text style={styles.detailValue}>
+                <View style={styles.deliveryInfo}>
+                  <Text style={styles.deliveryNameLarge}>{selectedDelivery.ecommerce}</Text>
+                  <Text style={styles.deliveryQuantityLarge}>
                     {selectedDelivery.quantity} {selectedDelivery.quantity === 1 ? 'entrega' : 'entregas'}
                   </Text>
                 </View>
-              </View>
-
-              <View style={styles.detailItem}>
-                <Ionicons name="calendar-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Período de Entrega</Text>
-                  <Text style={styles.detailValue}>
-                    {formatDateRange(selectedDelivery.date_start, selectedDelivery.date_ending)}
+                <View style={[styles.typeBadge, { backgroundColor: selectedDelivery.ecommerce_id ? '#D1FAE5' : '#FEF3C7' }]}>
+                  <Text style={[styles.typeText, { color: selectedDelivery.ecommerce_id ? '#065F46' : '#92400E' }]}>
+                    {selectedDelivery.ecommerce_id ? 'E-commerce' : 'Outros'}
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.detailItem}>
-                <Ionicons name="pricetag-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Tipo</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedDelivery.ecommerce_id ? 'E-commerce Cadastrado' : 'Entrega Avulsa'}
-                  </Text>
+              <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>Informações da Entrega</Text>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="storefront-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>E-commerce / Loja</Text>
+                    <Text style={styles.detailValue}>{selectedDelivery.ecommerce}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="home-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Residência</Text>
+                    <Text style={styles.detailValue}>{selectedDelivery.residence}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="cube-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Quantidade</Text>
+                    <Text style={styles.detailValue}>
+                      {selectedDelivery.quantity} {selectedDelivery.quantity === 1 ? 'entrega' : 'entregas'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Período de Entrega</Text>
+                    <Text style={styles.detailValue}>
+                      {formatDateRange(selectedDelivery.date_start, selectedDelivery.date_ending)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="pricetag-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Tipo</Text>
+                    <Text style={styles.detailValue}>
+                      {selectedDelivery.ecommerce_id ? 'E-commerce Cadastrado' : 'Entrega Avulsa'}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
 
-            <View style={styles.actionsSection}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.receiveButton]}
-                onPress={() => handleRegisterAction(selectedDelivery.id, 'receive')}
-              >
-                <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Registrar Recebimento</Text>
-              </TouchableOpacity>
+              <View style={styles.actionsSection}>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.receiveButton]}
+                    onPress={() => handleRegisterAction(selectedDelivery.id, 'receive')}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Registrar Recebimento</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.deliverButton]}
-                onPress={() => handleRegisterAction(selectedDelivery.id, 'deliver')}
-              >
-                <Ionicons name="arrow-forward-circle-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Registrar Entrega</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.deliverButton]}
+                    onPress={() => handleRegisterAction(selectedDelivery.id, 'deliver')}
+                >
+                  <Ionicons name="arrow-forward-circle-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Registrar Entrega</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#F59E0B', '#D97706']}
-        style={styles.header}
-      >
-        <Text style={styles.headerTitle}>Entregas Programadas</Text>
-        <Text style={styles.headerSubtitle}>
-          {deliveries.length} {deliveries.length === 1 ? 'entrega' : 'entregas'}
-        </Text>
-      </LinearGradient>
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+            colors={['#F59E0B', '#D97706']}
+            style={styles.header}
+        >
+          <Text style={styles.headerTitle}>Entregas Programadas</Text>
+          <Text style={styles.headerSubtitle}>
+            {deliveries.length} {deliveries.length === 1 ? 'entrega' : 'entregas'}
+          </Text>
+        </LinearGradient>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar e-commerce ou residência..."
-            placeholderTextColor="#9CA3AF"
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar e-commerce ou residência..."
+                placeholderTextColor="#9CA3AF"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+            />
+          </View>
         </View>
-      </View>
 
-      {loading && deliveries.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#F59E0B" />
-          <Text style={styles.loadingText}>Carregando entregas...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={deliveries}
-          renderItem={renderDeliveryItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="cube-outline" size={64} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Nenhuma entrega encontrada</Text>
-              <Text style={styles.emptySubtitle}>
-                {searchTerm 
-                  ? 'Não há entregas para a busca realizada.'
-                  : 'Não há entregas cadastradas no momento.'}
-              </Text>
+        {loading && deliveries.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#F59E0B" />
+              <Text style={styles.loadingText}>Carregando entregas...</Text>
             </View>
-          }
-        />
-      )}
-      
-      <DeliveryDetailsModal />
-    </SafeAreaView>
+        ) : (
+            <FlatList
+                data={deliveries}
+                renderItem={renderDeliveryItem}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.listContainer}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                }
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.1}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="cube-outline" size={64} color="#9CA3AF" />
+                    <Text style={styles.emptyTitle}>Nenhuma entrega encontrada</Text>
+                    <Text style={styles.emptySubtitle}>
+                      {searchTerm
+                          ? 'Não há entregas para a busca realizada.'
+                          : 'Não há entregas cadastradas no momento.'}
+                    </Text>
+                  </View>
+                }
+            />
+        )}
+
+        <DeliveryDetailsModal />
+      </SafeAreaView>
   );
 };
 

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useData } from '../contexts/DataContext';
+import { useData } from '../../contexts/DataContext';
 
 interface Guest {
   id?: string;

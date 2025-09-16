@@ -20,9 +20,9 @@ import { Picker } from '@react-native-picker/picker';
 
 interface Appointment {
   id: string;
-  visitor_id: string;
-  visitor_name?: string;
-  visitor_cpf?: string;
+  visitor_id: number;
+  name?: string;
+  cpf?: string;
   dateBegin: string;
   dateEnding: string;
 }
@@ -33,10 +33,10 @@ interface Guest {
   cpf: string;
 }
 
-const AppointmentForm: React.FC<{ 
-  appointment?: Appointment | null; 
-  onSave: () => void; 
-  onCancel: () => void 
+const AppointmentForm: React.FC<{
+  appointment?: Appointment | null;
+  onSave: () => void;
+  onCancel: () => void
 }> = ({ appointment, onSave, onCancel }) => {
   const { addAppointment, updateAppointment, guests, loadGuests } = useData();
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ const AppointmentForm: React.FC<{
         setLoadingGuests(false);
       }
     };
-    
+
     loadGuestsList();
   }, [loadGuests]);
 
@@ -92,123 +92,123 @@ const AppointmentForm: React.FC<{
   const selectedGuest = guests.find(guest => guest.id === formData.visitor_id);
 
   return (
-    <SafeAreaView style={styles.modalContainer}>
-      <View style={styles.modalHeader}>
-        <TouchableOpacity onPress={onCancel} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#6B7280" />
-        </TouchableOpacity>
-        <Text style={styles.modalTitle}>
-          {appointment ? 'Editar Agendamento' : 'Novo Agendamento'}
-        </Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <ScrollView style={styles.modalContent}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Selecionar Convidado</Text>
-          
-          {loadingGuests ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#3B82F6" />
-              <Text style={styles.loadingText}>Carregando convidados...</Text>
-            </View>
-          ) : (
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Convidado *</Text>
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={formData.visitor_id}
-                    onValueChange={(value) => setFormData({...formData, visitor_id: value})}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Selecione um convidado..." value="" />
-                    {guests.map((guest) => (
-                      <Picker.Item 
-                        key={guest.id} 
-                        label={`${guest.name} - ${guest.cpf}`} 
-                        value={guest.id} 
-                      />
-                    ))}
-                  </Picker>
-                </View>
-              </View>
-
-              {selectedGuest && (
-                <View style={styles.selectedGuestInfo}>
-                  <Text style={styles.selectedGuestTitle}>Convidado Selecionado:</Text>
-                  <Text style={styles.selectedGuestName}>{selectedGuest.name}</Text>
-                  <Text style={styles.selectedGuestCpf}>CPF: {selectedGuest.cpf}</Text>
-                </View>
-              )}
-            </>
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Período da Visita</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Data de Início *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.dateBegin}
-              onChangeText={(text) => setFormData({...formData, dateBegin: text})}
-              placeholder="DD/MM/AAAA"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Data de Fim *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.dateEnding}
-              onChangeText={(text) => setFormData({...formData, dateEnding: text})}
-              placeholder="DD/MM/AAAA"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <Text style={styles.dateHint}>
-            💡 Use o formato DD/MM/AAAA para as datas
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={onCancel} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#6B7280" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>
+            {appointment ? 'Editar Agendamento' : 'Novo Agendamento'}
           </Text>
+          <View style={styles.placeholder} />
         </View>
-      </ScrollView>
 
-      <View style={styles.modalFooter}>
-        <TouchableOpacity 
-          style={styles.cancelButton} 
-          onPress={onCancel}
-          disabled={loading}
-        >
-          <Text style={styles.cancelButtonText}>Cancelar</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]} 
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>Salvar</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <ScrollView style={styles.modalContent}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Selecionar Convidado</Text>
+
+            {loadingGuests ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#3B82F6" />
+                  <Text style={styles.loadingText}>Carregando convidados...</Text>
+                </View>
+            ) : (
+                <>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Convidado *</Text>
+                    <View style={styles.pickerContainer}>
+                      <Picker
+                          selectedValue={formData.visitor_id}
+                          onValueChange={(value) => setFormData({...formData, visitor_id: value})}
+                          style={styles.picker}
+                      >
+                        <Picker.Item label="Selecione um convidado..." value="" />
+                        {guests.map((guest) => (
+                            <Picker.Item
+                                key={guest.id}
+                                label={`${guest.name} - ${guest.cpf}`}
+                                value={guest.id}
+                            />
+                        ))}
+                      </Picker>
+                    </View>
+                  </View>
+
+                  {selectedGuest && (
+                      <View style={styles.selectedGuestInfo}>
+                        <Text style={styles.selectedGuestTitle}>Convidado Selecionado:</Text>
+                        <Text style={styles.selectedGuestName}>{selectedGuest.name}</Text>
+                        <Text style={styles.selectedGuestCpf}>CPF: {selectedGuest.cpf}</Text>
+                      </View>
+                  )}
+                </>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Período da Visita</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Data de Início *</Text>
+              <TextInput
+                  style={styles.input}
+                  value={formData.dateBegin}
+                  onChangeText={(text) => setFormData({...formData, dateBegin: text})}
+                  placeholder="DD/MM/AAAA"
+                  placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Data de Fim *</Text>
+              <TextInput
+                  style={styles.input}
+                  value={formData.dateEnding}
+                  onChangeText={(text) => setFormData({...formData, dateEnding: text})}
+                  placeholder="DD/MM/AAAA"
+                  placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <Text style={styles.dateHint}>
+              💡 Use o formato DD/MM/AAAA para as datas
+            </Text>
+          </View>
+        </ScrollView>
+
+        <View style={styles.modalFooter}>
+          <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={onCancel}
+              disabled={loading}
+          >
+            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+              style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={loading}
+          >
+            {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+                <>
+                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
   );
 };
 
-const AppointmentCard: React.FC<{ appointment: Appointment; onEdit: () => void; onDelete: () => void }> = ({ 
-  appointment, 
-  onEdit, 
-  onDelete 
-}) => {
+const AppointmentCard: React.FC<{ appointment: Appointment; onEdit: () => void; onDelete: () => void }> = ({
+                                                                                                             appointment,
+                                                                                                             onEdit,
+                                                                                                             onDelete
+                                                                                                           }) => {
   const formatDateRange = (dateBegin: string, dateEnding: string) => {
     if (dateBegin === dateEnding) {
       return dateBegin;
@@ -217,38 +217,38 @@ const AppointmentCard: React.FC<{ appointment: Appointment; onEdit: () => void; 
   };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="calendar" size={24} color="#FFFFFF" />
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="calendar" size={24} color="#FFFFFF" />
+          </View>
+          <View style={styles.cardInfo}>
+            <Text style={styles.appointmentName}>{appointment.name || 'Convidado'}</Text>
+            <Text style={styles.appointmentCpf}>CPF: {appointment.cpf || 'N/A'}</Text>
+          </View>
         </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.appointmentName}>{appointment.visitor_name || 'Convidado'}</Text>
-          <Text style={styles.appointmentCpf}>CPF: {appointment.visitor_cpf || 'N/A'}</Text>
-        </View>
-      </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>
-            {formatDateRange(appointment.dateBegin, appointment.dateEnding)}
-          </Text>
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>
+              {formatDateRange(appointment.dateBegin, appointment.dateEnding)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
+            <Ionicons name="create-outline" size={20} color="#3B82F6" />
+            <Text style={styles.actionButtonText}>Editar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={onDelete}>
+            <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Excluir</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
-          <Ionicons name="create-outline" size={20} color="#3B82F6" />
-          <Text style={styles.actionButtonText}>Editar</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={onDelete}>
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
-          <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Excluir</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
   );
 };
 
@@ -284,116 +284,116 @@ const AppointmentManagementScreen: React.FC = () => {
 
   const handleDelete = (appointment: Appointment) => {
     Alert.alert(
-      'Confirmar Exclusão',
-      `Tem certeza que deseja excluir o agendamento para "${appointment.visitor_name || 'Convidado'}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Excluir', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteAppointment(appointment.id);
-              handleRefresh();
-            } catch (error) {
-              console.error('Erro ao excluir agendamento:', error);
+        'Confirmar Exclusão',
+        `Tem certeza que deseja excluir o agendamento para "${appointment.name || 'Convidado'}"?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Excluir',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteAppointment(appointment.id);
+                handleRefresh();
+              } catch (error) {
+                console.error('Erro ao excluir agendamento:', error);
+              }
             }
           }
-        }
-      ]
+        ]
     );
   };
 
   const renderAppointmentItem = ({ item }: { item: Appointment }) => (
-    <AppointmentCard 
-      appointment={item} 
-      onEdit={() => handleEdit(item)}
-      onDelete={() => handleDelete(item)}
-    />
+      <AppointmentCard
+          appointment={item}
+          onEdit={() => handleEdit(item)}
+          onDelete={() => handleDelete(item)}
+      />
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#DC2626', '#B91C1C']}
-        style={styles.header}
-      >
-        <Text style={styles.headerTitle}>Agendamentos</Text>
-        <Text style={styles.headerSubtitle}>
-          {appointments.length} {appointments.length === 1 ? 'agendamento' : 'agendamentos'}
-        </Text>
-      </LinearGradient>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar por nome, CPF ou responsável..."
-            placeholderTextColor="#9CA3AF"
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => {
-            setSelectedAppointment(null);
-            setShowForm(true);
-          }}
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+            colors={['#DC2626', '#B91C1C']}
+            style={styles.header}
         >
-          <Ionicons name="add" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+          <Text style={styles.headerTitle}>Agendamentos</Text>
+          <Text style={styles.headerSubtitle}>
+            {appointments.length} {appointments.length === 1 ? 'agendamento' : 'agendamentos'}
+          </Text>
+        </LinearGradient>
 
-      {loading && appointments.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#DC2626" />
-          <Text style={styles.loadingText}>Carregando agendamentos...</Text>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar por nome, CPF ou responsável..."
+                placeholderTextColor="#9CA3AF"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+            />
+          </View>
+
+          <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setSelectedAppointment(null);
+                setShowForm(true);
+              }}
+          >
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={appointments}
-          renderItem={renderAppointmentItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Nenhum agendamento encontrado</Text>
-              <Text style={styles.emptySubtitle}>
-                {searchTerm 
-                  ? 'Não há agendamentos para a busca realizada.'
-                  : 'Não há agendamentos cadastrados no momento.'}
-              </Text>
+
+        {loading && appointments.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#DC2626" />
+              <Text style={styles.loadingText}>Carregando agendamentos...</Text>
             </View>
-          }
-        />
-      )}
-      
-      <Modal
-        visible={showForm}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
-        <AppointmentForm
-          appointment={selectedAppointment}
-          onSave={() => {
-            setShowForm(false);
-            setSelectedAppointment(null);
-            handleRefresh();
-          }}
-          onCancel={() => {
-            setShowForm(false);
-            setSelectedAppointment(null);
-          }}
-        />
-      </Modal>
-    </SafeAreaView>
+        ) : (
+            <FlatList
+                data={appointments}
+                renderItem={renderAppointmentItem}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContainer}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                }
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
+                    <Text style={styles.emptyTitle}>Nenhum agendamento encontrado</Text>
+                    <Text style={styles.emptySubtitle}>
+                      {searchTerm
+                          ? 'Não há agendamentos para a busca realizada.'
+                          : 'Não há agendamentos cadastrados no momento.'}
+                    </Text>
+                  </View>
+                }
+            />
+        )}
+
+        <Modal
+            visible={showForm}
+            animationType="slide"
+            presentationStyle="fullScreen"
+        >
+          <AppointmentForm
+              appointment={selectedAppointment}
+              onSave={() => {
+                setShowForm(false);
+                setSelectedAppointment(null);
+                handleRefresh();
+              }}
+              onCancel={() => {
+                setShowForm(false);
+                setSelectedAppointment(null);
+              }}
+          />
+        </Modal>
+      </SafeAreaView>
   );
 };
 

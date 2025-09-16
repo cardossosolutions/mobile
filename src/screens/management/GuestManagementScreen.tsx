@@ -27,10 +27,10 @@ interface Guest {
   residence?: string;
 }
 
-const GuestForm: React.FC<{ 
-  guest?: Guest | null; 
-  onSave: () => void; 
-  onCancel: () => void 
+const GuestForm: React.FC<{
+  guest?: Guest | null;
+  onSave: () => void;
+  onCancel: () => void
 }> = ({ guest, onSave, onCancel }) => {
   const { addGuest, updateGuest } = useData();
   const [loading, setLoading] = useState(false);
@@ -66,172 +66,161 @@ const GuestForm: React.FC<{
   };
 
   return (
-    <SafeAreaView style={styles.modalContainer}>
-      <View style={styles.modalHeader}>
-        <TouchableOpacity onPress={onCancel} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#6B7280" />
-        </TouchableOpacity>
-        <Text style={styles.modalTitle}>
-          {guest ? 'Editar Convidado' : 'Novo Convidado'}
-        </Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <ScrollView style={styles.modalContent}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informações Pessoais</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nome Completo *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.name}
-              onChangeText={(text) => setFormData({...formData, name: text})}
-              placeholder="Digite o nome completo"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>CPF *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.cpf}
-              onChangeText={(text) => setFormData({...formData, cpf: text})}
-              placeholder="000.000.000-00"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>RG</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.rg}
-              onChangeText={(text) => setFormData({...formData, rg: text})}
-              placeholder="Digite o RG"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Placa do Veículo</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.plate}
-              onChangeText={(text) => setFormData({...formData, plate: text})}
-              placeholder="ABC-1234"
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="characters"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Residência</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.residence}
-              onChangeText={(text) => setFormData({...formData, residence: text})}
-              placeholder="Digite a residência"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Observações</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={formData.observation}
-              onChangeText={(text) => setFormData({...formData, observation: text})}
-              placeholder="Observações adicionais"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={4}
-            />
-          </View>
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={onCancel} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color="#6B7280" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>
+            {guest ? 'Editar Convidado' : 'Novo Convidado'}
+          </Text>
+          <View style={styles.placeholder} />
         </View>
-      </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>Salvar</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <ScrollView style={styles.modalContent}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Informações Pessoais</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nome Completo *</Text>
+              <TextInput
+                  style={styles.input}
+                  value={formData.name}
+                  onChangeText={(text) => setFormData({...formData, name: text})}
+                  placeholder="Digite o nome completo"
+                  placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>CPF *</Text>
+              <TextInput
+                  style={styles.input}
+                  value={formData.cpf}
+                  onChangeText={(text) => setFormData({...formData, cpf: text})}
+                  placeholder="000.000.000-00"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>RG</Text>
+              <TextInput
+                  style={styles.input}
+                  value={formData.rg}
+                  onChangeText={(text) => setFormData({...formData, rg: text})}
+                  placeholder="Digite o RG"
+                  placeholderTextColor="#9CA3AF"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Placa do Veículo</Text>
+              <TextInput
+                  style={styles.input}
+                  value={formData.plate}
+                  onChangeText={(text) => setFormData({...formData, plate: text})}
+                  placeholder="ABC-1234"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="characters"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Observações</Text>
+              <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={formData.observation}
+                  onChangeText={(text) => setFormData({...formData, observation: text})}
+                  placeholder="Observações adicionais"
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  numberOfLines={4}
+              />
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <TouchableOpacity
+              style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={loading}
+          >
+            {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+            ) : (
+                <>
+                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                  <Text style={styles.saveButtonText}>Salvar</Text>
+                </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
   );
 };
 
-const GuestCard: React.FC<{ guest: Guest; onEdit: () => void; onDelete: () => void }> = ({ 
-  guest, 
-  onEdit, 
-  onDelete 
-}) => {
+const GuestCard: React.FC<{ guest: Guest; onEdit: () => void; onDelete: () => void }> = ({
+                                                                                           guest,
+                                                                                           onEdit,
+                                                                                           onDelete
+                                                                                         }) => {
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="person-add" size={24} color="#FFFFFF" />
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="person-add" size={24} color="#FFFFFF" />
+          </View>
+          <View style={styles.cardInfo}>
+            <Text style={styles.guestName}>{guest.name}</Text>
+            <Text style={styles.guestCpf}>CPF: {guest.cpf}</Text>
+          </View>
         </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.guestName}>{guest.name}</Text>
-          <Text style={styles.guestCpf}>CPF: {guest.cpf}</Text>
+
+        <View style={styles.cardContent}>
+          {guest.rg && (
+              <View style={styles.infoRow}>
+                <Ionicons name="card-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoText}>RG: {guest.rg}</Text>
+              </View>
+          )}
+
+          {guest.plate && (
+              <View style={styles.infoRow}>
+                <Ionicons name="car-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoText}>Placa: {guest.plate}</Text>
+              </View>
+          )}
+
+          {guest.residence && (
+              <View style={styles.infoRow}>
+                <Ionicons name="home-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoText}>Residência: {guest.residence}</Text>
+              </View>
+          )}
+
+          {guest.observation && (
+              <View style={styles.infoRow}>
+                <Ionicons name="document-text-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoText} numberOfLines={2}>{guest.observation}</Text>
+              </View>
+          )}
+        </View>
+
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
+            <Ionicons name="create-outline" size={20} color="#3B82F6" />
+            <Text style={styles.actionButtonText}>Editar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={onDelete}>
+            <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Excluir</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.cardContent}>
-        {guest.rg && (
-          <View style={styles.infoRow}>
-            <Ionicons name="card-outline" size={16} color="#6B7280" />
-            <Text style={styles.infoText}>RG: {guest.rg}</Text>
-          </View>
-        )}
-        
-        {guest.plate && (
-          <View style={styles.infoRow}>
-            <Ionicons name="car-outline" size={16} color="#6B7280" />
-            <Text style={styles.infoText}>Placa: {guest.plate}</Text>
-          </View>
-        )}
-
-        {guest.residence && (
-          <View style={styles.infoRow}>
-            <Ionicons name="home-outline" size={16} color="#6B7280" />
-            <Text style={styles.infoText}>Residência: {guest.residence}</Text>
-          </View>
-        )}
-
-        {guest.observation && (
-          <View style={styles.infoRow}>
-            <Ionicons name="document-text-outline" size={16} color="#6B7280" />
-            <Text style={styles.infoText} numberOfLines={2}>{guest.observation}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
-          <Ionicons name="create-outline" size={20} color="#3B82F6" />
-          <Text style={styles.actionButtonText}>Editar</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={onDelete}>
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
-          <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Excluir</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
   );
 };
 
@@ -267,24 +256,24 @@ const GuestManagementScreen: React.FC = () => {
 
   const handleDelete = (guest: Guest) => {
     Alert.alert(
-      'Confirmar Exclusão',
-      `Tem certeza que deseja excluir o convidado "${guest.name}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Excluir', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteGuest(guest.id);
-              handleRefresh();
-            } catch (error) {
-              console.error('Erro ao excluir convidado:', error);
-              Alert.alert('Erro', 'Não foi possível excluir o convidado');
+        'Confirmar Exclusão',
+        `Tem certeza que deseja excluir o convidado "${guest.name}"?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Excluir',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteGuest(guest.id);
+                handleRefresh();
+              } catch (error) {
+                console.error('Erro ao excluir convidado:', error);
+                Alert.alert('Erro', 'Não foi possível excluir o convidado');
+              }
             }
           }
-        }
-      ]
+        ]
     );
   };
 
@@ -305,82 +294,82 @@ const GuestManagementScreen: React.FC = () => {
   };
 
   const renderGuestItem = ({ item }: { item: Guest }) => (
-    <GuestCard 
-      guest={item} 
-      onEdit={() => handleEdit(item)}
-      onDelete={() => handleDelete(item)}
-    />
+      <GuestCard
+          guest={item}
+          onEdit={() => handleEdit(item)}
+          onDelete={() => handleDelete(item)}
+      />
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#F59E0B', '#D97706']}
-        style={styles.header}
-      >
-        <Text style={styles.headerTitle}>Convidados</Text>
-        <Text style={styles.headerSubtitle}>
-          {guests.length} {guests.length === 1 ? 'convidado' : 'convidados'}
-        </Text>
-      </LinearGradient>
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+            colors={['#F59E0B', '#D97706']}
+            style={styles.header}
+        >
+          <Text style={styles.headerTitle}>Convidados</Text>
+          <Text style={styles.headerSubtitle}>
+            {guests.length} {guests.length === 1 ? 'convidado' : 'convidados'}
+          </Text>
+        </LinearGradient>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar por nome, CPF ou placa..."
-            placeholderTextColor="#9CA3AF"
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-        </View>
-        
-        <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
-          <Ionicons name="add" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar por nome, CPF ou placa..."
+                placeholderTextColor="#9CA3AF"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+            />
+          </View>
 
-      {loading && guests.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#F59E0B" />
-          <Text style={styles.loadingText}>Carregando convidados...</Text>
+          <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={guests}
-          renderItem={renderGuestItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="person-add-outline" size={64} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Nenhum convidado encontrado</Text>
-              <Text style={styles.emptySubtitle}>
-                {searchTerm 
-                  ? 'Não há convidados para a busca realizada.'
-                  : 'Não há convidados cadastrados no momento.'}
-              </Text>
+
+        {loading && guests.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#F59E0B" />
+              <Text style={styles.loadingText}>Carregando convidados...</Text>
             </View>
-          }
-        />
-      )}
-      
-      <Modal
-        visible={showForm}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
-        <GuestForm
-          guest={selectedGuest}
-          onSave={handleFormSave}
-          onCancel={handleFormCancel}
-        />
-      </Modal>
-    </SafeAreaView>
+        ) : (
+            <FlatList
+                data={guests}
+                renderItem={renderGuestItem}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContainer}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                }
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="person-add-outline" size={64} color="#9CA3AF" />
+                    <Text style={styles.emptyTitle}>Nenhum convidado encontrado</Text>
+                    <Text style={styles.emptySubtitle}>
+                      {searchTerm
+                          ? 'Não há convidados para a busca realizada.'
+                          : 'Não há convidados cadastrados no momento.'}
+                    </Text>
+                  </View>
+                }
+            />
+        )}
+
+        <Modal
+            visible={showForm}
+            animationType="slide"
+            presentationStyle="fullScreen"
+        >
+          <GuestForm
+              guest={selectedGuest}
+              onSave={handleFormSave}
+              onCancel={handleFormCancel}
+          />
+        </Modal>
+      </SafeAreaView>
   );
 };
 

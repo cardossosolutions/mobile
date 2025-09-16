@@ -44,6 +44,11 @@ const ScheduleTabNavigator = () => {
         tabBarActiveTintColor: '#3B82F6',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
+          tabBarStyle: {
+              height: 50, // Defina a altura desejada aqui
+              paddingBottom: 5, // Adapte o espaçamento interno
+          },
+
       })}
     >
       <Tab.Screen 
@@ -94,6 +99,10 @@ const ManagementTabNavigator = () => {
         tabBarActiveTintColor: '#3B82F6',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
+          tabBarStyle: {
+              height: 50, // Defina a altura desejada aqui
+              paddingBottom: 5, // Adapte o espaçamento interno
+          },
       })}
     >
       <Tab.Screen 

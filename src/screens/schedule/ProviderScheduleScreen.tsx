@@ -35,7 +35,7 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onPress: () => void }>
   const formatDateRange = (dateStart: string, dateEnding: string) => {
     const start = new Date(dateStart).toLocaleDateString('pt-BR');
     const end = new Date(dateEnding).toLocaleDateString('pt-BR');
-    
+
     if (start === end) {
       return start;
     }
@@ -43,46 +43,46 @@ const ProviderCard: React.FC<{ provider: ProviderDetails; onPress: () => void }>
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <View style={styles.cardHeader}>
-        <View style={[styles.iconContainer, { backgroundColor: '#6366F1' }]}>
-          <Ionicons name="briefcase" size={24} color="#FFFFFF" />
-        </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.providerName}>{provider.name}</Text>
-          <Text style={styles.providerCpf}>CPF: {provider.cpf}</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: '#EDE9FE' }]}>
-          <Text style={[styles.statusText, { color: '#5B21B6' }]}>Prestador</Text>
-        </View>
-      </View>
-
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <Ionicons name="home-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>Residência: {provider.residence}</Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>
-            {formatDateRange(provider.date_start, provider.date_ending)}
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="call-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>{provider.mobile}</Text>
-        </View>
-
-        {provider.plate && (
-          <View style={styles.infoRow}>
-            <Ionicons name="car-outline" size={16} color="#6B7280" />
-            <Text style={styles.infoText}>{provider.plate}</Text>
+      <TouchableOpacity style={styles.card} onPress={onPress}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.iconContainer, { backgroundColor: '#6366F1' }]}>
+            <Ionicons name="briefcase" size={24} color="#FFFFFF" />
           </View>
-        )}
-      </View>
-    </TouchableOpacity>
+          <View style={styles.cardInfo}>
+            <Text style={styles.providerName}>{provider.name}</Text>
+            <Text style={styles.providerCpf}>CPF: {provider.cpf}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: '#EDE9FE' }]}>
+            <Text style={[styles.statusText, { color: '#5B21B6' }]}>Prestador</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <Ionicons name="home-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>Residência: {provider.residence}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>
+              {formatDateRange(provider.date_start, provider.date_ending)}
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>{provider.mobile}</Text>
+          </View>
+
+          {provider.plate && (
+              <View style={styles.infoRow}>
+                <Ionicons name="car-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoText}>{provider.plate}</Text>
+              </View>
+          )}
+        </View>
+      </TouchableOpacity>
   );
 };
 
@@ -103,23 +103,23 @@ const ProviderScheduleScreen: React.FC = () => {
       if (reset) {
         setLoading(true);
       }
-      
+
       let endpoint = `/provider/list-providers?page=${page}`;
       if (search && search.trim()) {
         endpoint += `&search=${encodeURIComponent(search.trim())}`;
       }
-      
+
       const response = await apiRequest(endpoint, { method: 'GET' });
-      
+
       if (response && response.data && Array.isArray(response.data)) {
         const newProviders = response.data;
-        
+
         if (reset || page === 1) {
           setProviders(newProviders);
         } else {
           setProviders(prev => [...prev, ...newProviders]);
         }
-        
+
         setCurrentPage(response.current_page);
         setHasNextPage(response.current_page < response.last_page);
       }
@@ -162,7 +162,7 @@ const ProviderScheduleScreen: React.FC = () => {
         action: action,
         type: 'provider'
       });
-      
+
       // Recarregar dados após registrar ação
       loadProviderData(1, searchTerm, true);
     } catch (error) {
@@ -171,19 +171,19 @@ const ProviderScheduleScreen: React.FC = () => {
   };
 
   const renderProviderItem = ({ item }: { item: ProviderDetails }) => (
-    <ProviderCard provider={item} onPress={() => {
-      setSelectedProvider(item);
-      setShowDetailsModal(true);
-    }} />
+      <ProviderCard provider={item} onPress={() => {
+        setSelectedProvider(item);
+        setShowDetailsModal(true);
+      }} />
   );
 
   const renderFooter = () => {
     if (!loading || providers.length === 0) return null;
-    
+
     return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#6366F1" />
-      </View>
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color="#6366F1" />
+        </View>
     );
   };
 
@@ -193,7 +193,7 @@ const ProviderScheduleScreen: React.FC = () => {
     const formatDateRange = (dateStart: string, dateEnding: string) => {
       const start = new Date(dateStart).toLocaleDateString('pt-BR');
       const end = new Date(dateEnding).toLocaleDateString('pt-BR');
-      
+
       if (start === end) {
         return start;
       }
@@ -201,194 +201,194 @@ const ProviderScheduleScreen: React.FC = () => {
     };
 
     return (
-      <Modal
-        visible={showDetailsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowDetailsModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowDetailsModal(false)}
-            >
-              <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Detalhes do Prestador</Text>
-            <View style={styles.placeholder} />
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.providerHeader}>
-              <View style={styles.providerAvatar}>
-                <Ionicons name="briefcase" size={40} color="#FFFFFF" />
-              </View>
-              <View style={styles.providerInfo}>
-                <Text style={styles.providerNameLarge}>{selectedProvider.name}</Text>
-                <Text style={styles.providerCpfLarge}>CPF: {selectedProvider.cpf}</Text>
-              </View>
+        <Modal
+            visible={showDetailsModal}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setShowDetailsModal(false)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowDetailsModal(false)}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Detalhes do Prestador</Text>
+              <View style={styles.placeholder} />
             </View>
 
-            <View style={styles.detailsSection}>
-              <Text style={styles.sectionTitle}>Informações Pessoais</Text>
-              
-              <View style={styles.detailItem}>
-                <Ionicons name="person-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Nome Completo</Text>
-                  <Text style={styles.detailValue}>{selectedProvider.name}</Text>
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.providerHeader}>
+                <View style={styles.providerAvatar}>
+                  <Ionicons name="briefcase" size={40} color="#FFFFFF" />
+                </View>
+                <View style={styles.providerInfo}>
+                  <Text style={styles.providerNameLarge}>{selectedProvider.name}</Text>
+                  <Text style={styles.providerCpfLarge}>CPF: {selectedProvider.cpf}</Text>
                 </View>
               </View>
 
-              <View style={styles.detailItem}>
-                <Ionicons name="card-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>CPF</Text>
-                  <Text style={styles.detailValue}>{selectedProvider.cpf}</Text>
-                </View>
-              </View>
+              <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>Informações Pessoais</Text>
 
-              <View style={styles.detailItem}>
-                <Ionicons name="card-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>RG</Text>
-                  <Text style={styles.detailValue}>{selectedProvider.rg}</Text>
-                </View>
-              </View>
-
-              <View style={styles.detailItem}>
-                <Ionicons name="call-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Telefone</Text>
-                  <Text style={styles.detailValue}>{selectedProvider.mobile}</Text>
-                </View>
-              </View>
-
-              {selectedProvider.plate && (
                 <View style={styles.detailItem}>
-                  <Ionicons name="car-outline" size={20} color="#6B7280" />
+                  <Ionicons name="person-outline" size={20} color="#6B7280" />
                   <View style={styles.detailText}>
-                    <Text style={styles.detailLabel}>Placa do Veículo</Text>
-                    <Text style={styles.detailValue}>{selectedProvider.plate}</Text>
+                    <Text style={styles.detailLabel}>Nome Completo</Text>
+                    <Text style={styles.detailValue}>{selectedProvider.name}</Text>
                   </View>
                 </View>
-              )}
-            </View>
 
-            <View style={styles.detailsSection}>
-              <Text style={styles.sectionTitle}>Informações do Serviço</Text>
-              
-              <View style={styles.detailItem}>
-                <Ionicons name="home-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Residência</Text>
-                  <Text style={styles.detailValue}>{selectedProvider.residence}</Text>
-                </View>
-              </View>
-
-              <View style={styles.detailItem}>
-                <Ionicons name="calendar-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Período do Serviço</Text>
-                  <Text style={styles.detailValue}>
-                    {formatDateRange(selectedProvider.date_start, selectedProvider.date_ending)}
-                  </Text>
-                </View>
-              </View>
-
-              {selectedProvider.observation && (
                 <View style={styles.detailItem}>
-                  <Ionicons name="document-text-outline" size={20} color="#6B7280" />
+                  <Ionicons name="card-outline" size={20} color="#6B7280" />
                   <View style={styles.detailText}>
-                    <Text style={styles.detailLabel}>Observações</Text>
-                    <Text style={styles.detailValue}>{selectedProvider.observation}</Text>
+                    <Text style={styles.detailLabel}>CPF</Text>
+                    <Text style={styles.detailValue}>{selectedProvider.cpf}</Text>
                   </View>
                 </View>
-              )}
-            </View>
 
-            <View style={styles.actionsSection}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.entryButton]}
-                onPress={() => handleRegisterAction(selectedProvider.id, 'entry')}
-              >
-                <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Registrar Entrada</Text>
-              </TouchableOpacity>
+                <View style={styles.detailItem}>
+                  <Ionicons name="card-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>RG</Text>
+                    <Text style={styles.detailValue}>{selectedProvider.rg}</Text>
+                  </View>
+                </View>
 
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.exitButton]}
-                onPress={() => handleRegisterAction(selectedProvider.id, 'exit')}
-              >
-                <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Registrar Saída</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+                <View style={styles.detailItem}>
+                  <Ionicons name="call-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Telefone</Text>
+                    <Text style={styles.detailValue}>{selectedProvider.mobile}</Text>
+                  </View>
+                </View>
+
+                {selectedProvider.plate && (
+                    <View style={styles.detailItem}>
+                      <Ionicons name="car-outline" size={20} color="#6B7280" />
+                      <View style={styles.detailText}>
+                        <Text style={styles.detailLabel}>Placa do Veículo</Text>
+                        <Text style={styles.detailValue}>{selectedProvider.plate}</Text>
+                      </View>
+                    </View>
+                )}
+              </View>
+
+              <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>Informações do Serviço</Text>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="home-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Residência</Text>
+                    <Text style={styles.detailValue}>{selectedProvider.residence}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Período do Serviço</Text>
+                    <Text style={styles.detailValue}>
+                      {formatDateRange(selectedProvider.date_start, selectedProvider.date_ending)}
+                    </Text>
+                  </View>
+                </View>
+
+                {selectedProvider.observation && (
+                    <View style={styles.detailItem}>
+                      <Ionicons name="document-text-outline" size={20} color="#6B7280" />
+                      <View style={styles.detailText}>
+                        <Text style={styles.detailLabel}>Observações</Text>
+                        <Text style={styles.detailValue}>{selectedProvider.observation}</Text>
+                      </View>
+                    </View>
+                )}
+              </View>
+
+              <View style={styles.actionsSection}>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.entryButton]}
+                    onPress={() => handleRegisterAction(selectedProvider.id, 'entry')}
+                >
+                  <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Registrar Entrada</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.exitButton]}
+                    onPress={() => handleRegisterAction(selectedProvider.id, 'exit')}
+                >
+                  <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Registrar Saída</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#6366F1', '#4F46E5']}
-        style={styles.header}
-      >
-        <Text style={styles.headerTitle}>Prestadores de Serviços</Text>
-        <Text style={styles.headerSubtitle}>
-          {providers.length} {providers.length === 1 ? 'prestador' : 'prestadores'}
-        </Text>
-      </LinearGradient>
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+            colors={['#6366F1', '#4F46E5']}
+            style={styles.header}
+        >
+          <Text style={styles.headerTitle}>Prestadores de Serviços</Text>
+          <Text style={styles.headerSubtitle}>
+            {providers.length} {providers.length === 1 ? 'prestador' : 'prestadores'}
+          </Text>
+        </LinearGradient>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar prestador, CPF ou observação..."
-            placeholderTextColor="#9CA3AF"
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar prestador, CPF ou observação..."
+                placeholderTextColor="#9CA3AF"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+            />
+          </View>
         </View>
-      </View>
 
-      {loading && providers.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Carregando prestadores...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={providers}
-          renderItem={renderProviderItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="briefcase-outline" size={64} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Nenhum prestador encontrado</Text>
-              <Text style={styles.emptySubtitle}>
-                {searchTerm 
-                  ? 'Não há prestadores para a busca realizada.'
-                  : 'Não há prestadores cadastrados no momento.'}
-              </Text>
+        {loading && providers.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6366F1" />
+              <Text style={styles.loadingText}>Carregando prestadores...</Text>
             </View>
-          }
-        />
-      )}
-      
-      <ProviderDetailsModal />
-    </SafeAreaView>
+        ) : (
+            <FlatList
+                data={providers}
+                renderItem={renderProviderItem}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.listContainer}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                }
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.1}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="briefcase-outline" size={64} color="#9CA3AF" />
+                    <Text style={styles.emptyTitle}>Nenhum prestador encontrado</Text>
+                    <Text style={styles.emptySubtitle}>
+                      {searchTerm
+                          ? 'Não há prestadores para a busca realizada.'
+                          : 'Não há prestadores cadastrados no momento.'}
+                    </Text>
+                  </View>
+                }
+            />
+        )}
+
+        <ProviderDetailsModal />
+      </SafeAreaView>
   );
 };
 

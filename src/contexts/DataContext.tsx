@@ -167,9 +167,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
-      
+
       const response = await apiRequest(url, { method: 'GET' });
-      
+
       if (response && response.data) {
         setResidences(response.data);
         setResidencePagination({
@@ -232,9 +232,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
-      
+
       const response = await apiRequest(url, { method: 'GET' });
-      
+
       if (response && response.data) {
         setEmployees(response.data);
         setEmployeePagination({
@@ -293,13 +293,13 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   // Implementações simplificadas para as outras entidades
   const loadGuests = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      let url = `${API_CONFIG.ENDPOINTS.GUESTS}?page=${page}`;
+      let url = `${API_CONFIG.ENDPOINTS.GUESTS_LIST}?page=${page}`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
-      
+
       const response = await apiRequest(url, { method: 'GET' });
-      
+
       if (response && response.data) {
         setGuests(response.data);
         setGuestPagination({
@@ -356,13 +356,13 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   const loadAppointments = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      let url = `${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}?page=${page}`;
+      let url = `${API_CONFIG.ENDPOINTS.APPOINTMENTS}?page=${page}`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
-      
+
       const response = await apiRequest(url, { method: 'GET' });
-      
+
       if (response && response.data) {
         setAppointments(response.data);
         setAppointmentPagination({
@@ -381,6 +381,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   const addAppointment = useCallback(async (appointmentData: any) => {
     try {
+      console.log('PAYLOAD',appointmentData);
       await apiRequest(API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER, {
         method: 'POST',
         body: JSON.stringify(appointmentData)
@@ -423,9 +424,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
-      
+
       const response = await apiRequest(url, { method: 'GET' });
-      
+
       if (response && response.data) {
         setServiceProviders(response.data);
         setServiceProviderPagination({
@@ -482,13 +483,13 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   const loadDeliveries = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      let url = `${API_CONFIG.ENDPOINTS.DELIVERIES}?page=${page}`;
+      let url = `${API_CONFIG.ENDPOINTS.DELIVERIES_LIST}?page=${page}`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
-      
+
       const response = await apiRequest(url, { method: 'GET' });
-      
+
       if (response && response.data) {
         setDeliveries(response.data);
         setDeliveryPagination({
@@ -558,46 +559,46 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [showSuccess, showError]);
 
   return (
-    <DataContext.Provider value={{
-      residences,
-      residencePagination,
-      loadResidences,
-      addResidence,
-      updateResidence,
-      deleteResidence,
-      employees,
-      employeePagination,
-      loadEmployees,
-      addEmployee,
-      updateEmployee,
-      deleteEmployee,
-      guests,
-      guestPagination,
-      loadGuests,
-      addGuest,
-      updateGuest,
-      deleteGuest,
-      appointments,
-      appointmentPagination,
-      loadAppointments,
-      addAppointment,
-      updateAppointment,
-      deleteAppointment,
-      serviceProviders,
-      serviceProviderPagination,
-      loadServiceProviders,
-      addServiceProvider,
-      updateServiceProvider,
-      deleteServiceProvider,
-      deliveries,
-      deliveryPagination,
-      loadDeliveries,
-      addDelivery,
-      updateDelivery,
-      deleteDelivery,
-      registerAction
-    }}>
-      {children}
-    </DataContext.Provider>
+      <DataContext.Provider value={{
+        residences,
+        residencePagination,
+        loadResidences,
+        addResidence,
+        updateResidence,
+        deleteResidence,
+        employees,
+        employeePagination,
+        loadEmployees,
+        addEmployee,
+        updateEmployee,
+        deleteEmployee,
+        guests,
+        guestPagination,
+        loadGuests,
+        addGuest,
+        updateGuest,
+        deleteGuest,
+        appointments,
+        appointmentPagination,
+        loadAppointments,
+        addAppointment,
+        updateAppointment,
+        deleteAppointment,
+        serviceProviders,
+        serviceProviderPagination,
+        loadServiceProviders,
+        addServiceProvider,
+        updateServiceProvider,
+        deleteServiceProvider,
+        deliveries,
+        deliveryPagination,
+        loadDeliveries,
+        addDelivery,
+        updateDelivery,
+        deleteDelivery,
+        registerAction
+      }}>
+        {children}
+      </DataContext.Provider>
   );
 };

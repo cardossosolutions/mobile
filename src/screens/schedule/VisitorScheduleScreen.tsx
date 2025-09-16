@@ -8,7 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  RefreshControl
+  RefreshControl, ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,46 +47,46 @@ const VisitorCard: React.FC<{ visitor: VisitorDetails; onPress: () => void }> = 
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="person" size={24} color="#FFFFFF" />
-        </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.visitorName}>{visitor.visitor_name}</Text>
-          <Text style={styles.visitorCpf}>CPF: {visitor.cpf}</Text>
-        </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>Agendado</Text>
-        </View>
-      </View>
-
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <Ionicons name="home-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>Residência: {visitor.residence}</Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>
-            {formatDateRange(visitor.dateBegin, visitor.dateEnding)}
-          </Text>
-        </View>
-
-        {visitor.plate && (
-          <View style={styles.infoRow}>
-            <Ionicons name="car-outline" size={16} color="#6B7280" />
-            <Text style={styles.infoText}>{visitor.plate}</Text>
+      <TouchableOpacity style={styles.card} onPress={onPress}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="person" size={24} color="#FFFFFF" />
           </View>
-        )}
-
-        <View style={styles.infoRow}>
-          <Ionicons name="call-outline" size={16} color="#6B7280" />
-          <Text style={styles.infoText}>{visitor.visitor_mobile}</Text>
+          <View style={styles.cardInfo}>
+            <Text style={styles.visitorName}>{visitor.visitor_name}</Text>
+            <Text style={styles.visitorCpf}>CPF: {visitor.cpf}</Text>
+          </View>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>Agendado</Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <Ionicons name="home-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>Residência: {visitor.residence}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>
+              {formatDateRange(visitor.dateBegin, visitor.dateEnding)}
+            </Text>
+          </View>
+
+          {visitor.plate && (
+              <View style={styles.infoRow}>
+                <Ionicons name="car-outline" size={16} color="#6B7280" />
+                <Text style={styles.infoText}>{visitor.plate}</Text>
+              </View>
+          )}
+
+          <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>{visitor.visitor_mobile}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
   );
 };
 
@@ -107,23 +107,23 @@ const VisitorScheduleScreen: React.FC = () => {
       if (reset) {
         setLoading(true);
       }
-      
+
       let endpoint = `/visitors/schedule?page=${page}`;
       if (search && search.trim()) {
         endpoint += `&search=${encodeURIComponent(search.trim())}`;
       }
-      
+
       const data = await apiRequest(endpoint, { method: 'GET' });
-      
+
       if (data && data.data && Array.isArray(data.data)) {
         const newVisitors = data.data;
-        
+
         if (reset || page === 1) {
           setVisitors(newVisitors);
         } else {
           setVisitors(prev => [...prev, ...newVisitors]);
         }
-        
+
         setCurrentPage(data.current_page);
         setHasNextPage(data.current_page < data.last_page);
       }
@@ -161,20 +161,20 @@ const VisitorScheduleScreen: React.FC = () => {
 
   const handleCameraPress = async () => {
     const { status } = await Camera.requestCameraPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permissão necessária', 'É necessário permitir o acesso à câmera para capturar fotos.');
       return;
     }
 
     Alert.alert(
-      'Capturar Foto',
-      'Escolha uma opção:',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Câmera', onPress: () => openCamera() },
-        { text: 'Galeria', onPress: () => openGallery() }
-      ]
+        'Capturar Foto',
+        'Escolha uma opção:',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Câmera', onPress: () => openCamera() },
+          { text: 'Galeria', onPress: () => openGallery() }
+        ]
     );
   };
 
@@ -217,7 +217,7 @@ const VisitorScheduleScreen: React.FC = () => {
   const handlePhotoCapture = async (imageUri: string) => {
     try {
       setLoading(true);
-      
+
       const formData = new FormData();
       formData.append('plate', {
         uri: imageUri,
@@ -232,7 +232,7 @@ const VisitorScheduleScreen: React.FC = () => {
 
       if (response && response.data && Array.isArray(response.data)) {
         setVisitors(response.data);
-        
+
         if (response.data.length === 1) {
           setSelectedVisitor(response.data[0]);
         }
@@ -252,7 +252,7 @@ const VisitorScheduleScreen: React.FC = () => {
         action: action,
         type: 'schedule'
       });
-      
+
       // Recarregar dados após registrar ação
       loadVisitorData(1, searchTerm, true);
     } catch (error) {
@@ -261,19 +261,19 @@ const VisitorScheduleScreen: React.FC = () => {
   };
 
   const renderVisitorItem = ({ item }: { item: VisitorDetails }) => (
-    <VisitorCard visitor={item} onPress={() => {
-      setSelectedVisitor(item);
-      setShowDetailsModal(true);
-    }} />
+      <VisitorCard visitor={item} onPress={() => {
+        setSelectedVisitor(item);
+        setShowDetailsModal(true);
+      }} />
   );
 
   const renderFooter = () => {
     if (!loading || visitors.length === 0) return null;
-    
+
     return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#3B82F6" />
-      </View>
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color="#3B82F6" />
+        </View>
     );
   };
 
@@ -288,217 +288,217 @@ const VisitorScheduleScreen: React.FC = () => {
     };
 
     return (
-      <Modal
-        visible={showDetailsModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowDetailsModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setShowDetailsModal(false)}
-            >
-              <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Detalhes do Visitante</Text>
-            <View style={styles.placeholder} />
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.visitorHeader}>
-              <View style={styles.visitorAvatar}>
-                <Ionicons name="person" size={40} color="#FFFFFF" />
-              </View>
-              <View style={styles.visitorInfo}>
-                <Text style={styles.visitorNameLarge}>{selectedVisitor.visitor_name}</Text>
-                <Text style={styles.visitorCpfLarge}>CPF: {selectedVisitor.cpf}</Text>
-              </View>
+        <Modal
+            visible={showDetailsModal}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setShowDetailsModal(false)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowDetailsModal(false)}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Detalhes do Visitante</Text>
+              <View style={styles.placeholder} />
             </View>
 
-            <View style={styles.detailsSection}>
-              <Text style={styles.sectionTitle}>Informações Pessoais</Text>
-              
-              <View style={styles.detailItem}>
-                <Ionicons name="person-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Nome Completo</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.visitor_name}</Text>
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.visitorHeader}>
+                <View style={styles.visitorAvatar}>
+                  <Ionicons name="person" size={40} color="#FFFFFF" />
+                </View>
+                <View style={styles.visitorInfo}>
+                  <Text style={styles.visitorNameLarge}>{selectedVisitor.visitor_name}</Text>
+                  <Text style={styles.visitorCpfLarge}>CPF: {selectedVisitor.cpf}</Text>
                 </View>
               </View>
 
-              <View style={styles.detailItem}>
-                <Ionicons name="card-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>CPF</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.cpf}</Text>
-                </View>
-              </View>
+              <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>Informações Pessoais</Text>
 
-              {selectedVisitor.rg && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="person-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Nome Completo</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.visitor_name}</Text>
+                  </View>
+                </View>
+
                 <View style={styles.detailItem}>
                   <Ionicons name="card-outline" size={20} color="#6B7280" />
                   <View style={styles.detailText}>
-                    <Text style={styles.detailLabel}>RG</Text>
-                    <Text style={styles.detailValue}>{selectedVisitor.rg}</Text>
+                    <Text style={styles.detailLabel}>CPF</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.cpf}</Text>
                   </View>
                 </View>
-              )}
 
-              <View style={styles.detailItem}>
-                <Ionicons name="call-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Telefone</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.visitor_mobile}</Text>
-                </View>
-              </View>
+                {selectedVisitor.rg && (
+                    <View style={styles.detailItem}>
+                      <Ionicons name="card-outline" size={20} color="#6B7280" />
+                      <View style={styles.detailText}>
+                        <Text style={styles.detailLabel}>RG</Text>
+                        <Text style={styles.detailValue}>{selectedVisitor.rg}</Text>
+                      </View>
+                    </View>
+                )}
 
-              {selectedVisitor.plate && (
                 <View style={styles.detailItem}>
-                  <Ionicons name="car-outline" size={20} color="#6B7280" />
+                  <Ionicons name="call-outline" size={20} color="#6B7280" />
                   <View style={styles.detailText}>
-                    <Text style={styles.detailLabel}>Placa do Veículo</Text>
-                    <Text style={styles.detailValue}>{selectedVisitor.plate}</Text>
+                    <Text style={styles.detailLabel}>Telefone</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.visitor_mobile}</Text>
                   </View>
                 </View>
-              )}
-            </View>
 
-            <View style={styles.detailsSection}>
-              <Text style={styles.sectionTitle}>Informações da Visita</Text>
-              
-              <View style={styles.detailItem}>
-                <Ionicons name="home-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Residência</Text>
-                  <Text style={styles.detailValue}>{selectedVisitor.residence}</Text>
-                </View>
+                {selectedVisitor.plate && (
+                    <View style={styles.detailItem}>
+                      <Ionicons name="car-outline" size={20} color="#6B7280" />
+                      <View style={styles.detailText}>
+                        <Text style={styles.detailLabel}>Placa do Veículo</Text>
+                        <Text style={styles.detailValue}>{selectedVisitor.plate}</Text>
+                      </View>
+                    </View>
+                )}
               </View>
 
-              <View style={styles.detailItem}>
-                <Ionicons name="calendar-outline" size={20} color="#6B7280" />
-                <View style={styles.detailText}>
-                  <Text style={styles.detailLabel}>Período da Visita</Text>
-                  <Text style={styles.detailValue}>
-                    {formatDateRange(selectedVisitor.dateBegin, selectedVisitor.dateEnding)}
-                  </Text>
-                </View>
-              </View>
-
-              {selectedVisitor.observation && (
-                <View style={styles.detailItem}>
-                  <Ionicons name="document-text-outline" size={20} color="#6B7280" />
-                  <View style={styles.detailText}>
-                    <Text style={styles.detailLabel}>Observações</Text>
-                    <Text style={styles.detailValue}>{selectedVisitor.observation}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-
-            {selectedVisitor.responsibles && selectedVisitor.responsibles.length > 0 && (
               <View style={styles.detailsSection}>
-                <Text style={styles.sectionTitle}>Responsáveis</Text>
-                {selectedVisitor.responsibles.map((responsible, index) => (
-                  <View key={index} style={styles.responsibleItem}>
-                    <View style={styles.responsibleIcon}>
-                      <Ionicons name="person-circle-outline" size={24} color="#3B82F6" />
-                    </View>
-                    <View style={styles.responsibleInfo}>
-                      <Text style={styles.responsibleName}>{responsible.name}</Text>
-                      <Text style={styles.responsiblePhone}>{responsible.mobile}</Text>
-                    </View>
+                <Text style={styles.sectionTitle}>Informações da Visita</Text>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="home-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Residência</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.residence}</Text>
                   </View>
-                ))}
+                </View>
+
+                <View style={styles.detailItem}>
+                  <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Período da Visita</Text>
+                    <Text style={styles.detailValue}>
+                      {formatDateRange(selectedVisitor.dateBegin, selectedVisitor.dateEnding)}
+                    </Text>
+                  </View>
+                </View>
+
+                {selectedVisitor.observation && (
+                    <View style={styles.detailItem}>
+                      <Ionicons name="document-text-outline" size={20} color="#6B7280" />
+                      <View style={styles.detailText}>
+                        <Text style={styles.detailLabel}>Observações</Text>
+                        <Text style={styles.detailValue}>{selectedVisitor.observation}</Text>
+                      </View>
+                    </View>
+                )}
               </View>
-            )}
 
-            <View style={styles.actionsSection}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.entryButton]}
-                onPress={() => handleRegisterAction(selectedVisitor.id, 'entry')}
-              >
-                <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Registrar Entrada</Text>
-              </TouchableOpacity>
+              {selectedVisitor.responsibles && selectedVisitor.responsibles.length > 0 && (
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.sectionTitle}>Responsáveis</Text>
+                    {selectedVisitor.responsibles.map((responsible, index) => (
+                        <View key={index} style={styles.responsibleItem}>
+                          <View style={styles.responsibleIcon}>
+                            <Ionicons name="person-circle-outline" size={24} color="#3B82F6" />
+                          </View>
+                          <View style={styles.responsibleInfo}>
+                            <Text style={styles.responsibleName}>{responsible.name}</Text>
+                            <Text style={styles.responsiblePhone}>{responsible.mobile}</Text>
+                          </View>
+                        </View>
+                    ))}
+                  </View>
+              )}
 
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.exitButton]}
-                onPress={() => handleRegisterAction(selectedVisitor.id, 'exit')}
-              >
-                <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.actionButtonText}>Registrar Saída</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+              <View style={styles.actionsSection}>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.entryButton]}
+                    onPress={() => handleRegisterAction(selectedVisitor.id, 'entry')}
+                >
+                  <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Registrar Entrada</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.exitButton]}
+                    onPress={() => handleRegisterAction(selectedVisitor.id, 'exit')}
+                >
+                  <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.actionButtonText}>Registrar Saída</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#3B82F6', '#1E40AF']}
-        style={styles.header}
-      >
-        <Text style={styles.headerTitle}>Agendamentos de Visitantes</Text>
-        <Text style={styles.headerSubtitle}>
-          {visitors.length} {visitors.length === 1 ? 'agendamento' : 'agendamentos'}
-        </Text>
-      </LinearGradient>
+      <SafeAreaView style={styles.container}>
+        <LinearGradient
+            colors={['#3B82F6', '#1E40AF']}
+            style={styles.header}
+        >
+          <Text style={styles.headerTitle}>Agendamentos de Visitantes</Text>
+          <Text style={styles.headerSubtitle}>
+            {visitors.length} {visitors.length === 1 ? 'agendamento' : 'agendamentos'}
+          </Text>
+        </LinearGradient>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar visitante, CPF ou responsável..."
-            placeholderTextColor="#9CA3AF"
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-        </View>
-        
-        <TouchableOpacity style={styles.cameraButton} onPress={handleCameraPress}>
-          <Ionicons name="camera" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search-outline" size={20} color="#6B7280" style={styles.searchIcon} />
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar visitante, CPF ou responsável..."
+                placeholderTextColor="#9CA3AF"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+            />
+          </View>
 
-      {loading && visitors.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Carregando agendamentos...</Text>
+          <TouchableOpacity style={styles.cameraButton} onPress={handleCameraPress}>
+            <Ionicons name="camera" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={visitors}
-          renderItem={renderVisitorItem}
-          keyExtractor={(item) => `${item.id}-${item.visitor_id}`}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
-              <Text style={styles.emptyTitle}>Nenhum agendamento encontrado</Text>
-              <Text style={styles.emptySubtitle}>
-                {searchTerm 
-                  ? 'Não há agendamentos para a busca realizada.'
-                  : 'Não há agendamentos cadastrados no momento.'}
-              </Text>
+
+        {loading && visitors.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text style={styles.loadingText}>Carregando agendamentos...</Text>
             </View>
-          }
-        />
-      )}
-      
-      <VisitorDetailsModal />
-    </SafeAreaView>
+        ) : (
+            <FlatList
+                data={visitors}
+                renderItem={renderVisitorItem}
+                keyExtractor={(item) => `${item.id}-${item.visitor_id}`}
+                contentContainerStyle={styles.listContainer}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+                }
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.1}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
+                    <Text style={styles.emptyTitle}>Nenhum agendamento encontrado</Text>
+                    <Text style={styles.emptySubtitle}>
+                      {searchTerm
+                          ? 'Não há agendamentos para a busca realizada.'
+                          : 'Não há agendamentos cadastrados no momento.'}
+                    </Text>
+                  </View>
+                }
+            />
+        )}
+
+        <VisitorDetailsModal />
+      </SafeAreaView>
   );
 };
 
