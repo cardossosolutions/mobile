@@ -137,7 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AsyncStorage.multiSet([
           ['auth_token', response.token],
           ['token_type', response.type || 'bearer'],
-          ['token_expires_in', response.experes_in || response.expires_in || '3600']
+          ['token_expires_in', String(response.experes_in || response.expires_in || '3600')]
         ]);
 
         try {

@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8080/api',
-  
+  // BASE_URL: 'http://localhost:8080/api',
+  BASE_URL: 'http://192.168.1.12:8080/api',
+
   ENDPOINTS: {
     LOGIN: '/login',
     LOGOUT: '/logout',
@@ -141,10 +142,15 @@ export const apiRequestNoAuth = async (
   };
 
   try {
-    console.log(`🌐 Fazendo requisição (sem auth) para: ${url}`);
-    
+    console.log(`🌐 Fazendooo requisição (sem auth) para: ${url}`);
+
+    console.log('📩 ANTES',config);
+
     const response = await fetch(url, config);
-    
+
+    console.log('📩 Objeto response:', response);
+
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
