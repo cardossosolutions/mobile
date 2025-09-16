@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useData } from '../../contexts/DataContext';
+import DeliveryForm from '../../components/forms/DeliveryForm';
+import { Modal } from 'react-native';
 
 interface Delivery {
   id: number;
@@ -87,6 +89,8 @@ const DeliveryManagementScreen: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
 
   useEffect(() => {
     handleRefresh();
@@ -106,7 +110,8 @@ const DeliveryManagementScreen: React.FC = () => {
   };
 
   const handleEdit = (delivery: Delivery) => {
-    Alert.alert('Editar Entrega', `Editar entrega do ${delivery.ecommerce}`);
+    setSelectedDelivery(delivery);
+    setShowForm(true);
   };
 
   const handleDelete = (delivery: Delivery) => {
@@ -163,7 +168,13 @@ const DeliveryManagementScreen: React.FC = () => {
           />
         </View>
         
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => {
+            setSelectedDelivery(null);
+            setShowForm(true);
+          }}
+        >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -195,6 +206,25 @@ const DeliveryManagementScreen: React.FC = () => {
           }
         />
       )}
+      
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <DeliveryForm
+          delivery={selectedDelivery}
+          onSave={() => {
+            setShowForm(false);
+            setSelectedDelivery(null);
+            handleRefresh();
+          }}
+          onCancel={() => {
+            setShowForm(false);
+            setSelectedDelivery(null);
+          }}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };

@@ -165,7 +165,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     try {
       let url = `${API_CONFIG.ENDPOINTS.RESIDENCES}?page=${page}`;
       if (search) {
-        url += `&${search}`;
+        url += `&search=${encodeURIComponent(search)}`;
       }
       
       const response = await apiRequest(url, { method: 'GET' });
@@ -230,7 +230,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     try {
       let url = `${API_CONFIG.ENDPOINTS.EMPLOYEES}?page=${page}`;
       if (search) {
-        url += `&${search}`;
+        url += `&search=${encodeURIComponent(search)}`;
       }
       
       const response = await apiRequest(url, { method: 'GET' });

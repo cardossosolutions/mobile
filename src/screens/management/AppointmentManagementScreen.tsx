@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useData } from '../../contexts/DataContext';
+import AppointmentForm from '../../components/forms/AppointmentForm';
+import { Modal } from 'react-native';
 
 interface Appointment {
   id: string;
@@ -82,6 +84,8 @@ const AppointmentManagementScreen: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     handleRefresh();
@@ -101,7 +105,8 @@ const AppointmentManagementScreen: React.FC = () => {
   };
 
   const handleEdit = (appointment: Appointment) => {
-    Alert.alert('Editar Agendamento', `Editar agendamento para ${appointment.name}`);
+    setSelectedAppointment(appointment);
+    setShowForm(true);
   };
 
   const handleDelete = (appointment: Appointment) => {
@@ -158,7 +163,13 @@ const AppointmentManagementScreen: React.FC = () => {
           />
         </View>
         
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => {
+            setSelectedAppointment(null);
+            setShowForm(true);
+          }}
+        >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -190,6 +201,25 @@ const AppointmentManagementScreen: React.FC = () => {
           }
         />
       )}
+      
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <AppointmentForm
+          appointment={selectedAppointment}
+          onSave={() => {
+            setShowForm(false);
+            setSelectedAppointment(null);
+            handleRefresh();
+          }}
+          onCancel={() => {
+            setShowForm(false);
+            setSelectedAppointment(null);
+          }}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };

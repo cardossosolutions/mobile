@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useData } from '../../contexts/DataContext';
+import ServiceProviderForm from '../../components/forms/ServiceProviderForm';
+import { Modal } from 'react-native';
 
 interface ServiceProvider {
   id: number;
@@ -102,6 +104,8 @@ const ServiceProviderManagementScreen: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
 
   useEffect(() => {
     handleRefresh();
@@ -121,7 +125,8 @@ const ServiceProviderManagementScreen: React.FC = () => {
   };
 
   const handleEdit = (provider: ServiceProvider) => {
-    Alert.alert('Editar Prestador', `Editar ${provider.name}`);
+    setSelectedProvider(provider);
+    setShowForm(true);
   };
 
   const handleDelete = (provider: ServiceProvider) => {
@@ -178,7 +183,13 @@ const ServiceProviderManagementScreen: React.FC = () => {
           />
         </View>
         
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => {
+            setSelectedProvider(null);
+            setShowForm(true);
+          }}
+        >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -210,6 +221,25 @@ const ServiceProviderManagementScreen: React.FC = () => {
           }
         />
       )}
+      
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <ServiceProviderForm
+          provider={selectedProvider}
+          onSave={() => {
+            setShowForm(false);
+            setSelectedProvider(null);
+            handleRefresh();
+          }}
+          onCancel={() => {
+            setShowForm(false);
+            setSelectedProvider(null);
+          }}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };

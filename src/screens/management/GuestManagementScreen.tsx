@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useData } from '../../contexts/DataContext';
+import GuestForm from '../../components/forms/GuestForm';
+import { Modal } from 'react-native';
 
 interface Guest {
   id: string;
@@ -85,6 +87,8 @@ const GuestManagementScreen: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
 
   useEffect(() => {
     handleRefresh();
@@ -104,7 +108,8 @@ const GuestManagementScreen: React.FC = () => {
   };
 
   const handleEdit = (guest: Guest) => {
-    Alert.alert('Editar Convidado', `Editar ${guest.name}`);
+    setSelectedGuest(guest);
+    setShowForm(true);
   };
 
   const handleDelete = (guest: Guest) => {
@@ -161,7 +166,13 @@ const GuestManagementScreen: React.FC = () => {
           />
         </View>
         
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => {
+            setSelectedGuest(null);
+            setShowForm(true);
+          }}
+        >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -193,6 +204,25 @@ const GuestManagementScreen: React.FC = () => {
           }
         />
       )}
+      
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <GuestForm
+          guest={selectedGuest}
+          onSave={() => {
+            setShowForm(false);
+            setSelectedGuest(null);
+            handleRefresh();
+          }}
+          onCancel={() => {
+            setShowForm(false);
+            setSelectedGuest(null);
+          }}
+        />
+      </Modal>
     </SafeAreaView>
   );
 };
