@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import { Modal } from 'react-native';
 import { apiRequest } from '../../config/api';
 import { useToast } from '../../contexts/ToastContext';
 import { useData } from '../../contexts/DataContext';
@@ -97,6 +98,7 @@ const VisitorScheduleScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [visitors, setVisitors] = useState<VisitorDetails[]>([]);
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorDetails | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
 
@@ -259,7 +261,10 @@ const VisitorScheduleScreen: React.FC = () => {
   };
 
   const renderVisitorItem = ({ item }: { item: VisitorDetails }) => (
-    <VisitorCard visitor={item} onPress={() => setSelectedVisitor(item)} />
+    <VisitorCard visitor={item} onPress={() => {
+      setSelectedVisitor(item);
+      setShowDetailsModal(true);
+    }} />
   );
 
   const renderFooter = () => {
@@ -269,6 +274,166 @@ const VisitorScheduleScreen: React.FC = () => {
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color="#3B82F6" />
       </View>
+    );
+  };
+
+  const VisitorDetailsModal: React.FC = () => {
+    if (!selectedVisitor) return null;
+
+    const formatDateRange = (dateBegin: string, dateEnding: string) => {
+      if (dateBegin === dateEnding) {
+        return dateBegin;
+      }
+      return `${dateBegin} até ${dateEnding}`;
+    };
+
+    return (
+      <Modal
+        visible={showDetailsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDetailsModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowDetailsModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Detalhes do Visitante</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.visitorHeader}>
+              <View style={styles.visitorAvatar}>
+                <Ionicons name="person" size={40} color="#FFFFFF" />
+              </View>
+              <View style={styles.visitorInfo}>
+                <Text style={styles.visitorNameLarge}>{selectedVisitor.visitor_name}</Text>
+                <Text style={styles.visitorCpfLarge}>CPF: {selectedVisitor.cpf}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailsSection}>
+              <Text style={styles.sectionTitle}>Informações Pessoais</Text>
+              
+              <View style={styles.detailItem}>
+                <Ionicons name="person-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Nome Completo</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.visitor_name}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="card-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>CPF</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.cpf}</Text>
+                </View>
+              </View>
+
+              {selectedVisitor.rg && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="card-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>RG</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.rg}</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.detailItem}>
+                <Ionicons name="call-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Telefone</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.visitor_mobile}</Text>
+                </View>
+              </View>
+
+              {selectedVisitor.plate && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="car-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Placa do Veículo</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.plate}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.detailsSection}>
+              <Text style={styles.sectionTitle}>Informações da Visita</Text>
+              
+              <View style={styles.detailItem}>
+                <Ionicons name="home-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Residência</Text>
+                  <Text style={styles.detailValue}>{selectedVisitor.residence}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailItem}>
+                <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                <View style={styles.detailText}>
+                  <Text style={styles.detailLabel}>Período da Visita</Text>
+                  <Text style={styles.detailValue}>
+                    {formatDateRange(selectedVisitor.dateBegin, selectedVisitor.dateEnding)}
+                  </Text>
+                </View>
+              </View>
+
+              {selectedVisitor.observation && (
+                <View style={styles.detailItem}>
+                  <Ionicons name="document-text-outline" size={20} color="#6B7280" />
+                  <View style={styles.detailText}>
+                    <Text style={styles.detailLabel}>Observações</Text>
+                    <Text style={styles.detailValue}>{selectedVisitor.observation}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            {selectedVisitor.responsibles && selectedVisitor.responsibles.length > 0 && (
+              <View style={styles.detailsSection}>
+                <Text style={styles.sectionTitle}>Responsáveis</Text>
+                {selectedVisitor.responsibles.map((responsible, index) => (
+                  <View key={index} style={styles.responsibleItem}>
+                    <View style={styles.responsibleIcon}>
+                      <Ionicons name="person-circle-outline" size={24} color="#3B82F6" />
+                    </View>
+                    <View style={styles.responsibleInfo}>
+                      <Text style={styles.responsibleName}>{responsible.name}</Text>
+                      <Text style={styles.responsiblePhone}>{responsible.mobile}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.actionsSection}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.entryButton]}
+                onPress={() => handleRegisterAction(selectedVisitor.id, 'entry')}
+              >
+                <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Registrar Entrada</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.exitButton]}
+                onPress={() => handleRegisterAction(selectedVisitor.id, 'exit')}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Registrar Saída</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     );
   };
 
@@ -331,6 +496,8 @@ const VisitorScheduleScreen: React.FC = () => {
           }
         />
       )}
+      
+      <VisitorDetailsModal />
     </SafeAreaView>
   );
 };
@@ -493,6 +660,160 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  placeholder: {
+    width: 40,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  visitorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  visitorAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  visitorInfo: {
+    flex: 1,
+  },
+  visitorNameLarge: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  visitorCpfLarge: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  detailsSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  detailText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '500',
+  },
+  responsibleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  responsibleIcon: {
+    marginRight: 12,
+  },
+  responsibleInfo: {
+    flex: 1,
+  },
+  responsibleName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  responsiblePhone: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  actionsSection: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 32,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  entryButton: {
+    backgroundColor: '#10B981',
+  },
+  exitButton: {
+    backgroundColor: '#EF4444',
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 
