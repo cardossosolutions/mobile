@@ -38,7 +38,8 @@ export const API_CONFIG = {
 };
 
 export const updateApiHost = (newHost: string) => {
-  API_CONFIG.BASE_URL = newHost.endsWith('/api') ? newHost : `${newHost}/api`;
+  const cleanHost = newHost.replace(/\/api$/, '');
+  API_CONFIG.BASE_URL = `${cleanHost}/api`;
 };
 
 export const getApiUrl = (endpoint: string) => {

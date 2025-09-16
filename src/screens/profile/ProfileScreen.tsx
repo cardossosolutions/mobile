@@ -27,11 +27,11 @@ const ProfileScreen: React.FC = () => {
   };
 
   const handleChangePassword = () => {
-    Alert.alert('Alterar Senha', 'Funcionalidade em desenvolvimento');
+    navigation.navigate('ChangePassword');
   };
 
   const handleApiConfig = () => {
-    Alert.alert('Configurar API', 'Funcionalidade em desenvolvimento');
+    navigation.navigate('ApiConfig');
   };
 
   const ProfileItem: React.FC<{ 

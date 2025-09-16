@@ -13,30 +13,53 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../contexts/AuthContext';
+import { apiRequestNoAuth, API_CONFIG } from '../../config/api';
+import { useToast } from '../../contexts/ToastContext';
 
-const LoginScreen: React.FC = () => {
+interface ForgotPasswordScreenProps {
+  navigation: any;
+}
+
+const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { showSuccess, showError } = useToast();
 
   const handleSubmit = async () => {
-    if (!email || !password) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
+    if (!email) {
+      Alert.alert('Erro', 'Por favor, digite seu email');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      Alert.alert('Erro', 'Por favor, digite um email válido');
       return;
     }
 
     setLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (!success) {
-        Alert.alert('Erro', 'Email ou senha incorretos');
-      }
-    } catch (err) {
-      Alert.alert('Erro', 'Erro ao conectar com o servidor. Verifique a configuração da API.');
+      await apiRequestNoAuth(API_CONFIG.ENDPOINTS.SEND_RESET, {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      });
+
+      showSuccess(
+        'Email enviado!', 
+        'Verifique sua caixa de entrada para redefinir sua senha.'
+      );
+      
+      // Navegar para tela de redefinição após 2 segundos
+      setTimeout(() => {
+        navigation.navigate('ResetPassword');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Erro ao enviar email:', error);
+      showError(
+        'Erro ao enviar email', 
+        'Não foi possível enviar o email de recuperação. Tente novamente.'
+      );
     } finally {
       setLoading(false);
     }
@@ -52,12 +75,21 @@ const LoginScreen: React.FC = () => {
         style={styles.gradient}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
-              <Ionicons name="shield-checkmark" size={60} color="#FFFFFF" />
+              <Ionicons name="mail" size={60} color="#FFFFFF" />
             </View>
-            <Text style={styles.title}>Portal do Visitante</Text>
-            <Text style={styles.subtitle}>Sistema de controle de acesso para condomínios</Text>
+            <Text style={styles.title}>Esqueci minha senha</Text>
+            <Text style={styles.subtitle}>
+              Digite seu email para receber as instruções de recuperação
+            </Text>
           </View>
 
           <View style={styles.formContainer}>
@@ -65,7 +97,7 @@ const LoginScreen: React.FC = () => {
               <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder="Digite seu email"
                 placeholderTextColor="#9CA3AF"
                 value={email}
                 onChangeText={setEmail}
@@ -75,56 +107,32 @@ const LoginScreen: React.FC = () => {
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="Senha"
-                placeholderTextColor="#9CA3AF"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons 
-                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={20} 
-                  color="#6B7280" 
-                />
-              </TouchableOpacity>
-            </View>
-
             <TouchableOpacity
-              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
               onPress={handleSubmit}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.loginButtonText}>Entrar</Text>
+                <Text style={styles.submitButtonText}>Enviar instruções</Text>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.forgotPasswordButton}>
-              <Text 
-                style={styles.forgotPasswordText}
-                onPress={() => navigation.navigate('ForgotPassword')}
-              >
-                Esqueci minha senha
-              </Text>
+            <TouchableOpacity 
+              style={styles.backToLoginButton}
+              onPress={() => navigation.navigate('Login')}
+            >
+              <Text style={styles.backToLoginText}>Voltar ao login</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.credentialsContainer}>
-            <Text style={styles.credentialsTitle}>Credenciais de teste:</Text>
-            <Text style={styles.credentialsText}>Email: admin@condominio.com</Text>
-            <Text style={styles.credentialsText}>Senha: admin123</Text>
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoTitle}>Como funciona:</Text>
+            <Text style={styles.infoText}>1. Digite seu email cadastrado</Text>
+            <Text style={styles.infoText}>2. Verifique sua caixa de entrada</Text>
+            <Text style={styles.infoText}>3. Clique no link recebido</Text>
+            <Text style={styles.infoText}>4. Defina sua nova senha</Text>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -143,6 +151,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    padding: 8,
+    zIndex: 1,
   },
   logoContainer: {
     alignItems: 'center',
@@ -203,15 +218,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
   },
-  passwordInput: {
-    paddingRight: 50,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 16,
-    padding: 4,
-  },
-  loginButton: {
+  submitButton: {
     backgroundColor: '#3B82F6',
     borderRadius: 12,
     height: 50,
@@ -227,24 +234,24 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  loginButtonDisabled: {
+  submitButtonDisabled: {
     opacity: 0.6,
   },
-  loginButtonText: {
+  submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  forgotPasswordButton: {
+  backToLoginButton: {
     alignItems: 'center',
     marginTop: 16,
   },
-  forgotPasswordText: {
+  backToLoginText: {
     color: '#3B82F6',
     fontSize: 14,
     fontWeight: '500',
   },
-  credentialsContainer: {
+  infoContainer: {
     alignItems: 'center',
     marginTop: 30,
     padding: 16,
@@ -252,17 +259,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 20,
   },
-  credentialsTitle: {
+  infoTitle: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  credentialsText: {
+  infoText: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 12,
-    marginBottom: 2,
+    marginBottom: 4,
+    textAlign: 'center',
   },
 });
 
-export default LoginScreen;
+export default ForgotPasswordScreen;

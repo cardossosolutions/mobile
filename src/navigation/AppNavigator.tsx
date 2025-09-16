@@ -8,6 +8,9 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginScreen from '../screens/auth/LoginScreen';
 import LoadingScreen from '../screens/auth/LoadingScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
+import ApiConfigScreen from '../screens/profile/ApiConfigScreen';
 import VisitorScheduleScreen from '../screens/schedule/VisitorScheduleScreen';
 import ProviderScheduleScreen from '../screens/schedule/ProviderScheduleScreen';
 import DeliveryScheduleScreen from '../screens/schedule/DeliveryScheduleScreen';
@@ -277,7 +280,10 @@ export default function AppNavigator() {
       ) : (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="ApiConfig" component={ApiConfigScreen} />
         </>
       )}
     </Stack.Navigator>
