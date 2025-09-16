@@ -8,14 +8,14 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
-  RefreshControl
+  RefreshControl,
+  Modal,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useData } from '../../contexts/DataContext';
-import GuestForm from '../../components/forms/GuestForm';
-import { Modal } from 'react-native';
 
 interface Guest {
   id: string;
@@ -26,6 +26,152 @@ interface Guest {
   observation?: string;
   residence?: string;
 }
+
+const GuestForm: React.FC<{ 
+  guest?: Guest | null; 
+  onSave: () => void; 
+  onCancel: () => void 
+}> = ({ guest, onSave, onCancel }) => {
+  const { addGuest, updateGuest } = useData();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: guest?.name || '',
+    cpf: guest?.cpf || '',
+    rg: guest?.rg || '',
+    plate: guest?.plate || '',
+    observation: guest?.observation || '',
+    residence: guest?.residence || ''
+  });
+
+  const handleSave = async () => {
+    if (!formData.name.trim() || !formData.cpf.trim()) {
+      Alert.alert('Erro', 'Nome e CPF são obrigatórios');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (guest?.id) {
+        await updateGuest(guest.id, formData);
+      } else {
+        await addGuest(formData);
+      }
+      onSave();
+    } catch (error) {
+      console.error('Erro ao salvar convidado:', error);
+      Alert.alert('Erro', 'Não foi possível salvar o convidado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.modalContainer}>
+      <View style={styles.modalHeader}>
+        <TouchableOpacity onPress={onCancel} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#6B7280" />
+        </TouchableOpacity>
+        <Text style={styles.modalTitle}>
+          {guest ? 'Editar Convidado' : 'Novo Convidado'}
+        </Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <ScrollView style={styles.modalContent}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Informações Pessoais</Text>
+          
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Nome Completo *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.name}
+              onChangeText={(text) => setFormData({...formData, name: text})}
+              placeholder="Digite o nome completo"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>CPF *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.cpf}
+              onChangeText={(text) => setFormData({...formData, cpf: text})}
+              placeholder="000.000.000-00"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>RG</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.rg}
+              onChangeText={(text) => setFormData({...formData, rg: text})}
+              placeholder="Digite o RG"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Placa do Veículo</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.plate}
+              onChangeText={(text) => setFormData({...formData, plate: text})}
+              placeholder="ABC-1234"
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="characters"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Residência</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.residence}
+              onChangeText={(text) => setFormData({...formData, residence: text})}
+              placeholder="Digite a residência"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Observações</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={formData.observation}
+              onChangeText={(text) => setFormData({...formData, observation: text})}
+              placeholder="Observações adicionais"
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+              <Text style={styles.saveButtonText}>Salvar</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
 
 const GuestCard: React.FC<{ guest: Guest; onEdit: () => void; onDelete: () => void }> = ({ 
   guest, 
@@ -56,6 +202,13 @@ const GuestCard: React.FC<{ guest: Guest; onEdit: () => void; onDelete: () => vo
           <View style={styles.infoRow}>
             <Ionicons name="car-outline" size={16} color="#6B7280" />
             <Text style={styles.infoText}>Placa: {guest.plate}</Text>
+          </View>
+        )}
+
+        {guest.residence && (
+          <View style={styles.infoRow}>
+            <Ionicons name="home-outline" size={16} color="#6B7280" />
+            <Text style={styles.infoText}>Residência: {guest.residence}</Text>
           </View>
         )}
 
@@ -127,11 +280,28 @@ const GuestManagementScreen: React.FC = () => {
               handleRefresh();
             } catch (error) {
               console.error('Erro ao excluir convidado:', error);
+              Alert.alert('Erro', 'Não foi possível excluir o convidado');
             }
           }
         }
       ]
     );
+  };
+
+  const handleAddNew = () => {
+    setSelectedGuest(null);
+    setShowForm(true);
+  };
+
+  const handleFormSave = () => {
+    setShowForm(false);
+    setSelectedGuest(null);
+    handleRefresh();
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setSelectedGuest(null);
   };
 
   const renderGuestItem = ({ item }: { item: Guest }) => (
@@ -166,13 +336,7 @@ const GuestManagementScreen: React.FC = () => {
           />
         </View>
         
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => {
-            setSelectedGuest(null);
-            setShowForm(true);
-          }}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -212,15 +376,8 @@ const GuestManagementScreen: React.FC = () => {
       >
         <GuestForm
           guest={selectedGuest}
-          onSave={() => {
-            setShowForm(false);
-            setSelectedGuest(null);
-            handleRefresh();
-          }}
-          onCancel={() => {
-            setShowForm(false);
-            setSelectedGuest(null);
-          }}
+          onSave={handleFormSave}
+          onCancel={handleFormCancel}
         />
       </Modal>
     </SafeAreaView>
@@ -342,19 +499,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
-  badgeContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
   cardActions: {
     flexDirection: 'row',
     padding: 16,
@@ -409,6 +553,92 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  placeholder: {
+    width: 40,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  section: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#111827',
+    backgroundColor: '#FFFFFF',
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  footer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    padding: 16,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

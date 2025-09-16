@@ -293,7 +293,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   // Implementações simplificadas para as outras entidades
   const loadGuests = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      let url = `${API_CONFIG.ENDPOINTS.GUESTS_LIST}?page=${page}`;
+      let url = `${API_CONFIG.ENDPOINTS.GUESTS}?page=${page}`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
@@ -356,7 +356,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   const loadAppointments = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      let url = `${API_CONFIG.ENDPOINTS.APPOINTMENTS}?page=${page}`;
+      let url = `${API_CONFIG.ENDPOINTS.APPOINTMENTS_REGISTER}?page=${page}`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
@@ -482,7 +482,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   const loadDeliveries = useCallback(async (page: number = 1, search: string = '') => {
     try {
-      let url = `${API_CONFIG.ENDPOINTS.DELIVERIES_LIST}?page=${page}`;
+      let url = `${API_CONFIG.ENDPOINTS.DELIVERIES}?page=${page}`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
       }
