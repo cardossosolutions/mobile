@@ -42,11 +42,12 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
   const [ecommerces, setEcommerces] = useState<Ecommerce[]>([]);
   const [formData, setFormData] = useState<Delivery>({
     ecommerce: delivery?.ecommerce || '',
-    ecommerce_id: delivery?.ecommerce_id || null,
+    ecommerce_id: delivery?.ecommerce_id || 0,
     quantity: delivery?.quantity || 1,
     date_start: delivery?.date_start ? formatDateToInput(delivery.date_start) : getCurrentDate(),
     date_ending: delivery?.date_ending ? formatDateToInput(delivery.date_ending) : getCurrentDate()
   });
+  const [customEcommerce, setCustomEcommerce] = useState('');
 
   // Função para obter data atual no formato MM/DD/YYYY
   function getCurrentDate(): string {
@@ -144,7 +145,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
   }, []);
 
   const handleSave = async () => {
-    if (!formData.ecommerce_id) {
+    if (!formData.ecommerce_id || formData.ecommerce_id === 0) {
       Alert.alert('Erro', 'Selecione um e-commerce');
       return;
     }
@@ -177,6 +178,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
     try {
       const dataToSave = {
         ...formData,
+        ecommerce: formData.ecommerce_id === -1 ? customEcommerce : formData.ecommerce,
         date_start: formatDateToBackend(formData.date_start),
         date_ending: formatDateToBackend(formData.date_ending)
       };
@@ -196,12 +198,22 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
   };
 
   const handleEcommerceChange = (ecommerceId: number) => {
-    const selectedEcommerce = ecommerces.find(e => e.id === ecommerceId);
-    setFormData({
-      ...formData,
-      ecommerce_id: ecommerceId,
-      ecommerce: selectedEcommerce ? selectedEcommerce.name : ''
-    });
+    if (ecommerceId === -1) {
+      // Opção "Outros" selecionada
+      setFormData({
+        ...formData,
+        ecommerce_id: -1,
+        ecommerce: ''
+      });
+    } else {
+      const selectedEcommerce = ecommerces.find(e => e.id === ecommerceId);
+      setFormData({
+        ...formData,
+        ecommerce_id: ecommerceId,
+        ecommerce: selectedEcommerce ? selectedEcommerce.name : ''
+      });
+      setCustomEcommerce('');
+    }
   };
 
   const handleDateChange = (field: 'date_start' | 'date_ending', text: string) => {
@@ -234,25 +246,41 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
               <Text style={styles.loadingText}>Carregando e-commerces...</Text>
             </View>
           ) : (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>E-commerce / Loja *</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={formData.ecommerce_id}
-                  onValueChange={handleEcommerceChange}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Selecione um e-commerce..." value={0} />
-                  {ecommerces.map((ecommerce) => (
-                    <Picker.Item
-                      key={ecommerce.id}
-                      label={ecommerce.name}
-                      value={ecommerce.id}
-                    />
-                  ))}
-                </Picker>
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-commerce / Loja *</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={formData.ecommerce_id}
+                    onValueChange={handleEcommerceChange}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Selecione um e-commerce..." value={0} />
+                    {ecommerces.map((ecommerce) => (
+                      <Picker.Item
+                        key={ecommerce.id}
+                        label={ecommerce.name}
+                        value={ecommerce.id}
+                      />
+                    ))}
+                    <Picker.Item label="Outros" value={-1} />
+                  </Picker>
+                </View>
               </View>
-            </View>
+
+              {formData.ecommerce_id === -1 && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Nome do E-commerce / Loja *</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={customEcommerce}
+                    onChangeText={setCustomEcommerce}
+                    placeholder="Digite o nome do e-commerce"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+              )}
+            </>
           )}
 
           <View style={styles.inputGroup}>
