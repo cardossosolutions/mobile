@@ -145,59 +145,6 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
     loadEcommerces();
   }, []);
 
-  const handleSave = async () => {
-    if (!formData.ecommerce_id || formData.ecommerce_id === 0) {
-      Alert.alert('Erro', 'Selecione um e-commerce');
-      return;
-    }
-
-    if (!formData.date_start || !formData.date_ending) {
-      Alert.alert('Erro', 'Datas de início e fim são obrigatórias');
-      return;
-    }
-
-    if (!isValidDateFormat(formData.date_start) || !isValidDateFormat(formData.date_ending)) {
-      Alert.alert('Erro', 'Use o formato DD/MM/YYYY para as datas');
-      return;
-    }
-
-    // Validar se data de início não é posterior à data de fim
-    const startDate = new Date(formatDateToBackend(formData.date_start));
-    const endDate = new Date(formatDateToBackend(formData.date_ending));
-    
-    if (startDate > endDate) {
-      Alert.alert('Erro', 'A data de início não pode ser posterior à data de fim');
-      return;
-    }
-
-    if (formData.quantity < 1) {
-      Alert.alert('Erro', 'Quantidade deve ser maior que zero');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const dataToSave = {
-        ...formData,
-        ecommerce: formData.ecommerce_id === -1 ? customEcommerce : formData.ecommerce,
-        date_start: formatDateToBackend(formData.date_start),
-        date_ending: formatDateToBackend(formData.date_ending)
-      };
-
-      if (delivery?.id) {
-        await updateDelivery(delivery.id, dataToSave);
-      } else {
-        await addDelivery(dataToSave);
-      }
-      onSave();
-    } catch (error) {
-      console.error('Erro ao salvar entrega:', error);
-      Alert.alert('Erro', 'Não foi possível salvar a entrega. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleEcommerceChange = (ecommerceId: number) => {
     if (ecommerceId === -1) {
       // Opção "Outros" selecionada
