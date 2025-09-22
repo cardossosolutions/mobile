@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useData } from '../../contexts/DataContext';
+import { apiRequest, API_CONFIG } from '../../config/api';
 
 interface Delivery {
   id?: number;
@@ -43,51 +44,97 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
     ecommerce: delivery?.ecommerce || '',
     ecommerce_id: delivery?.ecommerce_id || null,
     quantity: delivery?.quantity || 1,
-    date_start: delivery?.date_start ? formatDateToInput(delivery.date_start) : '',
-    date_ending: delivery?.date_ending ? formatDateToInput(delivery.date_ending) : ''
+    date_start: delivery?.date_start ? formatDateToInput(delivery.date_start) : getCurrentDate(),
+    date_ending: delivery?.date_ending ? formatDateToInput(delivery.date_ending) : getCurrentDate()
   });
+
+  // Função para obter data atual no formato MM/DD/YYYY
+  function getCurrentDate(): string {
+    const today = new Date();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const year = today.getFullYear();
+    return `${month}/${day}/${year}`;
+  }
 
   // Função para formatar data do backend (YYYY-MM-DD) para input (MM/DD/YYYY)
   function formatDateToInput(dateString: string): string {
     if (!dateString) return '';
-    const [year, month, day] = dateString.split('-');
-    return `${month}/${day}/${year}`;
+    try {
+      const date = new Date(dateString);
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${month}/${day}/${year}`;
+    } catch {
+      return getCurrentDate();
+    }
   }
 
   // Função para formatar data do input (MM/DD/YYYY) para backend (YYYY-MM-DD)
   function formatDateToBackend(dateString: string): string {
     if (!dateString) return '';
-    const [month, day, year] = dateString.split('/');
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    try {
+      const [month, day, year] = dateString.split('/');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    } catch {
+      return '';
+    }
   }
 
   // Função para validar formato de data MM/DD/YYYY
   function isValidDateFormat(dateString: string): boolean {
     const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/;
-    return regex.test(dateString);
+    if (!regex.test(dateString)) return false;
+    
+    // Validar se a data é válida
+    const [month, day, year] = dateString.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && 
+           date.getMonth() === month - 1 && 
+           date.getDate() === day;
   }
 
-  // Carregar lista de e-commerces
+  // Função para formatar input de data enquanto digita
+  function formatDateInput(text: string): string {
+    // Remove tudo que não é número
+    const numbers = text.replace(/\D/g, '');
+    
+    // Aplica a máscara MM/DD/YYYY
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    } else {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    }
+  }
+
+  // Carregar lista de e-commerces da API
   React.useEffect(() => {
     const loadEcommerces = async () => {
       setLoadingEcommerces(true);
       try {
-        // Simulando lista de e-commerces - substitua pela chamada real da API
-        const mockEcommerces = [
+        const response = await apiRequest(API_CONFIG.ENDPOINTS.ECOMMERCES, {
+          method: 'GET'
+        });
+        
+        if (response && Array.isArray(response)) {
+          setEcommerces(response);
+        } else {
+          console.warn('Resposta da API de e-commerces não é um array:', response);
+          setEcommerces([]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar e-commerces:', error);
+        // Fallback com lista básica em caso de erro
+        setEcommerces([
           { id: 1, name: 'Amazon' },
           { id: 2, name: 'Mercado Livre' },
           { id: 3, name: 'Shopee' },
           { id: 4, name: 'Magazine Luiza' },
-          { id: 5, name: 'Americanas' },
-          { id: 6, name: 'Casas Bahia' },
-          { id: 7, name: 'Submarino' },
-          { id: 8, name: 'Extra' },
-          { id: 9, name: 'Ponto Frio' },
-          { id: 10, name: 'Outros' }
-        ];
-        setEcommerces(mockEcommerces);
-      } catch (error) {
-        console.error('Erro ao carregar e-commerces:', error);
+          { id: 5, name: 'Americanas' }
+        ]);
       } finally {
         setLoadingEcommerces(false);
       }
@@ -95,9 +142,10 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
 
     loadEcommerces();
   }, []);
+
   const handleSave = async () => {
-    if (!formData.ecommerce_id && !formData.ecommerce.trim()) {
-      Alert.alert('Erro', 'Selecione um e-commerce ou digite o nome');
+    if (!formData.ecommerce_id) {
+      Alert.alert('Erro', 'Selecione um e-commerce');
       return;
     }
 
@@ -108,6 +156,15 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
 
     if (!isValidDateFormat(formData.date_start) || !isValidDateFormat(formData.date_ending)) {
       Alert.alert('Erro', 'Use o formato MM/DD/YYYY para as datas');
+      return;
+    }
+
+    // Validar se data de início não é posterior à data de fim
+    const startDate = new Date(formatDateToBackend(formData.date_start));
+    const endDate = new Date(formatDateToBackend(formData.date_ending));
+    
+    if (startDate > endDate) {
+      Alert.alert('Erro', 'A data de início não pode ser posterior à data de fim');
       return;
     }
 
@@ -132,12 +189,13 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
       onSave();
     } catch (error) {
       console.error('Erro ao salvar entrega:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a entrega. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEcommerceChange = (ecommerceId: number | null) => {
+  const handleEcommerceChange = (ecommerceId: number) => {
     const selectedEcommerce = ecommerces.find(e => e.id === ecommerceId);
     setFormData({
       ...formData,
@@ -145,6 +203,15 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
       ecommerce: selectedEcommerce ? selectedEcommerce.name : ''
     });
   };
+
+  const handleDateChange = (field: 'date_start' | 'date_ending', text: string) => {
+    const formattedDate = formatDateInput(text);
+    setFormData({
+      ...formData,
+      [field]: formattedDate
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -175,7 +242,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
                   onValueChange={handleEcommerceChange}
                   style={styles.picker}
                 >
-                  <Picker.Item label="Selecione um e-commerce..." value={null} />
+                  <Picker.Item label="Selecione um e-commerce..." value={0} />
                   {ecommerces.map((ecommerce) => (
                     <Picker.Item
                       key={ecommerce.id}
@@ -185,19 +252,6 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
                   ))}
                 </Picker>
               </View>
-              
-              {formData.ecommerce_id === 10 && (
-                <View style={styles.customInputGroup}>
-                  <Text style={styles.label}>Nome personalizado *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.ecommerce}
-                    onChangeText={(text) => setFormData({...formData, ecommerce: text})}
-                    placeholder="Digite o nome do e-commerce"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
-              )}
             </View>
           )}
 
@@ -218,27 +272,35 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
           <Text style={styles.sectionTitle}>Período da Entrega</Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Data de Início * (MM/DD/YYYY)</Text>
+            <Text style={styles.label}>Data de Início *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.dateInput]}
               value={formData.date_start}
-              onChangeText={(text) => setFormData({...formData, date_start: text})}
+              onChangeText={(text) => handleDateChange('date_start', text)}
               placeholder="MM/DD/YYYY"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
+              maxLength={10}
             />
+            <View style={styles.dateIcon}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Data de Fim * (MM/DD/YYYY)</Text>
+            <Text style={styles.label}>Data de Fim *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.dateInput]}
               value={formData.date_ending}
-              onChangeText={(text) => setFormData({...formData, date_ending: text})}
+              onChangeText={(text) => handleDateChange('date_ending', text)}
               placeholder="MM/DD/YYYY"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
+              maxLength={10}
             />
+            <View style={styles.dateIcon}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+            </View>
           </View>
           
           <Text style={styles.dateHint}>
@@ -310,9 +372,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 20,
-  },
-  customInputGroup: {
-    marginTop: 12,
+    position: 'relative',
   },
   label: {
     fontSize: 14,
@@ -328,6 +388,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
     backgroundColor: '#FFFFFF',
+  },
+  dateInput: {
+    paddingRight: 40,
+  },
+  dateIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pickerContainer: {
     borderWidth: 1,
