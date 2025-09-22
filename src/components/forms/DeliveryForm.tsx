@@ -214,7 +214,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
     try {
       // Preparar payload conforme especificado
       const payload = {
-        ecommerce: formData.ecommerce_id === -1 ? 'Outros' : selectedEcommerceName,
+        ecommerce: formData.ecommerce_id === -1 ? null : formData.ecommerce_id,
         other_name: formData.ecommerce_id === -1 ? customEcommerce.trim() : '',
         quantity: formData.quantity,
         date_start: formatDateToBackend(formData.date_start),
