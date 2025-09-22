@@ -12,8 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { useData } from '../../contexts/DataContext';
 import { apiRequest, API_CONFIG } from '../../config/api';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Delivery {
   id?: number;
@@ -36,7 +36,7 @@ interface DeliveryFormProps {
 }
 
 const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel }) => {
-  const { addDelivery, updateDelivery } = useData();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingEcommerces, setLoadingEcommerces] = useState(true);
   const [ecommerces, setEcommerces] = useState<Ecommerce[]>([]);
@@ -48,6 +48,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
     date_ending: delivery?.date_ending ? formatDateToInput(delivery.date_ending) : getCurrentDate()
   });
   const [customEcommerce, setCustomEcommerce] = useState('');
+  const [selectedEcommerceName, setSelectedEcommerceName] = useState('');
 
   // Função para obter data atual no formato MM/DD/YYYY
   function getCurrentDate(): string {
@@ -203,8 +204,9 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
       setFormData({
         ...formData,
         ecommerce_id: -1,
-        ecommerce: ''
+        ecommerce: 'Outros'
       });
+      setSelectedEcommerceName('Outros');
     } else {
       const selectedEcommerce = ecommerces.find(e => e.id === ecommerceId);
       setFormData({
@@ -212,6 +214,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
         ecommerce_id: ecommerceId,
         ecommerce: selectedEcommerce ? selectedEcommerce.name : ''
       });
+      setSelectedEcommerceName(selectedEcommerce ? selectedEcommerce.name : '');
       setCustomEcommerce('');
     }
   };
@@ -222,6 +225,90 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
       ...formData,
       [field]: formattedDate
     });
+  };
+
+  const handleSave = async () => {
+    // Validações
+    if (!formData.ecommerce_id || formData.ecommerce_id === 0) {
+      Alert.alert('Erro', 'Selecione um e-commerce');
+      return;
+    }
+
+    if (formData.ecommerce_id === -1 && !customEcommerce.trim()) {
+      Alert.alert('Erro', 'Digite o nome do e-commerce');
+      return;
+    }
+
+    if (!formData.date_start || !formData.date_ending) {
+      Alert.alert('Erro', 'Datas de início e fim são obrigatórias');
+      return;
+    }
+
+    if (!isValidDateFormat(formData.date_start) || !isValidDateFormat(formData.date_ending)) {
+      Alert.alert('Erro', 'Use o formato DD/MM/YYYY para as datas');
+      return;
+    }
+
+    // Validar se data de início não é posterior à data de fim
+    const startDate = new Date(formatDateToBackend(formData.date_start));
+    const endDate = new Date(formatDateToBackend(formData.date_ending));
+    
+    if (startDate > endDate) {
+      Alert.alert('Erro', 'A data de início não pode ser posterior à data de fim');
+      return;
+    }
+
+    if (formData.quantity < 1) {
+      Alert.alert('Erro', 'Quantidade deve ser maior que zero');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Preparar payload conforme especificado
+      const payload = {
+        ecommerce: formData.ecommerce_id === -1 ? 'Outros' : selectedEcommerceName,
+        other_name: formData.ecommerce_id === -1 ? customEcommerce.trim() : '',
+        quantity: formData.quantity,
+        date_start: formatDateToBackend(formData.date_start),
+        date_ending: formatDateToBackend(formData.date_ending)
+      };
+
+      let response;
+      if (delivery?.id) {
+        // PUT para alterar
+        response = await apiRequest(`${API_CONFIG.ENDPOINTS.DELIVERIES}/${delivery.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+      } else {
+        // POST para criar
+        response = await apiRequest(API_CONFIG.ENDPOINTS.DELIVERIES, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      }
+
+      // Mostrar mensagem de sucesso
+      if (response && response.message) {
+        showSuccess('Sucesso!', response.message);
+      } else {
+        showSuccess(
+          delivery ? 'Entrega atualizada!' : 'Entrega cadastrada!',
+          delivery ? 'A entrega foi atualizada com sucesso.' : 'A entrega foi cadastrada com sucesso.'
+        );
+      }
+
+      onSave();
+    } catch (error) {
+      console.error('Erro ao salvar entrega:', error);
+      showError(
+        'Erro ao salvar entrega',
+        'Não foi possível salvar a entrega. Verifique os dados e tente novamente.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
