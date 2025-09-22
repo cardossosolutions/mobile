@@ -51,56 +51,56 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
   // Função para obter data atual no formato MM/DD/YYYY
   function getCurrentDate(): string {
     const today = new Date();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
     const day = today.getDate().toString().padStart(2, '0');
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
     const year = today.getFullYear();
-    return `${month}/${day}/${year}`;
+    return `${day}/${month}/${year}`;
   }
 
-  // Função para formatar data do backend (YYYY-MM-DD) para input (MM/DD/YYYY)
+  // Função para formatar data do backend (YYYY-MM-DD) para input (DD/MM/YYYY)
   function formatDateToInput(dateString: string): string {
     if (!dateString) return '';
     try {
       const date = new Date(dateString);
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
       const year = date.getFullYear();
-      return `${month}/${day}/${year}`;
+      return `${day}/${month}/${year}`;
     } catch {
       return getCurrentDate();
     }
   }
 
-  // Função para formatar data do input (MM/DD/YYYY) para backend (YYYY-MM-DD)
+  // Função para formatar data do input (DD/MM/YYYY) para backend (YYYY-MM-DD)
   function formatDateToBackend(dateString: string): string {
     if (!dateString) return '';
     try {
-      const [month, day, year] = dateString.split('/');
+      const [day, month, year] = dateString.split('/');
       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     } catch {
       return '';
     }
   }
 
-  // Função para validar formato de data MM/DD/YYYY
+  // Função para validar formato de data DD/MM/YYYY
   function isValidDateFormat(dateString: string): boolean {
-    const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/;
+    const regex = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
     if (!regex.test(dateString)) return false;
     
     // Validar se a data é válida
-    const [month, day, year] = dateString.split('/').map(Number);
+    const [day, month, year] = dateString.split('/').map(Number);
     const date = new Date(year, month - 1, day);
     return date.getFullYear() === year && 
            date.getMonth() === month - 1 && 
            date.getDate() === day;
   }
 
-  // Função para formatar input de data enquanto digita
+  // Função para formatar input de data enquanto digita DD/MM/YYYY
   function formatDateInput(text: string): string {
     // Remove tudo que não é número
     const numbers = text.replace(/\D/g, '');
     
-    // Aplica a máscara MM/DD/YYYY
+    // Aplica a máscara DD/MM/YYYY
     if (numbers.length <= 2) {
       return numbers;
     } else if (numbers.length <= 4) {
@@ -155,7 +155,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
     }
 
     if (!isValidDateFormat(formData.date_start) || !isValidDateFormat(formData.date_ending)) {
-      Alert.alert('Erro', 'Use o formato MM/DD/YYYY para as datas');
+      Alert.alert('Erro', 'Use o formato DD/MM/YYYY para as datas');
       return;
     }
 
@@ -277,7 +277,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
               style={[styles.input, styles.dateInput]}
               value={formData.date_start}
               onChangeText={(text) => handleDateChange('date_start', text)}
-              placeholder="MM/DD/YYYY"
+              placeholder="DD/MM/YYYY"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
               maxLength={10}
@@ -293,7 +293,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
               style={[styles.input, styles.dateInput]}
               value={formData.date_ending}
               onChangeText={(text) => handleDateChange('date_ending', text)}
-              placeholder="MM/DD/YYYY"
+              placeholder="DD/MM/YYYY"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
               maxLength={10}
@@ -304,7 +304,7 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
           </View>
           
           <Text style={styles.dateHint}>
-            💡 Use o formato MM/DD/YYYY (exemplo: 12/25/2024)
+            💡 Use o formato DD/MM/YYYY (exemplo: 25/12/2024)
           </Text>
         </View>
       </ScrollView>
