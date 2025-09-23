@@ -35,16 +35,87 @@ interface ServiceProviderFormProps {
 const ServiceProviderForm: React.FC<ServiceProviderFormProps> = ({ provider, onSave, onCancel }) => {
   const { addServiceProvider, updateServiceProvider } = useData();
   const [loading, setLoading] = useState(false);
+
+  // Função para obter data atual no formato DD/MM/YYYY
+  const getCurrentDate = (): string => {
+    const today = new Date();
+    const day = today.getDate().toString().padStart(2, '0');
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const year = today.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Função para formatar data do backend (YYYY-MM-DD) para input (DD/MM/YYYY)
+  const formatDateToInput = (dateString: string): string => {
+    if (!dateString) return getCurrentDate();
+    try {
+      const date = new Date(dateString);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return getCurrentDate();
+    }
+  };
+
+  // Função para formatar data do input (DD/MM/YYYY) para backend (YYYY-MM-DD)
+  const formatDateToBackend = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const [day, month, year] = dateString.split('/');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    } catch {
+      return '';
+    }
+  };
+
+  // Função para validar formato de data DD/MM/YYYY
+  const isValidDateFormat = (dateString: string): boolean => {
+    const regex = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    if (!regex.test(dateString)) return false;
+    
+    // Validar se a data é válida
+    const [day, month, year] = dateString.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && 
+           date.getMonth() === month - 1 && 
+           date.getDate() === day;
+  };
+
+  // Função para formatar input de data enquanto digita DD/MM/YYYY
+  const formatDateInput = (text: string): string => {
+    // Remove tudo que não é número
+    const numbers = text.replace(/\D/g, '');
+    
+    // Aplica a máscara DD/MM/YYYY
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    } else {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    }
+  };
+
   const [formData, setFormData] = useState<ServiceProvider>({
     name: provider?.name || '',
     mobile: provider?.mobile || '',
     rg: provider?.rg || '',
     cpf: provider?.cpf || '',
     plate: provider?.plate || '',
-    date_start: provider?.date_start || '',
-    date_ending: provider?.date_ending || '',
+    date_start: provider?.date_start ? formatDateToInput(provider.date_start) : getCurrentDate(),
+    date_ending: provider?.date_ending ? formatDateToInput(provider.date_ending) : getCurrentDate(),
     observation: provider?.observation || ''
   });
+
+  const handleDateChange = (field: 'date_start' | 'date_ending', text: string) => {
+    const formattedDate = formatDateInput(text);
+    setFormData({
+      ...formData,
+      [field]: formattedDate
+    });
+  };
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.cpf.trim() || !formData.mobile.trim()) {
@@ -57,12 +128,33 @@ const ServiceProviderForm: React.FC<ServiceProviderFormProps> = ({ provider, onS
       return;
     }
 
+    if (!isValidDateFormat(formData.date_start) || !isValidDateFormat(formData.date_ending)) {
+      Alert.alert('Erro', 'Use o formato DD/MM/YYYY para as datas');
+      return;
+    }
+
+    // Validar se data de início não é posterior à data de fim
+    const startDate = new Date(formatDateToBackend(formData.date_start));
+    const endDate = new Date(formatDateToBackend(formData.date_ending));
+    
+    if (startDate > endDate) {
+      Alert.alert('Erro', 'A data de início não pode ser posterior à data de fim');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Preparar dados com datas no formato correto para o backend
+      const dataToSend = {
+        ...formData,
+        date_start: formatDateToBackend(formData.date_start),
+        date_ending: formatDateToBackend(formData.date_ending)
+      };
+
       if (provider?.id) {
-        await updateServiceProvider(provider.id, formData);
+        await updateServiceProvider(provider.id, dataToSend);
       } else {
-        await addServiceProvider(formData);
+        await addServiceProvider(dataToSend);
       }
       onSave();
     } catch (error) {
@@ -153,24 +245,38 @@ const ServiceProviderForm: React.FC<ServiceProviderFormProps> = ({ provider, onS
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Data de Início *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.dateInput]}
               value={formData.date_start}
-              onChangeText={(text) => setFormData({...formData, date_start: text})}
-              placeholder="YYYY-MM-DD"
+              onChangeText={(text) => handleDateChange('date_start', text)}
+              placeholder="DD/MM/YYYY"
               placeholderTextColor="#9CA3AF"
+              keyboardType="numeric"
+              maxLength={10}
             />
+            <View style={styles.dateIcon}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Data de Fim *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.dateInput]}
               value={formData.date_ending}
-              onChangeText={(text) => setFormData({...formData, date_ending: text})}
-              placeholder="YYYY-MM-DD"
+              onChangeText={(text) => handleDateChange('date_ending', text)}
+              placeholder="DD/MM/YYYY"
               placeholderTextColor="#9CA3AF"
+              keyboardType="numeric"
+              maxLength={10}
             />
+            <View style={styles.dateIcon}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+            </View>
           </View>
+
+          <Text style={styles.dateHint}>
+            💡 Use o formato DD/MM/YYYY (exemplo: 25/12/2024)
+          </Text>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Observações</Text>
@@ -250,6 +356,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 20,
+    position: 'relative',
   },
   label: {
     fontSize: 14,
@@ -265,6 +372,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
     backgroundColor: '#FFFFFF',
+  },
+  dateInput: {
+    paddingRight: 40,
+  },
+  dateIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dateHint: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginTop: 8,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   textArea: {
     height: 100,
