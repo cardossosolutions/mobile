@@ -227,6 +227,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
             <View style={styles.dateIcon}>
               <Ionicons name="calendar-outline" size={20} color="#6B7280" />
             </View>
+            <View style={styles.dateIcon}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -240,6 +243,9 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
               keyboardType="numeric"
               maxLength={10}
             />
+            <View style={styles.dateIcon}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+            </View>
             <View style={styles.dateIcon}>
               <Ionicons name="calendar-outline" size={20} color="#6B7280" />
             </View>
@@ -315,6 +321,7 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 20,
     position: 'relative',
+    position: 'relative',
   },
   label: {
     fontSize: 14,
@@ -332,6 +339,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   dateInput: {
+    paddingRight: 40,
+  },
+  dateIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingRight: 40,
   },
   dateIcon: {
