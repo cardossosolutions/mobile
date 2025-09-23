@@ -42,12 +42,14 @@ const DeliveryForm: React.FC<DeliveryFormProps> = ({ delivery, onSave, onCancel 
   const [ecommerces, setEcommerces] = useState<Ecommerce[]>([]);
   const [formData, setFormData] = useState<Delivery>({
     ecommerce: delivery?.ecommerce || '',
-    ecommerce_id: delivery?.ecommerce_id || 0,
+    ecommerce_id: delivery?.ecommerce_id || (delivery?.ecommerce && !delivery?.ecommerce_id ? -1 : 0),
     quantity: delivery?.quantity || 1,
     date_start: delivery?.date_start ? formatDateToInput(delivery.date_start) : getCurrentDate(),
     date_ending: delivery?.date_ending ? formatDateToInput(delivery.date_ending) : getCurrentDate()
   });
-  const [customEcommerce, setCustomEcommerce] = useState('');
+  const [customEcommerce, setCustomEcommerce] = useState(
+    delivery?.ecommerce && !delivery?.ecommerce_id ? delivery.ecommerce : ''
+  );
   const [selectedEcommerceName, setSelectedEcommerceName] = useState('');
 
   // Função para obter data atual no formato MM/DD/YYYY
