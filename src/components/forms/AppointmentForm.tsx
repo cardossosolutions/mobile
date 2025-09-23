@@ -95,6 +95,68 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
     }
   };
 
+  // Função para obter data atual no formato DD/MM/YYYY
+  const getCurrentDate = (): string => {
+    const today = new Date();
+    const day = today.getDate().toString().padStart(2, '0');
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const year = today.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Função para formatar data do backend (YYYY-MM-DD) para input (DD/MM/YYYY)
+  const formatDateToInput = (dateString: string): string => {
+    if (!dateString) return getCurrentDate();
+    try {
+      const date = new Date(dateString);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return getCurrentDate();
+    }
+  };
+
+  // Função para formatar data do input (DD/MM/YYYY) para backend (YYYY-MM-DD)
+  const formatDateToBackend = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+      const [day, month, year] = dateString.split('/');
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    } catch {
+      return '';
+    }
+  };
+
+  // Função para validar formato de data DD/MM/YYYY
+  const isValidDateFormat = (dateString: string): boolean => {
+    const regex = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+    if (!regex.test(dateString)) return false;
+    
+    // Validar se a data é válida
+    const [day, month, year] = dateString.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && 
+           date.getMonth() === month - 1 && 
+           date.getDate() === day;
+  };
+
+  // Função para formatar input de data enquanto digita DD/MM/YYYY
+  const formatDateInput = (text: string): string => {
+    // Remove tudo que não é número
+    const numbers = text.replace(/\D/g, '');
+    
+    // Aplica a máscara DD/MM/YYYY
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    } else {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    }
+  };
+
   const [formData, setFormData] = useState<Appointment>({
     name: appointment?.name || '',
     cpf: appointment?.cpf || '',
@@ -227,9 +289,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
             <View style={styles.dateIcon}>
               <Ionicons name="calendar-outline" size={20} color="#6B7280" />
             </View>
-            <View style={styles.dateIcon}>
-              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
-            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -243,9 +302,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
               keyboardType="numeric"
               maxLength={10}
             />
-            <View style={styles.dateIcon}>
-              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
-            </View>
             <View style={styles.dateIcon}>
               <Ionicons name="calendar-outline" size={20} color="#6B7280" />
             </View>
@@ -321,7 +377,6 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 20,
     position: 'relative',
-    position: 'relative',
   },
   label: {
     fontSize: 14,
@@ -339,14 +394,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   dateInput: {
-    paddingRight: 40,
-  },
-  dateIcon: {
-    position: 'absolute',
-    right: 12,
-    top: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingRight: 40,
   },
   dateIcon: {
