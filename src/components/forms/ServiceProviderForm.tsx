@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useData } from '../../contexts/DataContext';
 
-
 interface ServiceProvider {
   id?: number;
   name: string;
@@ -164,6 +163,7 @@ const ServiceProviderForm: React.FC<ServiceProviderFormProps> = ({ provider, onS
     }
   };
 
+  // Função para obter data atual no formato DD/MM/YYYY
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
