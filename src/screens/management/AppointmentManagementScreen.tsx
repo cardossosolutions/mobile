@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useData } from '../../contexts/DataContext';
-import { Picker } from '@react-native-picker/picker';
+import AppointmentForm from '../../components/forms/AppointmentForm';
 
 interface Appointment {
   id: string;

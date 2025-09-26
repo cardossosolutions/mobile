@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useData } from '../../contexts/DataContext';
+import { Picker } from '@react-native-picker/picker';
+import { apiRequest, API_CONFIG } from '../../config/api';
 
 interface Appointment {
   id?: string;
@@ -23,6 +25,12 @@ interface Appointment {
   visitor_id?: number;
 }
 
+interface Guest {
+  id: string;
+  name: string;
+  cpf: string;
+}
+
 interface AppointmentFormProps {
   appointment?: Appointment;
   onSave: () => void;
@@ -32,6 +40,8 @@ interface AppointmentFormProps {
 const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, onCancel }) => {
   const { addAppointment, updateAppointment } = useData();
   const [loading, setLoading] = useState(false);
+  const [loadingGuests, setLoadingGuests] = useState(true);
+  const [guests, setGuests] = useState<Guest[]>([]);
 
   // Função para obter data atual no formato DD/MM/YYYY
   const getCurrentDate = (): string => {
@@ -101,8 +111,34 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
     responsible: appointment?.responsible || '',
     dateBegin: appointment?.dateBegin ? formatDateToInput(appointment.dateBegin) : getCurrentDate(),
     dateEnding: appointment?.dateEnding ? formatDateToInput(appointment.dateEnding) : getCurrentDate(),
-    visitor_id: appointment?.visitor_id
+    visitor_id: appointment?.visitor_id || ''
   });
+
+  // Carregar lista de convidados da API
+  useEffect(() => {
+    const loadGuestsList = async () => {
+      setLoadingGuests(true);
+      try {
+        const response = await apiRequest(API_CONFIG.ENDPOINTS.GUESTS_SELECT, {
+          method: 'GET'
+        });
+        
+        if (response && Array.isArray(response)) {
+          setGuests(response);
+        } else {
+          console.warn('Resposta da API de convidados não é um array:', response);
+          setGuests([]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar convidados:', error);
+        setGuests([]);
+      } finally {
+        setLoadingGuests(false);
+      }
+    };
+
+    loadGuestsList();
+  }, []);
 
   const handleDateChange = (field: 'dateBegin' | 'dateEnding', text: string) => {
     const formattedDate = formatDateInput(text);
@@ -113,8 +149,13 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.cpf.trim() || !formData.responsible.trim()) {
-      Alert.alert('Erro', 'Nome, CPF e responsável são obrigatórios');
+    if (!formData.visitor_id) {
+      Alert.alert('Erro', 'Selecione um convidado');
+      return;
+    }
+
+    if (!formData.responsible.trim()) {
+      Alert.alert('Erro', 'Responsável é obrigatório');
       return;
     }
 
@@ -141,7 +182,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
     try {
       // Preparar dados com datas no formato correto para o backend
       const dataToSend = {
-        ...formData,
+        visitor_id: formData.visitor_id,
+        responsible: formData.responsible,
         dateBegin: formatDateToBackend(formData.dateBegin),
         dateEnding: formatDateToBackend(formData.dateEnding)
       };
@@ -159,6 +201,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
     }
   };
 
+  const selectedGuest = guests.find(guest => guest.id === formData.visitor_id);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -173,30 +217,44 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({ appointment, onSave, 
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informações do Visitante</Text>
+          <Text style={styles.sectionTitle}>Selecionar Convidado</Text>
           
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nome Completo *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.name}
-              onChangeText={(text) => setFormData({...formData, name: text})}
-              placeholder="Digite o nome completo"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
+          {loadingGuests ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#3B82F6" />
+              <Text style={styles.loadingText}>Carregando convidados...</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Convidado *</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={formData.visitor_id}
+                    onValueChange={(value) => setFormData({...formData, visitor_id: value})}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Selecione um convidado..." value="" />
+                    {guests.map((guest) => (
+                      <Picker.Item
+                        key={guest.id}
+                        label={`${guest.name} - ${guest.cpf}`}
+                        value={guest.id}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>CPF *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.cpf}
-              onChangeText={(text) => setFormData({...formData, cpf: text})}
-              placeholder="000.000.000-00"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="numeric"
-            />
-          </View>
+              {selectedGuest && (
+                <View style={styles.selectedGuestInfo}>
+                  <Text style={styles.selectedGuestTitle}>Convidado Selecionado:</Text>
+                  <Text style={styles.selectedGuestName}>{selectedGuest.name}</Text>
+                  <Text style={styles.selectedGuestCpf}>CPF: {selectedGuest.cpf}</Text>
+                </View>
+              )}
+            </>
+          )}
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Responsável *</Text>
@@ -347,6 +405,51 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 8,
     textAlign: 'center',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  picker: {
+    height: 50,
+    color: '#111827',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  selectedGuestInfo: {
+    backgroundColor: '#F0F9FF',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
+  },
+  selectedGuestTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E40AF',
+    marginBottom: 8,
+  },
+  selectedGuestName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  selectedGuestCpf: {
+    fontSize: 14,
+    color: '#6B7280',
   },
   footer: {
     padding: 16,
